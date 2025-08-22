@@ -1,9 +1,17 @@
 #!/usr/bin/env node
-
 const { spawn, execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
+
+// Helper: mappe 'npm' -> 'npm.cmd' et 'npx' -> 'npx.cmd' sous Windows
+const resolveCmd = (cmd) => {
+  if (process.platform === 'win32') {
+    if (cmd === 'npm') return 'npm.cmd';
+    if (cmd === 'npx') return 'npx.cmd';
+  }
+  return cmd;
+};
 
 // Suppress dotenv messages
 const originalLog = console.log;
@@ -23,33 +31,35 @@ const log = {
   header: (title) => console.log(`\n${title}\n${'─'.repeat(title.length)}`)
 };
 
-// Execute command and return promise
+// Execute command and return promise (robuste Windows/macOS/Linux)
 const exec = (command, args = [], options = {}) => {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { stdio: 'pipe', ...options });
-    let output = '';
-    child.stdout?.on('data', data => output += data.toString());
-    child.stderr?.on('data', data => output += data.toString());
-    child.on('close', code => {
-      if (code === 0) {
-        resolve(output);
-      } else {
-        reject(new Error(`${command} failed`));
-      }
+    const child = spawn(resolveCmd(command), args, {
+      stdio: 'pipe',
+      shell: process.platform === 'win32', // permet la résolution via le shell
+      ...options,
     });
+    let output = '';
+    child.stdout?.on('data', (d) => (output += d.toString()));
+    child.stderr?.on('data', (d) => (output += d.toString()));
+    child.on('close', (code) => (code === 0 ? resolve(output) : reject(new Error(`${command} failed`))));
+    child.on('error', (err) => reject(err));
   });
 };
 
-// Execute with auto-response
+// Execute with auto-response (idem)
 const execWithInput = (command, args = [], input = 'y\n') => {
   return new Promise((resolve) => {
-    const child = spawn(command, args, { stdio: ['pipe', 'pipe', 'pipe'] });
+    const child = spawn(resolveCmd(command), args, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: process.platform === 'win32',
+    });
     setTimeout(() => child.stdin.write(input), 1000);
-    
+
     let output = '';
-    child.stdout.on('data', data => output += data.toString());
-    child.stderr.on('data', data => output += data.toString());
-    child.on('close', code => resolve({ code, output }));
+    child.stdout.on('data', (d) => (output += d.toString()));
+    child.stderr.on('data', (d) => (output += d.toString()));
+    child.on('close', (code) => resolve({ code, output }));
   });
 };
 
