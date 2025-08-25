@@ -9,6 +9,7 @@ export interface AnalysisConfig {
   userSelectedCompetitors?: { name: string }[];
   useWebSearch?: boolean;
   sendEvent: (event: SSEEvent) => Promise<void>;
+  locale?: string;
 }
 
 export interface AnalysisResult {
@@ -32,7 +33,8 @@ export async function performAnalysis({
   customPrompts,
   userSelectedCompetitors,
   useWebSearch = false,
-  sendEvent
+  sendEvent,
+  locale
 }: AnalysisConfig): Promise<AnalysisResult> {
   // Send start event
   await sendEvent({
@@ -201,7 +203,8 @@ export async function performAnalysis({
             company.name, 
             competitors,
             useMockMode,
-            ...(useWebSearch ? [true] : []) // Pass web search flag only for enhanced version
+            ...(useWebSearch ? [true] : []), // Pass web search flag only for enhanced version
+            locale // Pass locale to both versions
           );
           
           console.log(`Analysis completed for ${provider.name}:`, {

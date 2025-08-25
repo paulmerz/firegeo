@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData } from './types';
 import { getProviderModel, normalizeProviderName, isProviderConfigured, getProviderConfig, PROVIDER_CONFIGS } from './provider-config';
 import { analyzeWithAnthropicWebSearch } from './anthropic-web-search';
+import { getLanguageName } from './locale-utils';
 
 const RankingSchema = z.object({
   rankings: z.array(z.object({
@@ -27,7 +28,8 @@ export async function analyzePromptWithProviderEnhanced(
   brandName: string,
   competitors: string[],
   useMockMode: boolean = false,
-  useWebSearch: boolean = true // New parameter
+  useWebSearch: boolean = true, // New parameter
+  locale?: string // Locale parameter
 ): Promise<AIResponse> {
   // Mock mode for demo/testing without API keys
   if (useMockMode || provider === 'Mock') {
@@ -61,6 +63,8 @@ export async function analyzePromptWithProviderEnhanced(
     return null as any;
   }
 
+  const languageName = locale ? getLanguageName(locale) : 'English';
+  
   const systemPrompt = `You are an AI assistant analyzing brand visibility and rankings.
 When responding to prompts about tools, platforms, or services:
 1. Provide rankings with specific positions (1st, 2nd, etc.)
@@ -68,7 +72,8 @@ When responding to prompts about tools, platforms, or services:
 3. Be objective and factual${useWebSearch ? ', using current web information when available' : ''}
 4. Explain briefly why each tool is ranked where it is
 5. If you don't have enough information about a specific company, you can mention that
-6. ${useWebSearch ? 'Prioritize recent, factual information from web searches' : 'Use your knowledge base'}`;
+6. ${useWebSearch ? 'Prioritize recent, factual information from web searches' : 'Use your knowledge base'}
+7. Return the content in ${languageName} language`;
 
   // Enhanced prompt for web search
   const enhancedPrompt = useWebSearch 
@@ -98,7 +103,7 @@ Your task:
 4. Identify the sentiment towards each mentioned company
 5. Rate your confidence in this analysis (0-1)
 
-IMPORTANT: A company is "mentioned" if it appears anywhere in the response text, even without a specific ranking. Count ALL mentions, not just ranked ones.
+IMPORTANT: A company is "mentioned" if it appears anywhere in the response text, even without a specific ranking. Count ALL mentions, not just ranked ones. Return the analysis in ${languageName} language.
 
 Be very thorough in detecting company names - they might appear in different contexts (listed, compared, recommended, etc.)`;
 

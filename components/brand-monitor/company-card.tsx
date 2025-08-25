@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Globe, Building2, ExternalLink, Plus, Trash2 } from 'lucide-react';
 import { Company } from '@/lib/types';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 
 interface CompanyCardProps {
   company: Company;
@@ -38,6 +39,7 @@ export function CompanyCard({
   onAddCompetitor,
   onContinueToAnalysis 
 }: CompanyCardProps) {
+  const t = useTranslations('brandMonitor');
   const [logoError, setLogoError] = React.useState(false);
   const [faviconError, setFaviconError] = React.useState(false);
   
@@ -126,10 +128,10 @@ export function CompanyCard({
               {analyzing ? (
                 <>
                   <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin mr-2" />
-                  Analyzing...
+                  {t('analyzing')}
                 </>
               ) : (
-                'Identify Competitors'
+                t('identifyCompetitors')
               )}
             </button>
           </div>
@@ -151,7 +153,7 @@ export function CompanyCard({
               ))}
               {company.scrapedData.keywords.length > 6 && (
                 <span className="text-xs text-gray-500">
-                  +{company.scrapedData.keywords.length - 6} more
+                  +{company.scrapedData.keywords.length - 6} {t('more')}
                 </span>
               )}
             </div>
@@ -165,8 +167,8 @@ export function CompanyCard({
           <div className="px-8 py-6">
             <div className="mb-4">
               <div>
-                <h3 className="text-sm font-medium text-gray-900">Competitors</h3>
-                <p className="text-sm text-gray-500">We'll compare {company.name} against these {identifiedCompetitors.length} competitors</p>
+                <h3 className="text-sm font-medium text-gray-900">{t('competitors')}</h3>
+                <p className="text-sm text-gray-500">{t('compareAgainst', { company: company.name, count: identifiedCompetitors.length })}</p>
               </div>
             </div>
               
@@ -246,7 +248,7 @@ export function CompanyCard({
                     className="h-10 px-4 rounded-[10px] text-sm font-medium flex items-center gap-1 transition-all duration-200 bg-orange-500 text-white hover:bg-orange-600 [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#c2410c,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(234,_88,_12,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#c2410c,_0px_1px_3px_0px_rgba(234,_88,_12,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#c2410c,_0px_1px_2px_0px_rgba(234,_88,_12,_30%)]"
                   >
                     <Plus className="w-4 h-4" />
-                    Add Competitor
+                    {t('addCompetitorButton')}
                   </button>
                 )}
                 
@@ -257,7 +259,7 @@ export function CompanyCard({
                     onClick={onContinueToAnalysis}
                     className="h-10 px-6 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#36322F] text-[#fff] hover:bg-[#4a4542] disabled:bg-[#8c8885] disabled:hover:bg-[#8c8885] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
                   >
-                    Continue to Analysis
+                    {t('continueToAnalysis')}
                   </button>
                 )}
               </div>

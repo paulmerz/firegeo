@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useReducer, useCallback, useState, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { Company } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sparkles } from 'lucide-react';
@@ -52,6 +53,9 @@ export function BrandMonitor({
   selectedAnalysis,
   onSaveAnalysis 
 }: BrandMonitorProps = {}) {
+  const t = useTranslations('brandMonitor');
+  const tErrors = useTranslations('brandMonitor.errors');
+  const tAnalysis = useTranslations('brandMonitor.analysis');
   const [state, dispatch] = useReducer(brandMonitorReducer, initialBrandMonitorState);
   const [demoUrl] = useState('example.com');
   const saveAnalysis = useSaveBrandAnalysis();
@@ -169,20 +173,20 @@ export function BrandMonitor({
   
   const handleScrape = useCallback(async () => {
     if (!url) {
-      dispatch({ type: 'SET_ERROR', payload: 'Please enter a URL' });
+      dispatch({ type: 'SET_ERROR', payload: tErrors('pleaseEnterUrl') });
       return;
     }
 
     // Validate URL
     if (!validateUrl(url)) {
-      dispatch({ type: 'SET_ERROR', payload: 'Please enter a valid URL (e.g., example.com or https://example.com)' });
+      dispatch({ type: 'SET_ERROR', payload: tErrors('pleaseEnterValidUrl') });
       dispatch({ type: 'SET_URL_VALID', payload: false });
       return;
     }
 
     // Check if user has enough credits for initial scrape (1 credit)
     if (creditsAvailable < 1) {
-      dispatch({ type: 'SET_ERROR', payload: 'Insufficient credits. You need at least 1 credit to analyze a URL.' });
+      dispatch({ type: 'SET_ERROR', payload: tErrors('insufficientCreditsUrl') });
       return;
     }
 
@@ -210,10 +214,10 @@ export function BrandMonitor({
           if (errorData.error?.message) {
             throw new ClientApiError(errorData);
           }
-          throw new Error(errorData.error || 'Failed to scrape');
+          throw new Error(errorData.error || tErrors('failedToScrape'));
         } catch (e) {
           if (e instanceof ClientApiError) throw e;
-          throw new Error('Failed to scrape');
+          throw new Error(tErrors('failedToScrape'));
         }
       }
 
@@ -221,7 +225,7 @@ export function BrandMonitor({
       console.log('Scrape data received:', data);
       
       if (!data.company) {
-        throw new Error('No company data received');
+        throw new Error(tErrors('noCompanyData'));
       }
       
       // Scrape was successful - credits have been deducted, refresh the navbar
@@ -242,18 +246,18 @@ export function BrandMonitor({
         }, 50);
       }, 500);
     } catch (error: any) {
-      let errorMessage = 'Failed to extract company information';
+      let errorMessage = tErrors('failedToExtractCompany');
       if (error instanceof ClientApiError) {
         errorMessage = error.getUserMessage();
       } else if (error.message) {
-        errorMessage = `Failed to extract company information: ${error.message}`;
+        errorMessage = tErrors('failedToExtractCompanyWithReason', { reason: error.message });
       }
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
       console.error('HandleScrape error:', error);
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }, [url, creditsAvailable, onCreditsUpdate]);
+  }, [url, creditsAvailable, onCreditsUpdate, tErrors]);
   
   const handlePrepareAnalysis = useCallback(async () => {
     if (!company) return;
@@ -348,7 +352,7 @@ export function BrandMonitor({
 
     // Check if user has enough credits
     if (creditsAvailable < CREDITS_PER_BRAND_ANALYSIS) {
-      dispatch({ type: 'SET_ERROR', payload: `Insufficient credits. You need at least ${CREDITS_PER_BRAND_ANALYSIS} credits to run an analysis.` });
+      dispatch({ type: 'SET_ERROR', payload: tErrors('insufficientCreditsAnalysis', { credits: CREDITS_PER_BRAND_ANALYSIS }) });
       return;
     }
 
@@ -379,7 +383,7 @@ export function BrandMonitor({
     dispatch({ type: 'SET_ANALYSIS_PROGRESS', payload: {
       stage: 'initializing',
       progress: 0,
-      message: 'Starting analysis...',
+      message: tAnalysis('startingAnalysis'),
       competitors: [],
       prompts: [],
       partialResults: []
@@ -411,7 +415,7 @@ export function BrandMonitor({
     } finally {
       dispatch({ type: 'SET_ANALYZING', payload: false });
     }
-  }, [company, removedDefaultPrompts, customPrompts, identifiedCompetitors, startSSEConnection, creditsAvailable]);
+  }, [company, removedDefaultPrompts, customPrompts, identifiedCompetitors, startSSEConnection, creditsAvailable, tErrors, tAnalysis]);
   
   const handleRestart = useCallback(() => {
     dispatch({ type: 'RESET_STATE' });
@@ -538,14 +542,15 @@ export function BrandMonitor({
                     <CardHeader className="border-b">
                       <div className="flex justify-between items-center">
                         <div>
-                          <CardTitle className="text-xl font-semibold">Comparison Matrix</CardTitle>
+                          <CardTitle className="text-xl font-semibold">{tAnalysis('comparisonMatrix.title')}</CardTitle>
                           <CardDescription className="text-sm text-gray-600 mt-1">
-                            Compare visibility scores across different AI providers
+                            {tAnalysis('comparisonMatrix.description')}
+                            
                           </CardDescription>
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-orange-600">{brandData.visibilityScore}%</p>
-                          <p className="text-xs text-gray-500 mt-1">Average Score</p>
+                          <p className="text-xs text-gray-500 mt-1">{tAnalysis('comparisonMatrix.averageScore')}</p>
                         </div>
                       </div>
                     </CardHeader>
@@ -558,8 +563,8 @@ export function BrandMonitor({
                         />
                       ) : (
                         <div className="text-center py-8 text-gray-500">
-                          <p>No comparison data available</p>
-                          <p className="text-sm mt-2">Please ensure AI providers are configured and the analysis has completed.</p>
+                          <p>{tAnalysis('comparisonMatrix.noDataAvailable')}</p>
+                          <p className="text-sm mt-2">{tAnalysis('comparisonMatrix.ensureProvidersConfigured')}</p>
                         </div>
                       )}
                     </CardContent>
@@ -570,7 +575,7 @@ export function BrandMonitor({
                   <div id="provider-rankings" className="h-full">
                     <ProviderRankingsTabs 
                       providerRankings={analysis.providerRankings} 
-                      brandName={company?.name || 'Your Brand'}
+                      brandName={company?.name || tAnalysis('yourBrand')}
                       shareOfVoice={brandData.shareOfVoice}
                       averagePosition={Math.round(brandData.averagePosition)}
                       sentimentScore={brandData.sentimentScore}
@@ -584,14 +589,14 @@ export function BrandMonitor({
                     <CardHeader className="border-b">
                       <div className="flex justify-between items-center">
                         <div>
-                          <CardTitle className="text-xl font-semibold">Prompts & Responses</CardTitle>
+                          <CardTitle className="text-xl font-semibold">{tAnalysis('promptsResponses.title')}</CardTitle>
                           <CardDescription className="text-sm text-gray-600 mt-1">
-                            AI responses to your brand queries
+                            {tAnalysis('promptsResponses.description')}
                           </CardDescription>
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-orange-600">{analysis.prompts.length}</p>
-                          <p className="text-xs text-gray-500 mt-1">Total Prompts</p>
+                          <p className="text-xs text-gray-500 mt-1">{tAnalysis('promptsResponses.totalPrompts')}</p>
                         </div>
                       </div>
                     </CardHeader>

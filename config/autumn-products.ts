@@ -52,7 +52,7 @@ export const AUTUMN_PRODUCTS: AutumnProduct[] = [
         id: 'free-messages',
         type: 'unit',
         display: {
-          primary_text: '100 messages',
+          primary_text: '100 messages yo',
           secondary_text: 'per month',
         },
         unit: {

@@ -5,6 +5,7 @@ import { ProviderComparisonData } from '@/lib/types';
 import { ArrowUpDownIcon, ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
 import { CompetitorCell } from './competitor-cell';
 import { getConfiguredProviders } from '@/lib/provider-config';
+import { useTranslations } from 'next-intl';
 
 interface ProviderComparisonMatrixProps {
   data: ProviderComparisonData[];
@@ -93,12 +94,13 @@ export function ProviderComparisonMatrix({ data, brandName, competitors }: Provi
   // Hooks must be called before any conditional returns
   const [sortColumn, setSortColumn] = useState<string>('competitor');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('asc');
+  const t = useTranslations('brandMonitor');
   
   if (!data || data.length === 0) {
     return (
       <div className="text-center py-12 bg-gray-50 rounded-lg">
-        <p className="text-gray-600 text-lg mb-2">No comparison data available</p>
-        <p className="text-gray-500 text-sm">The analysis may still be processing or no providers returned data.</p>
+        <p className="text-gray-600 text-lg mb-2">{t('noComparisonData')}</p>
+        <p className="text-gray-500 text-sm">{t('noComparisonDataDesc')}</p>
       </div>
     );
   }
@@ -187,7 +189,7 @@ export function ProviderComparisonMatrix({ data, brandName, competitors }: Provi
                 onClick={() => handleSort('competitor')} 
                 className="w-full p-3 font-medium text-gray-900 flex items-center justify-between hover:bg-gray-100 transition-colors text-left"
               >
-                Competitors
+                {t('competitors')}
                 {getSortIcon('competitor')}
               </button>
             </th>

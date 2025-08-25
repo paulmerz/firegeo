@@ -1,5 +1,6 @@
 import React from 'react';
 import { Globe, Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface UrlInputSectionProps {
   url: string;
@@ -18,6 +19,8 @@ export function UrlInputSection({
   onUrlChange,
   onSubmit
 }: UrlInputSectionProps) {
+  const t = useTranslations('brandMonitor');
+  
   return (
     <div className="flex items-center justify-center animate-panel-in pb-12">
       <div className="w-full max-w-5xl px-6">
@@ -32,7 +35,7 @@ export function UrlInputSection({
                   ? 'border-orange-300 focus:ring-orange-500 focus:border-transparent'
                   : 'border-gray-300 focus:ring-orange-500 focus:border-transparent'
               }`}
-              placeholder="Enter your website URL (e.g., example.com)"
+              placeholder={t('enterUrlPlaceholder')}
               value={url}
               onChange={(e) => onUrlChange(e.target.value)}
               onKeyDown={(e) => {
@@ -42,11 +45,11 @@ export function UrlInputSection({
               }}
               onFocus={(e) => {
                 if (!url) {
-                  e.target.placeholder = "example.com";
+                  e.target.placeholder = t('enterUrlPlaceholderShort');
                 }
               }}
               onBlur={(e) => {
-                e.target.placeholder = "Enter your website URL (e.g., example.com)";
+                e.target.placeholder = t('enterUrlPlaceholder');
               }}
               disabled={loading || analyzing}
             />
@@ -56,7 +59,7 @@ export function UrlInputSection({
               onClick={onSubmit}
               disabled={loading || analyzing || !url || urlValid === false}
               className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 rounded-lg flex items-center justify-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#36322F] hover:bg-[#4a4542] disabled:bg-gray-300 disabled:hover:bg-gray-300"
-              aria-label="Analyze website"
+              aria-label={t('analyzeWebsiteAriaLabel')}
             >
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin text-white" />

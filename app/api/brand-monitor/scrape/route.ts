@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { Autumn } from 'autumn-js';
 import { scrapeCompanyInfo } from '@/lib/scrape-utils';
+import { getLocaleFromRequest } from '@/lib/locale-utils';
 import { 
   handleApiError, 
   AuthenticationError, 
@@ -73,7 +74,10 @@ export async function POST(request: NextRequest) {
       // Continue even if tracking fails - we don't want to block the user
     }
 
-    const company = await scrapeCompanyInfo(normalizedUrl, maxAge);
+    // Extract locale from request
+    const locale = getLocaleFromRequest(request);
+    
+    const company = await scrapeCompanyInfo(normalizedUrl, maxAge, locale);
 
     return NextResponse.json({ company });
   } catch (error) {

@@ -93,7 +93,7 @@ export const MODEL_RATE_LIMITS = {
 // ============================================
 // URLs and Endpoints
 // ============================================
-export const DEFAULT_BASE_URL = 'http://localhost:3000';
+export const DEFAULT_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
 export const AUTUMN_API_URL = 'https://api.useautumn.com/v1';
 export const GOOGLE_FAVICON_API = 'https://www.google.com/s2/favicons?domain=';
 

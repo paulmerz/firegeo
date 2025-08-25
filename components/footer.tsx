@@ -1,7 +1,15 @@
+'use client';
+
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslations } from 'next-intl';
+import { useParams } from 'next/navigation';
 
 export function Footer() {
+  const t = useTranslations();
+  const params = useParams();
+  const locale = params.locale as string;
+
   return (
     <footer className="bg-white text-zinc-600 border-t border-zinc-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -17,7 +25,7 @@ export function Footer() {
               />
             </div>
             <p className="text-sm mb-4">
-              Turn websites into structured data. Built for AI apps and LLMs.
+              {t('footer.description')}
             </p>
             <div className="flex space-x-4">
               <a
@@ -55,26 +63,26 @@ export function Footer() {
 
           {/* Product */}
           <div>
-            <h3 className="text-zinc-900 font-semibold mb-4">Product</h3>
+            <h3 className="text-zinc-900 font-semibold mb-4">{t('footer.product')}</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/plans" className="hover:text-zinc-900 transition-colors">
-                  Plans
+                <Link href={`/${locale}/plans`} className="hover:text-zinc-900 transition-colors">
+                  {t('footer.plans')}
                 </Link>
               </li>
               <li>
                 <a href="#" className="hover:text-zinc-900 transition-colors">
-                  Documentation
+                  {t('footer.documentation')}
                 </a>
               </li>
               <li>
                 <a href="#" className="hover:text-zinc-900 transition-colors">
-                  API Reference
+                  {t('footer.apiReference')}
                 </a>
               </li>
               <li>
                 <a href="#" className="hover:text-zinc-900 transition-colors">
-                  Demo
+                  {t('footer.demo')}
                 </a>
               </li>
             </ul>
@@ -82,26 +90,26 @@ export function Footer() {
 
           {/* Company */}
           <div>
-            <h3 className="text-zinc-900 font-semibold mb-4">Company</h3>
+            <h3 className="text-zinc-900 font-semibold mb-4">{t('footer.company')}</h3>
             <ul className="space-y-2">
               <li>
                 <a href="#" className="hover:text-zinc-900 transition-colors">
-                  About
+                  {t('footer.about')}
                 </a>
               </li>
               <li>
                 <a href="#" className="hover:text-zinc-900 transition-colors">
-                  Blog
+                  {t('footer.blog')}
                 </a>
               </li>
               <li>
                 <a href="#" className="hover:text-zinc-900 transition-colors">
-                  Careers
+                  {t('footer.careers')}
                 </a>
               </li>
               <li>
                 <a href="#" className="hover:text-zinc-900 transition-colors">
-                  Contact
+                  {t('footer.contact')}
                 </a>
               </li>
             </ul>
@@ -111,14 +119,14 @@ export function Footer() {
         <div className="mt-12 pt-8 border-t border-zinc-200">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm">
-              © {new Date().getFullYear()} Firecrawl. All rights reserved.
+              © {new Date().getFullYear()} Firecrawl. {t('footer.allRightsReserved')}.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <a href="#" className="text-sm hover:text-zinc-900 transition-colors">
-                Privacy Policy
+                {t('footer.privacyPolicy')}
               </a>
               <a href="#" className="text-sm hover:text-zinc-900 transition-colors">
-                Terms of Service
+                {t('footer.termsOfService')}
               </a>
             </div>
           </div>

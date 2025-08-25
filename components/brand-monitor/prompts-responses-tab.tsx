@@ -5,6 +5,7 @@ import { ChevronDown, ChevronsDown, ChevronsUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { BrandPrompt, AIResponse } from '@/lib/types';
 import { HighlightedResponse } from './highlighted-response';
+import { useTranslations } from 'next-intl';
 
 interface PromptsResponsesTabProps {
   prompts: BrandPrompt[];
@@ -66,6 +67,7 @@ export function PromptsResponsesTab({
   brandName,
   competitors
 }: PromptsResponsesTabProps) {
+  const t = useTranslations('brandMonitor');
   const [allExpanded, setAllExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -113,7 +115,7 @@ export function PromptsResponsesTab({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search prompts and responses..."
+              placeholder={t('searchPromptsPlaceholder')}
               className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
             />
             <svg 

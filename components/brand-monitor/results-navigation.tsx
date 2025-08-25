@@ -1,5 +1,6 @@
 import React from 'react';
 import { ResultsTab } from '@/lib/brand-monitor-reducer';
+import { useTranslations } from 'next-intl';
 
 interface BrandData {
   visibilityScore: number;
@@ -25,6 +26,8 @@ export function ResultsNavigation({
   brandData,
   brandName
 }: ResultsNavigationProps) {
+  const t = useTranslations('brandMonitor.resultsNavigation');
+  
   const handleTabClick = (tab: ResultsTab) => {
     onTabChange(tab);
   };
@@ -44,7 +47,7 @@ export function ResultsNavigation({
               : 'bg-orange-500 text-white hover:bg-orange-600 [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#c2410c,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(234,_88,_12,_58%)] hover:translate-y-[1px] hover:scale-[0.98]'
           }`}
         >
-          Comparison Matrix
+          {t('comparisonMatrix')}
         </button>
         <button
           onClick={() => handleTabClick('prompts')}
@@ -54,7 +57,7 @@ export function ResultsNavigation({
               : 'bg-orange-500 text-white hover:bg-orange-600 [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#c2410c,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(234,_88,_12,_58%)] hover:translate-y-[1px] hover:scale-[0.98]'
           }`}
         >
-          Prompts & Responses
+          {t('promptsResponses')}
         </button>
         <button
           onClick={() => handleTabClick('rankings')}
@@ -64,7 +67,7 @@ export function ResultsNavigation({
               : 'bg-orange-500 text-white hover:bg-orange-600 [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#c2410c,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(234,_88,_12,_58%)] hover:translate-y-[1px] hover:scale-[0.98]'
           }`}
         >
-          Provider Rankings
+          {t('providerRankings')}
         </button>
         <button
           onClick={() => handleTabClick('visibility')}
@@ -74,7 +77,7 @@ export function ResultsNavigation({
               : 'bg-orange-500 text-white hover:bg-orange-600 [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#c2410c,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(234,_88,_12,_58%)] hover:translate-y-[1px] hover:scale-[0.98]'
           }`}
         >
-          Visibility Score
+          {t('visibilityScore')}
         </button>
         
         </div>
@@ -88,7 +91,7 @@ export function ResultsNavigation({
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Analyze another website
+            {t('analyzeAnotherWebsite')}
           </button>
         </div>
       </div>

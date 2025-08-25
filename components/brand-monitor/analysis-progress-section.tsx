@@ -5,6 +5,7 @@ import { Loader2, Plus, Trash2, CheckIcon } from 'lucide-react';
 import { Company, AnalysisStage } from '@/lib/types';
 import { IdentifiedCompetitor, PromptCompletionStatus } from '@/lib/brand-monitor-reducer';
 import { getEnabledProviders } from '@/lib/provider-config';
+import { useTranslations } from 'next-intl';
 
 interface AnalysisProgressSectionProps {
   company: Company;
@@ -86,6 +87,7 @@ export function AnalysisProgressSection({
   onStartAnalysis,
   detectServiceType
 }: AnalysisProgressSectionProps) {
+  const t = useTranslations('brandMonitor.analysisProgress');
   // Generate default prompts
   const serviceType = detectServiceType(company);
   const currentYear = new Date().getFullYear();
@@ -107,12 +109,12 @@ export function AnalysisProgressSection({
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl font-semibold">
-                  {analyzing ? 'Analysis Progress' : 'Prompts'}
+                  {analyzing ? t('title') : t('prompts')}
                 </CardTitle>
                 {/* Competitors list on the right */}
                 {!analyzing && (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">Competitors:</span>
+                    <span className="text-sm text-gray-500">{t('competitors')}:</span>
                     <div className="flex -space-x-2">
                       {identifiedCompetitors.slice(0, 6).map((comp, idx) => (
                         <div key={idx} className="w-8 h-8 rounded-full bg-white border-2 border-white shadow-sm overflow-hidden" title={comp.name}>
@@ -145,7 +147,7 @@ export function AnalysisProgressSection({
               {scrapingCompetitors && !analyzing && (
                 <CardDescription className="mt-2 flex items-center justify-center gap-2 text-orange-600">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Validating competitor data in background...</span>
+                  <span>{t('validatingCompetitorData')}</span>
                 </CardDescription>
               )}
               {analyzing && analysisProgress && (
@@ -238,7 +240,7 @@ export function AnalysisProgressSection({
                             );
                           })}
                         </div>
-                        {isCustom && <Badge variant="outline" className="text-xs mt-2">Custom</Badge>}
+                        {isCustom && <Badge variant="outline" className="text-xs mt-2">{t('custom')}</Badge>}
                       </div>
                     );
                   })}
@@ -253,7 +255,7 @@ export function AnalysisProgressSection({
                   className="h-9 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#36322F] text-[#fff] hover:bg-[#4a4542] disabled:bg-[#8c8885] disabled:hover:bg-[#8c8885] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100 px-4 py-1 gap-1"
                 >
                   <Plus className="h-4 w-4" />
-                  Add Prompt
+                  {t('addPrompt')}
                 </button>
               </div>
 
@@ -267,10 +269,10 @@ export function AnalysisProgressSection({
                   {analyzing ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Analyzing...
+                      {t('analyzing')}
                     </>
                   ) : (
-                    'Start Analysis'
+                    t('startAnalysis')
                   )}
                 </button>
               </div>

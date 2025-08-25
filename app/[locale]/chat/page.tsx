@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from '@/lib/auth-client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useCustomer } from '@/hooks/useAutumnCustomer';
 import { Button } from '@/components/ui/button';
 import { Send, Menu, X, MessageSquare, Plus, Trash2 } from 'lucide-react';
@@ -14,6 +15,9 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 // Separate component that uses Autumn hooks
 function ChatContent({ session }: { session: any }) {
   const router = useRouter();
+  const params = useParams();
+  const locale = params.locale as string;
+  const t = useTranslations();
   const { allowed, customer, refetch } = useCustomer();
   const [input, setInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -92,15 +96,15 @@ function ChatContent({ session }: { session: any }) {
             className="w-full btn-firecrawl-orange"
           >
             <Plus className="w-4 h-4 mr-2" />
-            New Chat
+            {t('chat.newChat')}
           </Button>
         </div>
         
         <div className="overflow-y-auto flex-1">
           {conversationsLoading ? (
-            <div className="p-4 text-center text-gray-500">Loading conversations...</div>
+            <div className="p-4 text-center text-gray-500">{t('chat.loadingConversations')}</div>
           ) : conversations?.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">No conversations yet</div>
+            <div className="p-4 text-center text-gray-500">{t('chat.noConversations')}</div>
           ) : (
             <div className="space-y-1 p-2">
               {conversations?.map((conversation) => (
@@ -114,7 +118,7 @@ function ChatContent({ session }: { session: any }) {
                   <div className="flex justify-between items-start">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">
-                        {conversation.title || 'Untitled Conversation'}
+                                                  {conversation.title || t('chat.untitledConversation')}
                       </p>
                       <p className="text-xs text-gray-500">
                         {conversation.lastMessageAt && format(new Date(conversation.lastMessageAt), 'MMM d, h:mm a')}
@@ -139,7 +143,7 @@ function ChatContent({ session }: { session: any }) {
         
         <div className="p-4 border-t bg-gray-50">
           <div className="text-sm text-gray-600">
-            <p>Messages remaining:</p>
+            <p>{t('chat.messagesRemaining')}</p>
             <p className="text-2xl font-bold text-orange-600">{remainingMessages}</p>
           </div>
         </div>
@@ -158,7 +162,7 @@ function ChatContent({ session }: { session: any }) {
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
             <h1 className="font-semibold">
-              {currentConversation?.title || 'New Conversation'}
+              {currentConversation?.title || t('chat.newConversation')}
             </h1>
           </div>
         </div>
@@ -169,27 +173,27 @@ function ChatContent({ session }: { session: any }) {
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading your account data...</p>
+                <p className="text-gray-600">{t('chat.loadingAccountData')}</p>
               </div>
             </div>
           ) : !hasMessages ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center max-w-md">
                 <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h2 className="text-xl font-semibold mb-2">Credit-Based Messaging</h2>
+                <h2 className="text-xl font-semibold mb-2">{t('chat.creditBasedMessaging')}</h2>
                 <p className="text-gray-600 mb-4">
-                  This is a demonstration of the credit-based messaging system. Each message consumes credits from your account balance.
+                  {t('chat.creditBasedDesc')}
                 </p>
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
                   <p className="text-sm text-orange-800">
-                    You currently have <span className="font-bold">{remainingMessages}</span> message credits available.
+                    {t('chat.youCurrentlyHave')} <span className="font-bold">{remainingMessages}</span> {t('chat.messageCreditsAvailable')}
                   </p>
                 </div>
                 <Button
-                  onClick={() => router.push('/plans')}
+                  onClick={() => router.push(`/${locale}/plans`)}
                   className="btn-firecrawl-orange"
                 >
-                  Get More Credits
+                  {t('chat.getMoreCredits')}
                 </Button>
               </div>
             </div>
@@ -232,9 +236,9 @@ function ChatContent({ session }: { session: any }) {
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h2 className="text-xl font-semibold mb-2">Start a Conversation</h2>
+                <h2 className="text-xl font-semibold mb-2">{t('chat.startConversation')}</h2>
                 <p className="text-gray-600">
-                  Send a message to begin chatting with AI
+                  {t('chat.sendMessageToBegin')}
                 </p>
               </div>
             </div>
@@ -254,7 +258,7 @@ function ChatContent({ session }: { session: any }) {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={hasMessages ? "Type your message..." : "No messages available"}
+              placeholder={hasMessages ? t('chat.typeMessage') : t('chat.noMessagesAvailable')}
               disabled={!hasMessages || sendMessage.isPending}
               className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100 disabled:text-gray-500"
             />
@@ -272,10 +276,10 @@ function ChatContent({ session }: { session: any }) {
       <ConfirmationDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title="Delete Conversation"
-        description="Are you sure you want to delete this conversation? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('chat.deleteConversation')}
+        description={t('chat.deleteConversationDesc')}
+        confirmText={t('chat.delete')}
+        cancelText={t('common.cancel')}
         onConfirm={confirmDelete}
         isLoading={deleteConversation.isPending}
       />

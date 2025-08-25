@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { signUp } from '@/lib/auth-client';
+import { useTranslations } from 'next-intl';
+import { useParams } from 'next/navigation';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -12,6 +14,9 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showExistingAccountOptions, setShowExistingAccountOptions] = useState(false);
+  const t = useTranslations();
+  const params = useParams();
+  const locale = params.locale as string;
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +42,7 @@ export default function RegisterPage() {
         throw response.error;
       }
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to register';
+      const errorMessage = err.message || t('auth.failedToRegister');
       setError(errorMessage);
       
       // Check if the error is about existing account
@@ -60,28 +65,28 @@ export default function RegisterPage() {
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 p-12 items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-orange-400/90 via-orange-500/90 to-orange-600/90" />
         <div className="relative z-10 max-w-md text-white">
-          <h1 className="text-4xl font-bold mb-4">Join thousands of developers</h1>
+          <h1 className="text-4xl font-bold mb-4">{t('auth.joinDevelopers')}</h1>
           <p className="text-lg opacity-90">
-            Start building with our powerful API and unlock new possibilities for your applications.
+            {t('auth.joinDevelopersDescription')}
           </p>
           <div className="mt-8 space-y-4">
             <div className="flex items-center space-x-3">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <span>Unlimited API access</span>
+              <span>{t('auth.unlimitedAccess')}</span>
             </div>
             <div className="flex items-center space-x-3">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <span>Real-time collaboration</span>
+              <span>{t('auth.realtimeCollaboration')}</span>
             </div>
             <div className="flex items-center space-x-3">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <span>24/7 support</span>
+              <span>{t('auth.support247')}</span>
             </div>
           </div>
         </div>
@@ -104,12 +109,12 @@ export default function RegisterPage() {
               />
             </div>
             <h2 className="text-center text-3xl font-extrabold text-gray-900">
-              Create your account
+              {t('auth.registerTitle')}
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
-              Or{' '}
-              <Link href="/login" className="font-medium text-orange-600 hover:text-orange-500">
-                sign in to existing account
+              {t('auth.or')}{' '}
+              <Link href={`/${locale}/login`} className="font-medium text-orange-600 hover:text-orange-500">
+                {t('auth.signInExisting')}
               </Link>
             </p>
           </div>
@@ -117,7 +122,7 @@ export default function RegisterPage() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Full name
+                  {t('auth.fullNameLabel')}
                 </label>
                 <input
                   id="name"
@@ -128,12 +133,12 @@ export default function RegisterPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
-                  placeholder="Enter your full name"
+                  placeholder={t('auth.fullNamePlaceholder')}
                 />
               </div>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email address
+                  {t('auth.emailLabel')}
                 </label>
                 <input
                   id="email"
@@ -144,12 +149,12 @@ export default function RegisterPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
-                  placeholder="Enter your email"
+                  placeholder={t('auth.emailPlaceholder')}
                 />
               </div>
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
+                  {t('auth.passwordLabel')}
                 </label>
                 <input
                   id="password"
@@ -160,9 +165,9 @@ export default function RegisterPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
-                  placeholder="Choose a strong password"
+                  placeholder={t('auth.newPasswordPlaceholder')}
                 />
-                <p className="mt-1 text-xs text-gray-500">Must be at least 8 characters long</p>
+                <p className="mt-1 text-xs text-gray-500">{t('auth.passwordRequirement')}</p>
               </div>
             </div>
 
@@ -174,20 +179,20 @@ export default function RegisterPage() {
                 {showExistingAccountOptions && (
                   <div className="mt-3 space-y-3">
                     <p className="text-sm text-gray-300">
-                      It looks like you already have an account with this email address.
+                      {t('auth.existingAccountDetected')}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Link 
-                        href={`/login?email=${encodeURIComponent(email)}`}
+                        href={`/${locale}/login?email=${encodeURIComponent(email)}`}
                         className="inline-flex items-center justify-center px-4 py-2 border border-orange-500 text-sm font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 focus:ring-offset-gray-900 transition-colors"
                       >
-                        Sign in instead
+                        {t('auth.signInInstead')}
                       </Link>
                       <Link 
-                        href="/forgot-password"
+                        href={`/${locale}/forgot-password`}
                         className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md text-orange-400 hover:text-orange-300 focus:outline-none focus:underline transition-colors"
                       >
-                        Forgot password?
+                        {t('auth.forgotPassword')}
                       </Link>
                     </div>
                   </div>
@@ -205,13 +210,13 @@ export default function RegisterPage() {
                   className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
                 />
                 <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
-                  I agree to the{' '}
+                  {t('auth.agreeToTerms')}{' '}
                   <Link href="#" className="text-orange-600 hover:text-orange-500">
-                    Terms of Service
+                    {t('footer.termsOfService')}
                   </Link>{' '}
-                  and{' '}
+                  {t('auth.and')}{' '}
                   <Link href="#" className="text-orange-600 hover:text-orange-500">
-                    Privacy Policy
+                    {t('footer.privacyPolicy')}
                   </Link>
                 </label>
               </div>
@@ -220,7 +225,7 @@ export default function RegisterPage() {
                 disabled={loading}
                 className="btn-firecrawl-orange w-full inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 h-10 px-4"
               >
-                {loading ? 'Creating account...' : 'Create account'}
+                {loading ? t('auth.creatingAccount') : t('auth.createAccount')}
               </button>
             </div>
           </form>

@@ -1,0 +1,481 @@
+{
+  "common": {
+    "home": "Accueil",
+    "dashboard": "Tableau de bord",
+    "chat": "Chat",
+    "brandMonitor": "Surveillance de marque",
+    "pricing": "Tarifs",
+    "login": "Connexion",
+    "register": "S'inscrire",
+    "logout": "Déconnexion",
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "reset": "Réinitialiser",
+    "submit": "Soumettre",
+    "credits": "crédits",
+    "deleting": "Suppression..."
+  },
+  "navbar": {
+    "title": "SaaS Starter",
+    "menuToggle": "Basculer le menu",
+    "userMenu": "Menu utilisateur"
+  },
+  "footer": {
+    "description": "Transformez les sites web en données structurées. Conçu pour les applications IA et les LLM.",
+    "product": "Produit",
+    "plans": "Forfaits",
+    "documentation": "Documentation",
+    "apiReference": "Référence API",
+    "demo": "Démo",
+    "company": "Entreprise",
+    "about": "À propos",
+    "blog": "Blog",
+    "careers": "Carrières",
+    "contact": "Contact",
+    "allRightsReserved": "Tous droits réservés",
+    "privacyPolicy": "Politique de confidentialité",
+    "termsOfService": "Conditions d'utilisation"
+  },
+  "auth": {
+    "loginTitle": "Connectez-vous à votre compte",
+    "registerTitle": "Créez votre compte",
+    "emailLabel": "Adresse e-mail",
+    "passwordLabel": "Mot de passe",
+    "confirmPasswordLabel": "Confirmer le mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "noAccount": "Vous n'avez pas de compte ?",
+    "hasAccount": "Vous avez déjà un compte ?",
+    "signIn": "Se connecter",
+    "signUp": "S'inscrire",
+    "signingIn": "Connexion en cours...",
+    "signingUp": "Inscription en cours...",
+    "signingOut": "Déconnexion en cours...",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "resetPasswordTitle": "Réinitialisez votre mot de passe",
+    "resetPasswordDescription": "Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+    "sendResetLink": "Envoyer le lien de réinitialisation",
+    "passwordResetSent": "Lien de réinitialisation de mot de passe envoyé à votre e-mail",
+    "fullNameLabel": "Nom complet",
+    "passwordResetSuccess": "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.",
+    "welcomeBack": "Bon retour !",
+    "welcomeBackDescription": "Connectez-vous pour continuer à construire des choses incroyables avec notre API puissante.",
+    "joinDevelopers": "Rejoignez des milliers de développeurs",
+    "joinDevelopersDescription": "Commencez à construire avec notre API puissante et débloquez de nouvelles possibilités pour vos applications.",
+    "unlimitedAccess": "Accès API illimité",
+    "realtimeCollaboration": "Collaboration en temps réel",
+    "support247": "Support 24/7",
+    "emailPlaceholder": "Entrez votre e-mail",
+    "passwordPlaceholder": "Entrez votre mot de passe",
+    "fullNamePlaceholder": "Entrez votre nom complet",
+    "newPasswordPlaceholder": "Choisissez un mot de passe fort",
+    "passwordRequirement": "Doit contenir au moins 8 caractères",
+    "rememberMe": "Se souvenir de moi",
+    "or": "Ou",
+    "createNewAccount": "créer un nouveau compte",
+    "signInExisting": "se connecter à un compte existant",
+    "agreeToTerms": "J'accepte les",
+    "and": "et",
+    "existingAccountDetected": "Il semble que vous ayez déjà un compte avec cette adresse e-mail.",
+    "signInInstead": "Se connecter à la place",
+    "failedToLogin": "Échec de la connexion",
+    "failedToRegister": "Échec de l'inscription",
+    "createAccount": "Créer un compte",
+    "creatingAccount": "Création du compte...",
+    "forgotPasswordTitle": "Réinitialisez votre mot de passe",
+    "forgotPasswordDesc": "Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+    "backToLogin": "Retour à la connexion",
+    "sendResetEmail": "Envoyer l'e-mail de réinitialisation",
+    "resetEmailSent": "E-mail de réinitialisation envoyé ! Vérifiez votre boîte de réception pour plus d'instructions.",
+    "failedToSendReset": "Échec de l'envoi de l'e-mail de réinitialisation"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "welcome": "Bon retour !",
+    "overview": "Vue d'ensemble",
+    "recentActivity": "Activité récente",
+    "quickActions": "Actions rapides",
+    "statistics": "Statistiques",
+    "profileInformation": "Informations du profil",
+    "editProfile": "Modifier le profil",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "email": "E-mail",
+    "displayName": "Nom d'affichage",
+    "phone": "Téléphone",
+    "bio": "Bio",
+    "notSet": "Non défini",
+    "enterDisplayName": "Entrez votre nom d'affichage",
+    "enterPhone": "Entrez votre numéro de téléphone",
+    "tellAboutYourself": "Parlez-nous de vous",
+    "settings": "Paramètres",
+    "emailNotifications": "Notifications par e-mail",
+    "emailNotificationsDesc": "Recevoir des notifications par e-mail pour les mises à jour importantes",
+    "marketingEmails": "E-mails marketing",
+    "marketingEmailsDesc": "Recevoir des e-mails sur les nouvelles fonctionnalités et offres",
+    "accountInformation": "Informations du compte",
+    "currentPlan": "Plan actuel",
+    "freePlan": "Plan gratuit",
+    "changingTo": "Changement vers",
+    "usageStatistics": "Statistiques d'utilisation",
+    "used": "Utilisé",
+    "resetsOn": "Se réinitialise le",
+    "noUsageData": "Aucune donnée d'utilisation disponible",
+    "availablePlans": "Plans disponibles",
+    "currentPlanLabel": "(Plan actuel)",
+    "scheduledLabel": "(Programmé)",
+    "loading": "Chargement...",
+    "downgrade": "Rétrograder",
+    "upgrade": "Améliorer",
+    "starts": "Commence",
+    "on": "le"
+  },
+  "chat": {
+    "title": "Chat",
+    "newChat": "Nouveau Chat",
+    "newConversation": "Nouvelle conversation",
+    "typeMessage": "Tapez votre message...",
+    "send": "Envoyer",
+    "conversations": "Conversations",
+    "noConversations": "Aucune conversation pour le moment",
+    "loadingConversations": "Chargement des conversations...",
+    "untitledConversation": "Conversation sans titre",
+    "messagesRemaining": "Messages restants :",
+    "creditBasedMessaging": "Messagerie basée sur les crédits",
+    "creditBasedDesc": "Ceci est une démonstration du système de messagerie basé sur les crédits. Chaque message consomme des crédits de votre solde de compte.",
+    "youCurrentlyHave": "Vous avez actuellement",
+    "messageCreditsAvailable": "crédits de messages disponibles.",
+    "getMoreCredits": "Obtenir plus de crédits",
+    "startConversation": "Commencer une conversation",
+    "sendMessageToBegin": "Envoyez un message pour commencer à discuter avec l'IA",
+    "noMessagesAvailable": "Aucun message disponible",
+    "loadingAccountData": "Chargement des données de votre compte...",
+    "deleteConversation": "Supprimer la conversation",
+    "deleteConversationDesc": "Êtes-vous sûr de vouloir supprimer cette conversation ? Cette action ne peut pas être annulée.",
+    "delete": "Supprimer"
+  },
+  "brandMonitor": {
+    "title": "Surveillance de marque",
+    "fireGeoMonitor": "FireGEO Monitor",
+    "aiBrandVisibilityPlatform": "Plateforme de Visibilité de Marque IA",
+    "trackHowAi": "Suivez comment les modèles IA classent votre marque par rapport aux concurrents",
+    "newAnalysis": "Nouvelle analyse",
+    "loadingAnalyses": "Chargement des analyses...",
+    "noAnalysesYet": "Aucune analyse pour le moment",
+    "untitledAnalysis": "Analyse sans titre",
+    "deleteAnalysis": "Supprimer l'analyse",
+    "deleteAnalysisDesc": "Êtes-vous sûr de vouloir supprimer cette analyse ? Cette action ne peut pas être annulée.",
+    "pleaseLogIn": "Veuillez vous connecter pour accéder au moniteur de marque",
+    "addPrompt": "Ajouter un prompt",
+    "cancel": "Annuler",
+    "analyze": "Analyser",
+    "noComparisonData": "Aucune donnée de comparaison disponible",
+    "noComparisonDataDesc": "L'analyse peut encore être en cours ou aucun fournisseur n'a retourné de données.",
+    "analizing": "Analyse en cours...",
+    "results": "Résultats",
+    "competitors": "Concurrents",
+    "rankings": "Classements",
+    "visibility": "Visibilité",
+    "addCompetitor": "Ajouter un concurrent",
+    "webSearch": "Recherche web",
+    "addCustomPrompt": "Ajouter un prompt personnalisé",
+    "addCustomPromptDesc": "Entrez un prompt à laquelle les modèles IA répondront sur votre secteur.",
+    "addCustomPromptPlaceholder": "Exemple : Quel est le meilleur scraper IA ?",
+    "enterCustomPromptPlaceholder": "Entrez un prompt personnalisé (utilisez {brand} et {industry} comme espaces réservés)",
+    "searchPromptsPlaceholder": "Rechercher les prompts et réponses...",
+    "enterUrlPlaceholder": "Entrez l'URL de votre site web (ex : exemple.com)",
+    "enterUrlPlaceholderShort": "exemple.com",
+    "competitorNamePlaceholder": "ex : Anthropic",
+    "competitorUrlPlaceholder": "ex : anthropic.com",
+    "addCompetitorTitle": "Ajouter un concurrent",
+    "competitorNameLabel": "Nom du Concurrent",
+    "websiteUrlOptionalLabel": "URL du site web (optionnel)",
+    "addCompetitorButton": "Ajouter un concurrent",
+    "analyzeWebsiteAriaLabel": "Analyser le site web",
+    "identifyCompetitors": "Identifier les Concurrents",
+    "compareAgainst": "Nous comparerons {company} à ces {count} concurrent(s)",
+    "continueToAnalysis": "Continuer vers l'Analyse",
+    "more": "de plus",
+    "resultsNavigation": {
+      "comparisonMatrix": "Matrice de Comparaison",
+      "promptsResponses": "Prompts et réponses",
+      "providerRankings": "Classements des Fournisseurs",
+      "visibilityScore": "Score de visibilité",
+      "analyzeAnotherWebsite": "Analyser un autre site web"
+    },
+    "analysisProgress": {
+      "title": "Progression de l'analyse",
+      "prompts": "Prompts",
+      "competitors": "Concurrents",
+      "validatingCompetitorData": "Validation des données des concurrents en arrière-plan...",
+      "addPrompt": "Ajouter un prompt",
+      "startAnalysis": "Commencer l'analyse",
+      "analyzing": "Analyse en cours...",
+      "custom": "Personnalisé"
+    },
+    "errors": {
+      "pleaseEnterUrl": "Veuillez entrer une URL",
+      "pleaseEnterValidUrl": "Veuillez entrer une URL valide (ex : exemple.com ou https://exemple.com)",
+      "insufficientCreditsUrl": "Crédits insuffisants. Vous avez besoin d'au moins 1 crédit pour analyser une URL.",
+      "insufficientCreditsAnalysis": "Crédits insuffisants. Vous avez besoin d'au moins {credits} crédits pour effectuer une analyse.",
+      "failedToScrape": "Échec du scraping",
+      "noCompanyData": "Aucune donnée d'entreprise reçue",
+      "failedToExtractCompany": "Échec de l'extraction des informations de l'entreprise",
+      "failedToExtractCompanyWithReason": "Échec de l'extraction des informations de l'entreprise : {reason}"
+    },
+    "analysis": {
+      "startingAnalysis": "Démarrage de l'analyse...",
+      "comparisonMatrix": {
+        "title": "Matrice de comparaison",
+        "description": "Comparer les scores de visibilité entre différents fournisseurs IA",
+        "averageScore": "Score moyen",
+        "noDataAvailable": "Aucune donnée de comparaison disponible",
+        "ensureProvidersConfigured": "Veuillez vous assurer que les fournisseurs IA sont configurés et que l'analyse est terminée."
+      },
+      "promptsResponses": {
+        "title": "Prompts et réponses",
+        "description": "Réponses IA à vos requêtes de marque",
+        "totalPrompts": "Total des prompts"
+      },
+      "yourBrand": "Votre marque"
+    }
+  },
+  "pricing": {
+    "title": "Plans tarifaires",
+    "simpleTransparentPricing": "Tarification simple et transparente",
+    "choosePerfectPlan": "Choisissez le plan parfait pour vos besoins. Toujours flexible pour évoluer à la hausse ou à la baisse.",
+    "loggedInAs": "Connecté en tant que :",
+    "monthly": "Mensuel",
+    "yearly": "Annuel",
+    "popular": "Le plus populaire",
+    "feature": "Fonctionnalité",
+    "features": "Fonctionnalités",
+    "getStarted": "Commencer",
+    "currentPlan": "Plan actuel",
+    "upgrade": "Mettre à niveau",
+    "downgrade": "Rétrograder",
+    "free": "Gratuit",
+    "pro": "Pro",
+    "enterprise": "Entreprise",
+    "plans": {
+      "free": {
+        "name": "Gratuit",
+        "description": "Parfait pour essayer notre service",
+        "price": "Gratuit",
+        "priceDesc": "Aucune carte de crédit requise",
+        "feature1": "10 messages par mois",
+        "feature1Desc": "Réponses de chat alimentées par l'IA",
+        "feature2": "Support communautaire",
+        "feature2Desc": "Obtenez de l'aide de notre communauté",
+        "feature3": "Fonctionnalités de base",
+        "feature3Desc": "Outils essentiels pour commencer"
+      },
+      "pro": {
+        "name": "Pro",
+        "description": "Pour tous vos besoins de messagerie",
+        "recommendText": "Le plus populaire",
+        "price": "10$/mois",
+        "priceDesc": "facturé mensuellement",
+        "feature1": "100 messages par mois",
+        "feature1Desc": "Réponses de chat alimentées par l'IA",
+        "feature2": "Support premium",
+        "feature2Desc": "Obtenez de l'aide de notre équipe",
+        "feature3": "Accès prioritaire",
+        "feature3Desc": "Soyez le premier à essayer les nouvelles fonctionnalités"
+      }
+    }
+  },
+  "errors": {
+    "generic": "Quelque chose s'est mal passé. Veuillez réessayer.",
+    "notFound": "Page non trouvée",
+    "unauthorized": "Vous n'êtes pas autorisé à accéder à cette page",
+    "serverError": "Erreur interne du serveur",
+    "networkError": "Erreur réseau. Veuillez vérifier votre connexion.",
+    "validationError": "Veuillez vérifier votre saisie et réessayer"
+  },
+  "metadata": {
+    "title": "SaaS Starter",
+    "description": "Starter SaaS Next.js avec Better Auth"
+  },
+  "home": {
+    "hero": {
+      "title": "FireGEO Monitor",
+      "subtitle": "Plateforme de Visibilité de Marque IA",
+      "description": "Suivez comment les modèles IA classent votre marque par rapport aux concurrents",
+      "startAnalysis": "Commencer l'Analyse de Marque",
+      "viewPricing": "Voir les Tarifs",
+      "features": "Alimenté par l'IA • Analyse en Temps Réel • Suivi des Concurrents • Insights SEO"
+    },
+    "stats": {
+      "aiModels": {
+        "title": "ChatGPT",
+        "description": "Claude, Perplexity et Plus"
+      },
+      "realtime": {
+        "title": "Temps réel",
+        "description": "Analyse"
+      },
+      "competitor": {
+        "title": "Concurrents",
+        "description": "Suivi"
+      },
+      "insights": {
+        "title": "Actionnable",
+        "description": "Insights"
+      }
+    },
+    "pricing": {
+      "title": "Surveillez la Visibilité de Votre Marque",
+      "description": "Choisissez le plan qui correspond à vos besoins de surveillance",
+      "perMonth": "/mois",
+      "mostPopular": "Le Plus Populaire",
+      "viewDetailed": "Voir les tarifs détaillés →",
+      "starter": {
+        "title": "Starter",
+        "description": "Parfait pour les marques personnelles",
+        "features": {
+          "analyses": "10 analyses de marque/mois",
+          "providers": "Fournisseurs IA de base",
+          "reports": "Rapports par e-mail"
+        },
+        "cta": "Commencer gratuitement"
+      },
+      "pro": {
+        "title": "Pro",
+        "description": "Pour les entreprises en croissance",
+        "features": {
+          "analyses": "Analyses de marque illimitées",
+          "providers": "Tous les fournisseurs IA",
+          "alerts": "Alertes en temps réel"
+        },
+        "cta": "Commencer l'essai gratuit"
+      },
+      "enterprise": {
+        "title": "Entreprise",
+        "description": "Pour les agences et grandes marques",
+        "price": "Personnalisé",
+        "features": {
+          "brands": "Plusieurs marques",
+          "api": "Accès API",
+          "whiteLabel": "Options marque blanche"
+        },
+        "cta": "Contacter les ventes"
+      }
+    },
+    "cta1": {
+      "title": "Voyez Comment les Modèles IA Classent Votre Marque",
+      "description": "Surveillez la visibilité de votre marque sur ChatGPT, Claude, Perplexity et plus",
+      "button": "Commencer l'Analyse Gratuite"
+    },
+    "faq": {
+      "title": "Questions fréquemment posées",
+      "description": "Tout ce que vous devez savoir sur FireGEO Monitor",
+      "questions": {
+        "howItWorks": {
+          "question": "Comment fonctionne FireGEO Monitor ?",
+          "answer": "FireGEO Monitor analyse la visibilité de votre marque sur les principales plateformes IA comme ChatGPT, Claude et Perplexity. Entrez simplement l'URL de votre site web, et nous vous montrerons comment les modèles IA classent votre marque par rapport aux concurrents, quelles invites déclenchent votre apparition, et fournissons des insights actionnables pour améliorer votre visibilité IA."
+        },
+        "providers": {
+          "question": "Quels fournisseurs IA surveillez-vous ?",
+          "answer": "Nous surveillons toutes les principales plateformes IA, notamment ChatGPT d'OpenAI, Claude d'Anthropic, Perplexity, Gemini de Google, et plus encore. Notre système se met continuellement à jour à mesure que de nouveaux fournisseurs IA émergent, vous garantissant toujours une visibilité complète sur le paysage IA."
+        },
+        "updates": {
+          "question": "À quelle fréquence les données sont-elles mises à jour ?",
+          "answer": "Notre surveillance fonctionne en temps réel. Lorsque vous demandez une analyse, nous interrogeons tous les fournisseurs IA simultanément pour obtenir les résultats les plus actuels. Vous pouvez lancer de nouvelles analyses à tout moment pour suivre les changements dans la visibilité de votre marque et voir comment vos efforts d'optimisation fonctionnent."
+        },
+        "insights": {
+          "question": "Quels insights vais-je obtenir ?",
+          "answer": "Vous verrez le score de visibilité de votre marque, les classements des concurrents, quelles invites déclenchent votre apparition, l'analyse de la qualité des réponses, et des recommandations spécifiques pour améliorer votre présence IA. La plateforme suit également les tendances dans le temps et vous alerte des changements significatifs."
+        },
+        "credits": {
+          "question": "De combien de crédits ai-je besoin ?",
+          "answer": "Chaque analyse de marque utilise 10 crédits (1 crédit pour l'analyse initiale de l'URL, 9 crédits pour le scan complet des fournisseurs IA). Le niveau gratuit inclut 100 crédits mensuels, suffisant pour 10 analyses complètes. Les plans Pro incluent des analyses illimitées pour une surveillance complète."
+        }
+      }
+    },
+    "finalCta": {
+      "title": "Commencez à Surveiller la Visibilité IA de Votre Marque",
+      "description": "Prenez le contrôle de la façon dont les modèles IA présentent votre marque",
+      "analyzeButton": "Analyser Votre Marque",
+      "pricingButton": "Voir les Tarifs"
+    }
+  },
+  "aiPrompts": {
+    "companyExtraction": {
+      "instruction": "Extraire les informations de l'entreprise à partir de ce contenu de site web :",
+      "extractDescription": "Extraire le nom de l'entreprise, une brève description, les mots-clés pertinents, et identifier la catégorie d'industrie PRINCIPALE.",
+      "industryRules": "Règles de détection de l'industrie :",
+      "industryRulesCoolers": "Si l'entreprise fabrique des glacières, des articles de boisson, de l'équipement de plein air, du matériel de camping, catégoriser comme \"équipement de plein air\"",
+      "industryRulesWebScraping": "Si l'entreprise offre du web scraping, du crawling, de l'extraction de données, ou des outils/services d'analyse HTML, catégoriser comme \"web scraping\"",
+      "industryRulesAI": "Si l'entreprise fournit principalement des modèles ou services IA/ML, catégoriser comme \"IA\"",
+      "industryRulesDeployment": "Si l'entreprise offre de l'hébergement, du déploiement, ou de l'infrastructure cloud, catégoriser comme \"déploiement\"",
+      "industryRulesEcommerce": "Si l'entreprise est une plateforme e-commerce ou un créateur de boutiques en ligne, catégoriser comme \"plateforme e-commerce\"",
+      "industryRulesDirectConsumer": "Si l'entreprise vend des produits physiques directement aux consommateurs (vêtements, accessoires, etc.), catégoriser comme \"marque directe-consommateur\"",
+      "industryRulesApparel": "Si l'entreprise est dans la mode/vêtements/sous-vêtements/habillement, catégoriser comme \"mode & vêtements\"",
+      "industryRulesDeveloper": "Si l'entreprise fournit des outils logiciels ou des API, catégoriser comme \"outils développeur\"",
+      "industryRulesMarketplace": "Si l'entreprise est une place de marché ou un agrégateur, catégoriser comme \"place de marché\"",
+      "industryRulesSaas": "Pour d'autres logiciels B2B, utiliser \"SaaS\"",
+      "industryRulesConsumer": "Pour d'autres produits de consommation, utiliser \"biens de consommation\"",
+      "importantNote": "IMPORTANT :",
+      "mainProductsNote": "Pour mainProducts, lister les PRODUITS RÉELS (ex : \"glacières\", \"gobelets\", \"articles de boisson\") pas les catégories de produits",
+      "competitorsNote": "Pour competitors, extraire les NOMS COMPLETS D'ENTREPRISES (ex : \"RTIC\", \"IGLOO\", \"Coleman\") pas seulement les initiales",
+      "focusNote": "Se concentrer sur ce que l'entreprise FABRIQUE/VEND, pas ce qui va DANS leurs produits (ex : Yeti fabrique des glacières, pas des boissons)",
+      "languageNote": "Retourner le contenu en {locale_name}"
+    },
+    "analysisPrompt": {
+      "analyzeResponse": "Analyser cette réponse IA concernant {brandName} et les concurrents {competitors} :",
+      "returnAnalysis": "Retourner une analyse simple :",
+      "questionMentioned": "{brandName} est-il mentionné ? (oui/non)",
+      "questionPosition": "Quelle position/classement a-t-il ? (numéro ou \"non classé\")",
+      "questionCompetitors": "Quels concurrents sont mentionnés ? (lister les noms)",
+      "questionSentiment": "Quel est le sentiment global ? (positif/neutre/négatif)"
+    }
+  },
+  "publicPricing": {
+    "starter": {
+      "name": "Starter",
+      "description": "Parfait pour les projets personnels",
+      "price": "0$",
+      "priceDesc": "/mois",
+      "feature1": "100 messages/mois",
+      "feature2": "Fonctionnalités de base",
+      "feature3": "Support communautaire",
+      "button": "Commencer gratuitement"
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Pour les entreprises en croissance",
+      "price": "10$",
+      "priceDesc": "/mois",
+      "feature1": "Messages illimités",
+      "feature2": "Fonctionnalités avancées",
+      "feature3": "Support prioritaire",
+      "button": "Commencer l'essai gratuit"
+    },
+    "enterprise": {
+      "name": "Entreprise",
+      "description": "Pour les grandes équipes",
+      "price": "Personnalisé",
+      "feature1": "Limites personnalisées",
+      "feature2": "Fonctionnalités personnalisées",
+      "feature3": "Support dédié",
+      "button": "Contacter les ventes"
+    },
+    "mostPopular": "Le plus populaire",
+    "free": "Gratuit",
+    "getStarted": "Commencer",
+    "startFree": "Commencer gratuitement"
+  }
+}

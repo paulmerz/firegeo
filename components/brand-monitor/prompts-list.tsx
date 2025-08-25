@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Check, X, Plus, Trash2 } from 'lucide-react';
 import { BrandPrompt, AIProvider } from '@/lib/types';
+import { useTranslations } from 'next-intl';
 
 interface PromptAnalysisState {
   promptId: string;
@@ -68,6 +69,7 @@ export function PromptsList({
   availableProviders,
   isAnalyzing,
 }: PromptsListProps) {
+  const t = useTranslations('brandMonitor');
   const [newPrompt, setNewPrompt] = useState('');
   const [showAddPrompt, setShowAddPrompt] = useState(false);
 
@@ -127,7 +129,7 @@ export function PromptsList({
         {showAddPrompt && (
           <div className="flex gap-2 p-4 bg-gray-50 rounded-lg">
             <Input
-              placeholder="Enter a custom prompt (use {brand} and {industry} as placeholders)"
+              placeholder={t('enterCustomPromptPlaceholder')}
               value={newPrompt}
               onChange={(e) => setNewPrompt(e.target.value)}
               onKeyDown={(e) => {

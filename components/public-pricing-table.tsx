@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from 'next-intl';
+import { useParams } from 'next/navigation';
 
 interface Product {
   id: string;
@@ -27,6 +29,9 @@ export function PublicPricingTable() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslations();
+  const params = useParams();
+  const locale = params.locale as string;
 
   useEffect(() => {
     fetch('/api/autumn/products', {
@@ -68,111 +73,111 @@ export function PublicPricingTable() {
       <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
         {/* Starter */}
         <div className="bg-white p-8 rounded-[20px] border border-zinc-200">
-          <h3 className="text-2xl font-bold mb-2">Starter</h3>
-          <p className="text-zinc-600 mb-6">Perfect for side projects</p>
+          <h3 className="text-2xl font-bold mb-2">{t('publicPricing.starter.name')}</h3>
+          <p className="text-zinc-600 mb-6">{t('publicPricing.starter.description')}</p>
           <div className="mb-6">
-            <span className="text-4xl font-bold">$0</span>
-            <span className="text-zinc-600">/month</span>
+            <span className="text-4xl font-bold">{t('publicPricing.starter.price')}</span>
+            <span className="text-zinc-600">{t('publicPricing.starter.priceDesc')}</span>
           </div>
           <ul className="space-y-3 mb-8">
             <li className="flex items-center">
               <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              100 messages/month
+              {t('publicPricing.starter.feature1')}
             </li>
             <li className="flex items-center">
               <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              Basic features
+              {t('publicPricing.starter.feature2')}
             </li>
             <li className="flex items-center">
               <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              Community support
+              {t('publicPricing.starter.feature3')}
             </li>
           </ul>
           <Link
-            href="/register"
+            href={`/${locale}/register`}
             className="btn-firecrawl-outline w-full inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 h-10 px-4"
           >
-            Start free
+            {t('publicPricing.starter.button')}
           </Link>
         </div>
 
         {/* Pro - Featured */}
         <div className="bg-white p-8 rounded-[20px] border-2 border-orange-500 relative">
           <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-black text-white px-4 py-1 rounded-full text-sm font-medium">
-            Most Popular
+            {t('publicPricing.mostPopular')}
           </div>
-          <h3 className="text-2xl font-bold mb-2">Pro</h3>
-          <p className="text-zinc-600 mb-6">For growing businesses</p>
+          <h3 className="text-2xl font-bold mb-2">{t('publicPricing.pro.name')}</h3>
+          <p className="text-zinc-600 mb-6">{t('publicPricing.pro.description')}</p>
           <div className="mb-6">
-            <span className="text-4xl font-bold">$10</span>
-            <span className="text-zinc-600">/month</span>
+            <span className="text-4xl font-bold">{t('publicPricing.pro.price')}</span>
+            <span className="text-zinc-600">{t('publicPricing.pro.priceDesc')}</span>
           </div>
           <ul className="space-y-3 mb-8">
             <li className="flex items-center">
               <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              Unlimited messages
+              {t('publicPricing.pro.feature1')}
             </li>
             <li className="flex items-center">
               <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              Advanced features
+              {t('publicPricing.pro.feature2')}
             </li>
             <li className="flex items-center">
               <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              Priority support
+              {t('publicPricing.pro.feature3')}
             </li>
           </ul>
           <Link
-            href="/register"
+            href={`/${locale}/register`}
             className="btn-firecrawl-orange w-full inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 h-10 px-4"
           >
-            Start free trial
+            {t('publicPricing.pro.button')}
           </Link>
         </div>
 
         {/* Enterprise */}
         <div className="bg-white p-8 rounded-[20px] border border-zinc-200">
-          <h3 className="text-2xl font-bold mb-2">Enterprise</h3>
-          <p className="text-zinc-600 mb-6">For large teams</p>
+          <h3 className="text-2xl font-bold mb-2">{t('publicPricing.enterprise.name')}</h3>
+          <p className="text-zinc-600 mb-6">{t('publicPricing.enterprise.description')}</p>
           <div className="mb-6">
-            <span className="text-4xl font-bold">Custom</span>
+            <span className="text-4xl font-bold">{t('publicPricing.enterprise.price')}</span>
           </div>
           <ul className="space-y-3 mb-8">
             <li className="flex items-center">
               <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              Custom limits
+              {t('publicPricing.enterprise.feature1')}
             </li>
             <li className="flex items-center">
               <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              Custom features
+              {t('publicPricing.enterprise.feature2')}
             </li>
             <li className="flex items-center">
               <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              Dedicated support
+              {t('publicPricing.enterprise.feature3')}
             </li>
           </ul>
           <Link
-            href="/contact"
+            href={`/${locale}/contact`}
             className="btn-firecrawl-outline w-full inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 h-10 px-4"
           >
-            Contact sales
+            {t('publicPricing.enterprise.button')}
           </Link>
         </div>
       </div>
@@ -185,7 +190,7 @@ export function PublicPricingTable() {
       {products.map((product) => {
         const isRecommended = !!product.display?.recommend_text;
         const mainPrice = product.properties?.is_free
-          ? { primary_text: "Free" }
+          ? { primary_text: t('publicPricing.free') }
           : product.items[0]?.display;
 
         return (
@@ -195,7 +200,7 @@ export function PublicPricingTable() {
               isRecommended ? 'border-2 border-orange-500 relative' : 'border-zinc-200'
             }`}
           >
-            {isRecommended && (
+            {isRecommended && product.display?.recommend_text && (
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-black text-white px-4 py-1 rounded-full text-sm font-medium">
                 {product.display.recommend_text}
               </div>
@@ -225,12 +230,12 @@ export function PublicPricingTable() {
               ))}
             </ul>
             <Link
-              href="/register"
+              href={`/${locale}/register`}
               className={`${
                 isRecommended ? 'btn-firecrawl-orange' : 'btn-firecrawl-outline'
               } w-full inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 h-10 px-4`}
             >
-              {product.properties?.is_free ? 'Start free' : 'Get started'}
+              {product.properties?.is_free ? t('publicPricing.startFree') : t('publicPricing.getStarted')}
             </Link>
           </div>
         );

@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { Autumn } from 'autumn-js';
 import { performAnalysis, createSSEMessage } from '@/lib/analyze-common';
 import { SSEEvent } from '@/lib/types';
+import { getLocaleFromRequest } from '@/lib/locale-utils';
 import { 
   AuthenticationError, 
   InsufficientCreditsError, 
@@ -137,13 +138,17 @@ export async function POST(request: NextRequest) {
           timestamp: new Date()
         });
 
+        // Extract locale from request
+        const locale = getLocaleFromRequest(request);
+        
         // Perform the analysis using common logic
         const analysisResult = await performAnalysis({
           company,
           customPrompts,
           userSelectedCompetitors,
           useWebSearch,
-          sendEvent
+          sendEvent,
+          locale
         });
 
         // Send final complete event with all data

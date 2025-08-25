@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { useTranslations } from 'next-intl'
 
 interface ConfirmationDialogProps {
   open: boolean
@@ -34,6 +35,8 @@ export function ConfirmationDialog({
   onCancel,
   isLoading = false,
 }: ConfirmationDialogProps) {
+  const t = useTranslations('common');
+  
   const handleConfirm = () => {
     onConfirm()
     if (!isLoading) {
@@ -62,7 +65,7 @@ export function ConfirmationDialog({
             onClick={handleConfirm}
             disabled={isLoading}
           >
-            {isLoading ? "Deleting..." : confirmText}
+            {isLoading ? t('deleting') : confirmText}
           </Button>
         </DialogFooter>
       </DialogContent>

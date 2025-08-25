@@ -1,0 +1,480 @@
+{
+  "common": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "chat": "Chat",
+    "brandMonitor": "Brand Monitor",
+    "pricing": "Pricing",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "profile": "Profile",
+    "settings": "Settings",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "submit": "Submit",
+    "credits": "credits",
+    "deleting": "Deleting..."
+  },
+  "navbar": {
+    "title": "SaaS Starter",
+    "menuToggle": "Toggle menu",
+    "userMenu": "User menu"
+  },
+  "footer": {
+    "description": "Turn websites into structured data. Built for AI apps and LLMs.",
+    "product": "Product",
+    "plans": "Plans",
+    "documentation": "Documentation",
+    "apiReference": "API Reference",
+    "demo": "Demo",
+    "company": "Company",
+    "about": "About",
+    "blog": "Blog",
+    "careers": "Careers",
+    "contact": "Contact",
+    "allRightsReserved": "All rights reserved",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service"
+  },
+  "auth": {
+    "loginTitle": "Sign in to your account",
+    "registerTitle": "Create your account",
+    "emailLabel": "Email address",
+    "passwordLabel": "Password",
+    "fullNameLabel": "Full name",
+    "confirmPasswordLabel": "Confirm password",
+    "forgotPassword": "Forgot your password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signingIn": "Signing in...",
+    "signingUp": "Signing up...",
+    "signingOut": "Signing out...",
+    "createAccount": "Create account",
+    "creatingAccount": "Creating account...",
+    "resetPassword": "Reset password",
+    "resetPasswordTitle": "Reset your password",
+    "resetPasswordDescription": "Enter your email address and we'll send you a link to reset your password.",
+    "sendResetLink": "Send reset link",
+    "backToLogin": "Back to login",
+    "passwordResetSent": "Password reset link sent to your email",
+    "passwordResetSuccess": "Password reset successfully. You can now login with your new password.",
+    "welcomeBack": "Welcome back!",
+    "welcomeBackDescription": "Sign in to continue building amazing things with our powerful API.",
+    "joinDevelopers": "Join thousands of developers",
+    "joinDevelopersDescription": "Start building with our powerful API and unlock new possibilities for your applications.",
+    "unlimitedAccess": "Unlimited API access",
+    "realtimeCollaboration": "Real-time collaboration",
+    "support247": "24/7 support",
+    "emailPlaceholder": "Enter your email",
+    "passwordPlaceholder": "Enter your password",
+    "fullNamePlaceholder": "Enter your full name",
+    "newPasswordPlaceholder": "Choose a strong password",
+    "passwordRequirement": "Must be at least 8 characters long",
+    "rememberMe": "Remember me",
+    "or": "Or",
+    "createNewAccount": "create a new account",
+    "signInExisting": "sign in to existing account",
+    "agreeToTerms": "I agree to the",
+    "and": "and",
+    "existingAccountDetected": "It looks like you already have an account with this email address.",
+    "signInInstead": "Sign in instead",
+    "failedToLogin": "Failed to login",
+    "failedToRegister": "Failed to register",
+    "forgotPasswordTitle": "Reset your password",
+    "forgotPasswordDesc": "Enter your email address and we'll send you a link to reset your password.",
+    "sendResetEmail": "Send reset email",
+    "resetEmailSent": "Reset email sent! Check your inbox for further instructions.",
+    "failedToSendReset": "Failed to send reset email"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back!",
+    "overview": "Overview",
+    "recentActivity": "Recent Activity",
+    "quickActions": "Quick Actions",
+    "statistics": "Statistics",
+    "profileInformation": "Profile Information",
+    "editProfile": "Edit Profile",
+    "save": "Save",
+    "cancel": "Cancel",
+    "email": "Email",
+    "displayName": "Display Name",
+    "phone": "Phone",
+    "bio": "Bio",
+    "notSet": "Not set",
+    "enterDisplayName": "Enter your display name",
+    "enterPhone": "Enter your phone number",
+    "tellAboutYourself": "Tell us about yourself",
+    "settings": "Settings",
+    "emailNotifications": "Email Notifications",
+    "emailNotificationsDesc": "Receive email notifications for important updates",
+    "marketingEmails": "Marketing Emails",
+    "marketingEmailsDesc": "Receive emails about new features and offers",
+    "accountInformation": "Account Information",
+    "currentPlan": "Current Plan",
+    "freePlan": "Free Plan",
+    "changingTo": "Changing to",
+    "usageStatistics": "Usage Statistics",
+    "used": "Used",
+    "resetsOn": "Resets on",
+    "noUsageData": "No usage data available",
+    "availablePlans": "Available Plans",
+    "currentPlanLabel": "(Current Plan)",
+    "scheduledLabel": "(Scheduled)",
+    "loading": "Loading...",
+    "downgrade": "Downgrade",
+    "upgrade": "Upgrade",
+    "starts": "Starts",
+    "on": "on"
+  },
+  "chat": {
+    "title": "Chat",
+    "newChat": "New Chat",
+    "newConversation": "New Conversation",
+    "typeMessage": "Type your message...",
+    "send": "Send",
+    "conversations": "Conversations",
+    "noConversations": "No conversations yet",
+    "loadingConversations": "Loading conversations...",
+    "untitledConversation": "Untitled Conversation",
+    "messagesRemaining": "Messages remaining:",
+    "creditBasedMessaging": "Credit-Based Messaging",
+    "creditBasedDesc": "This is a demonstration of the credit-based messaging system. Each message consumes credits from your account balance.",
+    "youCurrentlyHave": "You currently have",
+    "messageCreditsAvailable": "message credits available.",
+    "getMoreCredits": "Get More Credits",
+    "startConversation": "Start a Conversation",
+    "sendMessageToBegin": "Send a message to begin chatting with AI",
+    "noMessagesAvailable": "No messages available",
+    "loadingAccountData": "Loading your account data...",
+    "deleteConversation": "Delete Conversation",
+    "deleteConversationDesc": "Are you sure you want to delete this conversation? This action cannot be undone.",
+    "delete": "Delete"
+  },
+  "brandMonitor": {
+    "title": "Brand Monitor",
+    "fireGeoMonitor": "FireGEO Monitor",
+    "aiBrandVisibilityPlatform": "AI Brand Visibility Platform",
+    "trackHowAi": "Track how AI models rank your brand against competitors",
+    "newAnalysis": "New Analysis",
+    "loadingAnalyses": "Loading analyses...",
+    "noAnalysesYet": "No analyses yet",
+    "untitledAnalysis": "Untitled Analysis",
+    "deleteAnalysis": "Delete Analysis",
+    "deleteAnalysisDesc": "Are you sure you want to delete this analysis? This action cannot be undone.",
+    "pleaseLogIn": "Please log in to access the brand monitor",
+    "addPrompt": "Add Prompt",
+    "cancel": "Cancel",
+    "analyze": "Analyze",
+    "noComparisonData": "No comparison data available",
+    "noComparisonDataDesc": "The analysis may still be processing or no providers returned data.",
+    "results": "Results",
+    "competitors": "Competitors",
+    "rankings": "Rankings",
+    "visibility": "Visibility",
+    "addCompetitor": "Add Competitor",
+    "webSearch": "Web Search",
+    "addCustomPrompt": "Add Custom Prompt",
+    "addCustomPromptDesc": "Enter a prompt that AI models will answer about your industry.",
+    "addCustomPromptPlaceholder": "Example: What is the best AI scraper?",
+    "enterCustomPromptPlaceholder": "Enter a custom prompt (use {brand} and {industry} as placeholders)",
+    "searchPromptsPlaceholder": "Search prompts and responses...",
+    "enterUrlPlaceholder": "Enter your website URL (e.g., example.com)",
+    "enterUrlPlaceholderShort": "example.com",
+    "competitorNamePlaceholder": "e.g., Anthropic",
+    "competitorUrlPlaceholder": "e.g., anthropic.com",
+    "addCompetitorTitle": "Add Competitor",
+    "competitorNameLabel": "Competitor Name",
+    "websiteUrlOptionalLabel": "Website URL (optional)",
+    "addCompetitorButton": "Add Competitor",
+    "analyzeWebsiteAriaLabel": "Analyze website",
+    "identifyCompetitors": "Identify Competitors",
+    "compareAgainst": "We'll compare {company} against these {count} competitors",
+    "continueToAnalysis": "Continue to Analysis",
+    "more": "more",
+    "resultsNavigation": {
+      "comparisonMatrix": "Comparison Matrix",
+      "promptsResponses": "Prompts & Responses",
+      "providerRankings": "Provider Rankings",
+      "visibilityScore": "Visibility Score",
+      "analyzeAnotherWebsite": "Analyze another website"
+    },
+    "analysisProgress": {
+      "title": "Analysis Progress",
+      "prompts": "Prompts",
+      "competitors": "Competitors",
+      "validatingCompetitorData": "Validating competitor data in background...",
+      "addPrompt": "Add Prompt",
+      "startAnalysis": "Start Analysis",
+      "analyzing": "Analyzing...",
+      "custom": "Custom"
+    },
+    "errors": {
+      "pleaseEnterUrl": "Please enter a URL",
+      "pleaseEnterValidUrl": "Please enter a valid URL (e.g., example.com or https://example.com)",
+      "insufficientCreditsUrl": "Insufficient credits. You need at least 1 credit to analyze a URL.",
+      "insufficientCreditsAnalysis": "Insufficient credits. You need at least {credits} credits to run an analysis.",
+      "failedToScrape": "Failed to scrape",
+      "noCompanyData": "No company data received",
+      "failedToExtractCompany": "Failed to extract company information",
+      "failedToExtractCompanyWithReason": "Failed to extract company information: {reason}"
+    },
+    "analysis": {
+      "startingAnalysis": "Starting analysis...",
+      "comparisonMatrix": {
+        "title": "Comparison Matrix",
+        "description": "Compare visibility scores across different AI providers",
+        "averageScore": "Average Score",
+        "noDataAvailable": "No comparison data available",
+        "ensureProvidersConfigured": "Please ensure AI providers are configured and the analysis has completed."
+      },
+      "promptsResponses": {
+        "title": "Prompts & Responses",
+        "description": "AI responses to your brand queries",
+        "totalPrompts": "Total Prompts"
+      },
+      "yourBrand": "Your Brand"
+    }
+  },
+  "pricing": {
+    "title": "Pricing Plans",
+    "simpleTransparentPricing": "Simple, transparent pricing",
+    "choosePerfectPlan": "Choose the perfect plan for your needs. Always flexible to scale up or down.",
+    "loggedInAs": "Logged in as:",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "popular": "Most Popular",
+    "feature": "Feature",
+    "features": "Features",
+    "getStarted": "Get Started",
+    "currentPlan": "Current Plan",
+    "upgrade": "Upgrade",
+    "downgrade": "Downgrade",
+    "free": "Free",
+    "pro": "Pro",
+    "enterprise": "Enterprise",
+    "plans": {
+      "free": {
+        "name": "Free",
+        "description": "Perfect for trying out our service",
+        "price": "Free",
+        "priceDesc": "No credit card required",
+        "feature1": "10 messages per month",
+        "feature1Desc": "AI-powered chat responses",
+        "feature2": "Community support",
+        "feature2Desc": "Get help from our community",
+        "feature3": "Basic features",
+        "feature3Desc": "Essential tools to get started"
+      },
+      "pro": {
+        "name": "Pro",
+        "description": "For all your messaging needs",
+        "recommendText": "Most Popular",
+        "price": "$10/month",
+        "priceDesc": "billed monthly",
+        "feature1": "100 messages per month",
+        "feature1Desc": "AI-powered chat responses",
+        "feature2": "Premium support",
+        "feature2Desc": "Get help from our team",
+        "feature3": "Priority access",
+        "feature3Desc": "Be first to try new features"
+      }
+    }
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "notFound": "Page not found",
+    "unauthorized": "You are not authorized to access this page",
+    "serverError": "Internal server error",
+    "networkError": "Network error. Please check your connection.",
+    "validationError": "Please check your input and try again"
+  },
+  "metadata": {
+    "title": "SaaS Starter",
+    "description": "Next.js SaaS Starter with Better Auth"
+  },
+  "home": {
+    "hero": {
+      "title": "FireGEO Monitor",
+      "subtitle": "AI Brand Visibility Platform",
+      "description": "Track how AI models rank your brand against competitors",
+      "startAnalysis": "Start Brand Analysis",
+      "viewPricing": "View Pricing",
+      "features": "Powered by AI • Real-time Analysis • Competitor Tracking • SEO Insights"
+    },
+    "stats": {
+      "aiModels": {
+        "title": "ChatGPT",
+        "description": "Claude, Perplexity & More"
+      },
+      "realtime": {
+        "title": "Real-time",
+        "description": "Analysis"
+      },
+      "competitor": {
+        "title": "Competitor",
+        "description": "Tracking"
+      },
+      "insights": {
+        "title": "Actionable",
+        "description": "Insights"
+      }
+    },
+    "pricing": {
+      "title": "Monitor Your Brand Visibility",
+      "description": "Choose the plan that fits your monitoring needs",
+      "perMonth": "/month",
+      "mostPopular": "Most Popular",
+      "viewDetailed": "View detailed pricing →",
+      "starter": {
+        "title": "Starter",
+        "description": "Perfect for personal brands",
+        "features": {
+          "analyses": "10 brand analyses/month",
+          "providers": "Basic AI providers",
+          "reports": "Email reports"
+        },
+        "cta": "Start free"
+      },
+      "pro": {
+        "title": "Pro",
+        "description": "For growing businesses",
+        "features": {
+          "analyses": "Unlimited brand analyses",
+          "providers": "All AI providers",
+          "alerts": "Real-time alerts"
+        },
+        "cta": "Start free trial"
+      },
+      "enterprise": {
+        "title": "Enterprise",
+        "description": "For agencies & large brands",
+        "price": "Custom",
+        "features": {
+          "brands": "Multiple brands",
+          "api": "API access",
+          "whiteLabel": "White-label options"
+        },
+        "cta": "Contact sales"
+      }
+    },
+    "cta1": {
+      "title": "See How AI Models Rank Your Brand",
+      "description": "Monitor your brand visibility across ChatGPT, Claude, Perplexity and more",
+      "button": "Start Free Analysis"
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "description": "Everything you need to know about FireGEO Monitor",
+      "questions": {
+        "howItWorks": {
+          "question": "How does FireGEO Monitor work?",
+          "answer": "FireGEO Monitor analyzes your brand's visibility across major AI platforms like ChatGPT, Claude, and Perplexity. Simply enter your website URL, and we'll show you how AI models rank your brand against competitors, what prompts trigger your appearance, and provide actionable insights to improve your AI visibility."
+        },
+        "providers": {
+          "question": "Which AI providers do you monitor?",
+          "answer": "We monitor all major AI platforms including OpenAI's ChatGPT, Anthropic's Claude, Perplexity, Google's Gemini, and more. Our system continuously updates as new AI providers emerge, ensuring you always have comprehensive visibility across the AI landscape."
+        },
+        "updates": {
+          "question": "How often is the data updated?",
+          "answer": "Our monitoring runs in real-time. When you request an analysis, we query all AI providers simultaneously to get the most current results. You can run new analyses anytime to track changes in your brand visibility and see how your optimization efforts are performing."
+        },
+        "insights": {
+          "question": "What insights will I get?",
+          "answer": "You'll see your brand's visibility score, competitor rankings, which prompts trigger your appearance, response quality analysis, and specific recommendations to improve your AI presence. The platform also tracks trends over time and alerts you to significant changes."
+        },
+        "credits": {
+          "question": "How many credits do I need?",
+          "answer": "Each brand analysis uses 10 credits (1 credit for initial URL analysis, 9 credits for the full AI provider scan). The free tier includes 100 credits monthly, enough for 10 complete analyses. Pro plans include unlimited analyses for comprehensive monitoring."
+        }
+      }
+    },
+    "finalCta": {
+      "title": "Start Monitoring Your AI Brand Visibility",
+      "description": "Take control of how AI models present your brand",
+      "analyzeButton": "Analyze Your Brand",
+      "pricingButton": "View Pricing"
+    }
+  },
+  "aiPrompts": {
+    "companyExtraction": {
+      "instruction": "Extract company information from this website content:",
+      "extractDescription": "Extract the company name, a brief description, relevant keywords, and identify the PRIMARY industry category.",
+      "industryRules": "Industry detection rules:",
+      "industryRulesCoolers": "If the company makes coolers, drinkware, outdoor equipment, camping gear, categorize as \"outdoor gear\"",
+      "industryRulesWebScraping": "If the company offers web scraping, crawling, data extraction, or HTML parsing tools/services, categorize as \"web scraping\"",
+      "industryRulesAI": "If the company primarily provides AI/ML models or services, categorize as \"AI\"",
+      "industryRulesDeployment": "If the company offers hosting, deployment, or cloud infrastructure, categorize as \"deployment\"",
+      "industryRulesEcommerce": "If the company is an e-commerce platform or online store builder, categorize as \"e-commerce platform\"",
+      "industryRulesDirectConsumer": "If the company sells physical products directly to consumers (clothing, accessories, etc.), categorize as \"direct-to-consumer brand\"",
+      "industryRulesApparel": "If the company is in fashion/apparel/underwear/clothing, categorize as \"apparel & fashion\"",
+      "industryRulesDeveloper": "If the company provides software tools or APIs, categorize as \"developer tools\"",
+      "industryRulesMarketplace": "If the company is a marketplace or aggregator, categorize as \"marketplace\"",
+      "industryRulesSaas": "For other B2B software, use \"SaaS\"",
+      "industryRulesConsumer": "For other consumer products, use \"consumer goods\"",
+      "importantNote": "IMPORTANT:",
+      "mainProductsNote": "For mainProducts, list the ACTUAL PRODUCTS (e.g., \"coolers\", \"tumblers\", \"drinkware\") not product categories",
+      "competitorsNote": "For competitors, extract FULL COMPANY NAMES (e.g., \"RTIC\", \"IGLOO\", \"Coleman\") not just initials",
+      "focusNote": "Focus on what the company MAKES/SELLS, not what goes IN their products (e.g., Yeti makes coolers, not beverages)",
+      "languageNote": "Return the content in {locale_name} language"
+    },
+    "analysisPrompt": {
+      "analyzeResponse": "Analyze this AI response about {brandName} and competitors {competitors}:",
+      "returnAnalysis": "Return a simple analysis:",
+      "questionMentioned": "Is {brandName} mentioned? (yes/no)",
+      "questionPosition": "What position/ranking does it have? (number or \"not ranked\")",
+      "questionCompetitors": "Which competitors are mentioned? (list names)",
+      "questionSentiment": "What's the overall sentiment? (positive/neutral/negative)"
+    }
+  },
+  "publicPricing": {
+    "starter": {
+      "name": "Starter",
+      "description": "Perfect for side projects",
+      "price": "$0",
+      "priceDesc": "/month",
+      "feature1": "100 messages/month",
+      "feature2": "Basic features",
+      "feature3": "Community support",
+      "button": "Start free"
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "For growing businesses",
+      "price": "$10",
+      "priceDesc": "/month",
+      "feature1": "Unlimited messages",
+      "feature2": "Advanced features",
+      "feature3": "Priority support",
+      "button": "Start free trial"
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "For large teams",
+      "price": "Custom",
+      "feature1": "Custom limits",
+      "feature2": "Custom features",
+      "feature3": "Dedicated support",
+      "button": "Contact sales"
+    },
+    "mostPopular": "Most Popular",
+    "free": "Free",
+    "getStarted": "Get started",
+    "startFree": "Start free"
+  }
+}

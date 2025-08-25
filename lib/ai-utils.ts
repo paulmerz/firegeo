@@ -4,6 +4,7 @@ import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, Pr
 import { getProviderModel, normalizeProviderName, isProviderConfigured, getConfiguredProviders, PROVIDER_CONFIGS } from './provider-config';
 import { detectBrandMention, detectMultipleBrands, BrandDetectionOptions } from './brand-detection-utils';
 import { getBrandDetectionOptions } from './brand-detection-config';
+import { getMessages, getTranslation } from './locale-utils';
 
 const RankingSchema = z.object({
   rankings: z.array(z.object({
@@ -315,7 +316,8 @@ export async function analyzePromptWithProvider(
   provider: string,
   brandName: string,
   competitors: string[],
-  useMockMode: boolean = false
+  useMockMode: boolean = false,
+  locale?: string
 ): Promise<AIResponse> {
   // Mock mode for demo/testing without API keys
   if (useMockMode || provider === 'Mock') {
@@ -339,13 +341,16 @@ export async function analyzePromptWithProvider(
     console.log('Google model details:', model);
   }
 
+  const languageName = locale ? getLanguageName(locale) : 'English';
+  
   const systemPrompt = `You are an AI assistant analyzing brand visibility and rankings.
 When responding to prompts about tools, platforms, or services:
 1. Provide rankings with specific positions (1st, 2nd, etc.)
 2. Focus on the companies mentioned in the prompt
 3. Be objective and factual
 4. Explain briefly why each tool is ranked where it is
-5. If you don't have enough information about a specific company, you can mention that`;
+5. If you don't have enough information about a specific company, you can mention that
+6. Return the content in ${languageName} language`;
 
   try {
     // First, get the response
@@ -387,6 +392,7 @@ IMPORTANT:
 - Count ALL mentions, not just ranked ones
 - Be very thorough - check for variations like "${brandName}", "${brandName.replace(/\s+/g, '')}", "${brandName.toLowerCase()}"
 - Look in all contexts: listed, compared, recommended, discussed, referenced, etc.
+- Return the analysis in ${languageName} language
 
 Examples of mentions to catch:
 - "${brandName} is a great tool" (direct mention)
@@ -416,7 +422,13 @@ Examples of mentions to catch:
       // For Anthropic, try a simpler text-based approach
       if (provider === 'Anthropic') {
         try {
-          const simplePrompt = `Analyze this AI response about ${brandName} and competitors ${competitors.join(', ')}:
+          // Load translations for the current locale
+          const messages = locale ? await getMessages(locale) : null;
+          
+          const buildSimplePrompt = () => {
+            if (!messages) {
+              // Fallback to English prompt
+              return `Analyze this AI response about ${brandName} and competitors ${competitors.join(', ')}:
 
 "${text}"
 
@@ -425,6 +437,26 @@ Return a simple analysis:
 2. What position/ranking does it have? (number or "not ranked")
 3. Which competitors are mentioned? (list names)
 4. What's the overall sentiment? (positive/neutral/negative)`;
+            }
+            
+            // Use translated prompt
+            const t = (key: string, replacements?: Record<string, string>) => getTranslation(messages, key, replacements);
+            
+            return `${t('aiPrompts.analysisPrompt.analyzeResponse', { 
+              brandName, 
+              competitors: competitors.join(', ') 
+            })}:
+
+"${text}"
+
+${t('aiPrompts.analysisPrompt.returnAnalysis')}
+1. ${t('aiPrompts.analysisPrompt.questionMentioned', { brandName })}
+2. ${t('aiPrompts.analysisPrompt.questionPosition')}
+3. ${t('aiPrompts.analysisPrompt.questionCompetitors')}
+4. ${t('aiPrompts.analysisPrompt.questionSentiment')}`;
+          };
+          
+          const simplePrompt = buildSimplePrompt();
 
           const { text: simpleResponse } = await generateText({
             model,

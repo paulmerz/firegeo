@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Company } from './types';
 import FirecrawlApp from '@mendable/firecrawl-js';
 import { getConfiguredProviders, getProviderModel } from './provider-config';
+import { getLanguageName } from './locale-utils';
 
 const firecrawl = new FirecrawlApp({
   apiKey: process.env.FIRECRAWL_API_KEY,
@@ -17,7 +18,7 @@ const CompanyInfoSchema = z.object({
   competitors: z.array(z.string()).optional(),
 });
 
-export async function scrapeCompanyInfo(url: string, maxAge?: number): Promise<Company> {
+export async function scrapeCompanyInfo(url: string, maxAge?: number, locale?: string): Promise<Company> {
   try {
     // Ensure URL has protocol
     let normalizedUrl = url.trim();
@@ -54,6 +55,9 @@ export async function scrapeCompanyInfo(url: string, maxAge?: number): Promise<C
       throw new Error(`${provider.name} model not available`);
     }
     
+    // Get language name for the prompt
+    const languageName = locale ? getLanguageName(locale) : 'English';
+    
     const { object } = await generateObject({
       model,
       schema: CompanyInfoSchema,
@@ -80,7 +84,8 @@ export async function scrapeCompanyInfo(url: string, maxAge?: number): Promise<C
       IMPORTANT: 
       1. For mainProducts, list the ACTUAL PRODUCTS (e.g., "coolers", "tumblers", "drinkware") not product categories
       2. For competitors, extract FULL COMPANY NAMES (e.g., "RTIC", "IGLOO", "Coleman") not just initials
-      3. Focus on what the company MAKES/SELLS, not what goes IN their products (e.g., Yeti makes coolers, not beverages)`,
+      3. Focus on what the company MAKES/SELLS, not what goes IN their products (e.g., Yeti makes coolers, not beverages)
+      4. Return the content in ${languageName} language`,
     });
 
     // Extract favicon URL - try multiple sources

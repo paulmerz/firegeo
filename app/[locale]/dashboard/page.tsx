@@ -2,8 +2,9 @@
 
 import { useCustomer, usePricingTable } from 'autumn-js/react';
 import { useSession } from '@/lib/auth-client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Lock, CheckCircle, AlertCircle, Loader2, User, Mail, Phone, Edit2, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProductChangeDialog from '@/components/autumn/product-change-dialog';
@@ -14,6 +15,9 @@ function DashboardContent({ session }: { session: any }) {
   const { customer, attach } = useCustomer();
   const { products } = usePricingTable();
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
+  const t = useTranslations();
+  const params = useParams();
+  const locale = params.locale as string;
   
   // Profile and settings hooks
   const { data: profileData } = useProfile();
@@ -89,12 +93,12 @@ function DashboardContent({ session }: { session: any }) {
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-8">{t('dashboard.title')}</h1>
 
         {/* Profile Section */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Profile Information</h2>
+            <h2 className="text-xl font-semibold">{t('dashboard.profileInformation')}</h2>
             {!isEditingProfile ? (
               <Button
                 onClick={() => setIsEditingProfile(true)}
@@ -102,7 +106,7 @@ function DashboardContent({ session }: { session: any }) {
                 className="bg-black text-white hover:bg-gray-800"
               >
                 <Edit2 className="h-4 w-4 mr-2" />
-                Edit Profile
+                {t('dashboard.editProfile')}
               </Button>
             ) : (
               <div className="flex gap-2">
@@ -113,7 +117,7 @@ function DashboardContent({ session }: { session: any }) {
                   disabled={updateProfile.isPending}
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  Save
+                  {t('dashboard.save')}
                 </Button>
                 <Button
                   onClick={handleCancelEdit}
@@ -122,7 +126,7 @@ function DashboardContent({ session }: { session: any }) {
                   disabled={updateProfile.isPending}
                 >
                   <X className="h-4 w-4 mr-2" />
-                  Cancel
+                  {t('dashboard.cancel')}
                 </Button>
               </div>
             )}
@@ -132,7 +136,7 @@ function DashboardContent({ session }: { session: any }) {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 <Mail className="inline-block h-4 w-4 mr-1" />
-                Email
+                {t('dashboard.email')}
               </label>
               <p className="text-gray-900">{session.user?.email}</p>
             </div>
@@ -140,7 +144,7 @@ function DashboardContent({ session }: { session: any }) {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 <User className="inline-block h-4 w-4 mr-1" />
-                Display Name
+                {t('dashboard.displayName')}
               </label>
               {isEditingProfile ? (
                 <input
@@ -148,11 +152,11 @@ function DashboardContent({ session }: { session: any }) {
                   value={profileForm.displayName}
                   onChange={(e) => setProfileForm({ ...profileForm, displayName: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter your display name"
+                  placeholder={t('dashboard.enterDisplayName')}
                 />
               ) : (
                 <p className="text-gray-900">
-                  {profileData?.profile?.displayName || 'Not set'}
+                  {profileData?.profile?.displayName || t('dashboard.notSet')}
                 </p>
               )}
             </div>
@@ -160,7 +164,7 @@ function DashboardContent({ session }: { session: any }) {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 <Phone className="inline-block h-4 w-4 mr-1" />
-                Phone
+                {t('dashboard.phone')}
               </label>
               {isEditingProfile ? (
                 <input
@@ -168,18 +172,18 @@ function DashboardContent({ session }: { session: any }) {
                   value={profileForm.phone}
                   onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter your phone number"
+                  placeholder={t('dashboard.enterPhone')}
                 />
               ) : (
                 <p className="text-gray-900">
-                  {profileData?.profile?.phone || 'Not set'}
+                  {profileData?.profile?.phone || t('dashboard.notSet')}
                 </p>
               )}
             </div>
             
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Bio
+                {t('dashboard.bio')}
               </label>
               {isEditingProfile ? (
                 <textarea
@@ -187,11 +191,11 @@ function DashboardContent({ session }: { session: any }) {
                   onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows={3}
-                  placeholder="Tell us about yourself"
+                  placeholder={t('dashboard.tellAboutYourself')}
                 />
               ) : (
                 <p className="text-gray-900">
-                  {profileData?.profile?.bio || 'Not set'}
+                  {profileData?.profile?.bio || t('dashboard.notSet')}
                 </p>
               )}
             </div>
@@ -200,12 +204,12 @@ function DashboardContent({ session }: { session: any }) {
 
         {/* Settings Section */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Settings</h2>
+          <h2 className="text-xl font-semibold mb-4">{t('dashboard.settings')}</h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Email Notifications</p>
-                <p className="text-sm text-gray-600">Receive email notifications for important updates</p>
+                <p className="font-medium">{t('dashboard.emailNotifications')}</p>
+                <p className="text-sm text-gray-600">{t('dashboard.emailNotificationsDesc')}</p>
               </div>
               <button
                 onClick={() => handleSettingToggle('emailNotifications', !settings?.emailNotifications)}
@@ -224,8 +228,8 @@ function DashboardContent({ session }: { session: any }) {
             
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Marketing Emails</p>
-                <p className="text-sm text-gray-600">Receive emails about new features and offers</p>
+                <p className="font-medium">{t('dashboard.marketingEmails')}</p>
+                <p className="text-sm text-gray-600">{t('dashboard.marketingEmailsDesc')}</p>
               </div>
               <button
                 onClick={() => handleSettingToggle('marketingEmails', !settings?.marketingEmails)}
@@ -246,14 +250,14 @@ function DashboardContent({ session }: { session: any }) {
 
         {/* User Info */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Account Information</h2>
+          <h2 className="text-xl font-semibold mb-4">{t('dashboard.accountInformation')}</h2>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-gray-600">Email</p>
+              <p className="text-sm text-gray-600">{t('dashboard.email')}</p>
               <p className="font-medium">{session.user?.email}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Current Plan</p>
+              <p className="text-sm text-gray-600">{t('dashboard.currentPlan')}</p>
               <p className="font-medium flex items-center">
                 {activeProduct ? (
                   <>
@@ -261,14 +265,14 @@ function DashboardContent({ session }: { session: any }) {
                     {activeProduct.name || activeProduct.id}
                     {scheduledProduct && (
                       <span className="ml-2 text-sm text-gray-500">
-                        (Changing to {scheduledProduct.name || scheduledProduct.id} on {new Date(scheduledProduct.started_at || scheduledProduct.current_period_end).toLocaleDateString()})
+                        ({t('dashboard.changingTo')} {scheduledProduct.name || scheduledProduct.id} {t('dashboard.on')} {new Date(scheduledProduct.started_at || scheduledProduct.current_period_end).toLocaleDateString()})
                       </span>
                     )}
                   </>
                 ) : (
                   <>
                     <AlertCircle className="h-4 w-4 text-yellow-500 mr-1" />
-                    Free Plan
+                    {t('dashboard.freePlan')}
                   </>
                 )}
               </p>
@@ -278,7 +282,7 @@ function DashboardContent({ session }: { session: any }) {
 
         {/* Usage Stats */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Usage Statistics</h2>
+          <h2 className="text-xl font-semibold mb-4">{t('dashboard.usageStatistics')}</h2>
           {Object.keys(userFeatures).length > 0 ? (
             <div className="space-y-4">
               {Object.entries(userFeatures).map(([featureId, feature]) => (
@@ -286,7 +290,7 @@ function DashboardContent({ session }: { session: any }) {
                   <div className="mb-4">
                     <h3 className="font-medium mb-2 capitalize">{featureId.replace(/_/g, ' ')}</h3>
                     <div className="flex justify-between text-sm mb-1">
-                      <span>Used</span>
+                      <span>{t('dashboard.used')}</span>
                       <span>{feature.usage || 0} / {feature.included_usage || feature.balance + (feature.usage || 0)}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -300,20 +304,20 @@ function DashboardContent({ session }: { session: any }) {
                   </div>
                   {feature.next_reset_at && (
                     <p className="text-sm text-gray-600">
-                      Resets on: {new Date(feature.next_reset_at).toLocaleDateString()}
+                      {t('dashboard.resetsOn')}: {new Date(feature.next_reset_at).toLocaleDateString()}
                     </p>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500">No usage data available</p>
+            <p className="text-gray-500">{t('dashboard.noUsageData')}</p>
           )}
         </div>
 
         {/* Available Plans */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Available Plans</h2>
+          <h2 className="text-xl font-semibold mb-4">{t('dashboard.availablePlans')}</h2>
           {!products ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
@@ -332,10 +336,10 @@ function DashboardContent({ session }: { session: any }) {
                         <h3 className="font-medium text-lg">
                           {product.display?.name || product.name}
                           {isCurrentPlan && (
-                            <span className="ml-2 text-sm text-green-600">(Current Plan)</span>
+                            <span className="ml-2 text-sm text-green-600">{t('dashboard.currentPlanLabel')}</span>
                           )}
                           {isScheduledPlan && (
-                            <span className="ml-2 text-sm text-orange-600">(Scheduled)</span>
+                            <span className="ml-2 text-sm text-orange-600">{t('dashboard.scheduledLabel')}</span>
                           )}
                         </h3>
                         {product.display?.description && (
@@ -366,16 +370,16 @@ function DashboardContent({ session }: { session: any }) {
                           {loadingProductId === product.id ? (
                             <>
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Loading...
+                              {t('dashboard.loading')}
                             </>
                           ) : (
-                            product.properties?.is_free ? 'Downgrade' : 'Upgrade'
+                            product.properties?.is_free ? t('dashboard.downgrade') : t('dashboard.upgrade')
                           )}
                         </Button>
                       )}
                       {isScheduledPlan && (
                         <span className="text-sm text-gray-500">
-                          Starts {new Date(scheduledProduct.started_at || scheduledProduct.current_period_end).toLocaleDateString()}
+                          {t('dashboard.starts')} {new Date(scheduledProduct.started_at || scheduledProduct.current_period_end).toLocaleDateString()}
                         </span>
                       )}
                     </div>
@@ -405,7 +409,7 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">{t('dashboard.loading')}</p>
         </div>
       </div>
     );
