@@ -18,9 +18,9 @@ import {
   validateCompetitorUrl,
   normalizeCompetitorName,
   assignUrlToCompetitor,
-  detectServiceType,
   getIndustryCompetitors
 } from '@/lib/brand-monitor-utils';
+import { preparePromptsForAnalysis } from '@/lib/prompt-utils';
 import { getEnabledProviders } from '@/lib/provider-config';
 import { useSaveBrandAnalysis } from '@/hooks/useBrandAnalyses';
 
@@ -361,48 +361,46 @@ export function BrandMonitor({
       onCreditsUpdate();
     }
 
-    // Collect all prompts (default + custom)
-    const serviceType = detectServiceType(company);
-    const currentYear = new Date().getFullYear();
-    const defaultPrompts = [
-      `Best ${serviceType}s in ${currentYear}?`,
-      `Top ${serviceType}s for startups?`,
-      `Most popular ${serviceType}s today?`,
-      `Recommended ${serviceType}s for developers?`
-    ].filter((_, index) => !removedDefaultPrompts.includes(index));
-    
-    const allPrompts = [...defaultPrompts, ...customPrompts];
-    
-    // Store the prompts for UI display - make sure they're normalized
-    const normalizedPrompts = allPrompts.map(p => p.trim());
-    dispatch({ type: 'SET_ANALYZING_PROMPTS', payload: normalizedPrompts });
-
-    console.log('Starting analysis...');
-    
-    dispatch({ type: 'SET_ANALYZING', payload: true });
-    dispatch({ type: 'SET_ANALYSIS_PROGRESS', payload: {
-      stage: 'initializing',
-      progress: 0,
-      message: tAnalysis('startingAnalysis'),
-      competitors: [],
-      prompts: [],
-      partialResults: []
-    }});
-    dispatch({ type: 'SET_ANALYSIS_TILES', payload: [] });
-    
-    // Initialize prompt completion status
-    const initialStatus: any = {};
-    const expectedProviders = getEnabledProviders().map(config => config.name);
-    
-    normalizedPrompts.forEach(prompt => {
-      initialStatus[prompt] = {};
-      expectedProviders.forEach(provider => {
-        initialStatus[prompt][provider] = 'pending';
-      });
-    });
-    dispatch({ type: 'SET_PROMPT_COMPLETION_STATUS', payload: initialStatus });
-
     try {
+      // Use centralized prompt preparation logic
+      const competitorNames = identifiedCompetitors.map(c => c.name);
+      const allPrompts = await preparePromptsForAnalysis(
+        company,
+        customPrompts,
+        removedDefaultPrompts,
+        competitorNames,
+        true // Use AI-generated prompts for better analysis
+      );
+      
+      // Store the prompts for UI display - make sure they're normalized
+      const normalizedPrompts = allPrompts.map(p => p.trim());
+      dispatch({ type: 'SET_ANALYZING_PROMPTS', payload: normalizedPrompts });
+
+      console.log('Starting analysis...');
+      
+      dispatch({ type: 'SET_ANALYZING', payload: true });
+      dispatch({ type: 'SET_ANALYSIS_PROGRESS', payload: {
+        stage: 'initializing',
+        progress: 0,
+        message: tAnalysis('startingAnalysis'),
+        competitors: [],
+        prompts: [],
+        partialResults: []
+      }});
+      dispatch({ type: 'SET_ANALYSIS_TILES', payload: [] });
+      
+      // Initialize prompt completion status
+      const initialStatus: any = {};
+      const expectedProviders = getEnabledProviders().map(config => config.name);
+      
+      normalizedPrompts.forEach(prompt => {
+        initialStatus[prompt] = {};
+        expectedProviders.forEach(provider => {
+          initialStatus[prompt][provider] = 'pending';
+        });
+      });
+      dispatch({ type: 'SET_PROMPT_COMPLETION_STATUS', payload: initialStatus });
+
       await startSSEConnection('/api/brand-monitor/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -412,6 +410,9 @@ export function BrandMonitor({
           competitors: identifiedCompetitors 
         }),
       });
+    } catch (error) {
+      console.error('Error preparing prompts or starting analysis:', error);
+      dispatch({ type: 'SET_ERROR', payload: tErrors('analysisPreparationFailed') });
     } finally {
       dispatch({ type: 'SET_ANALYZING', payload: false });
     }
@@ -506,7 +507,6 @@ export function BrandMonitor({
             dispatch({ type: 'SET_NEW_PROMPT_TEXT', payload: '' });
           }}
           onStartAnalysis={handleAnalyze}
-          detectServiceType={detectServiceType}
         />
         </div>
       )}

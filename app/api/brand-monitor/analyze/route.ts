@@ -88,19 +88,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Track usage with Autumn (deduct credits)
-    try {
-      console.log('[Brand Monitor] Recording usage - Customer ID:', sessionResponse.user.id);
-      await autumn.track({
-        customer_id: sessionResponse.user.id,
-        feature_id: FEATURE_ID_MESSAGES,
-        count: CREDITS_PER_BRAND_ANALYSIS,
-      });
-      console.log('[Brand Monitor] Usage recorded successfully');
-    } catch (err) {
-      console.error('Failed to track usage:', err);
-      throw new ExternalServiceError('Unable to process credit deduction. Please try again', 'autumn');
-    }
+
 
     // Get remaining credits after deduction
     let remainingCredits = 0;

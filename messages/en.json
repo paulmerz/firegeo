@@ -181,6 +181,7 @@
     "addPrompt": "Add Prompt",
     "cancel": "Cancel",
     "analyze": "Analyze",
+    "analyzing": "Analying...",
     "noComparisonData": "No comparison data available",
     "noComparisonDataDesc": "The analysis may still be processing or no providers returned data.",
     "results": "Results",
@@ -232,7 +233,8 @@
       "failedToScrape": "Failed to scrape",
       "noCompanyData": "No company data received",
       "failedToExtractCompany": "Failed to extract company information",
-      "failedToExtractCompanyWithReason": "Failed to extract company information: {reason}"
+      "failedToExtractCompanyWithReason": "Failed to extract company information: {reason}",
+      "analysisPreparationFailed": "Failed to prepare analysis. Please try again."
     },
     "analysis": {
       "startingAnalysis": "Starting analysis...",
@@ -249,6 +251,29 @@
         "totalPrompts": "Total Prompts"
       },
       "yourBrand": "Your Brand"
+    },
+    "providerRankings": {
+      "title": "Provider Rankings",
+      "description": "Your brand performance by AI provider",
+      "averageRank": "Average Rank",
+      "company": "Company",
+      "visibility": "Visibility",
+      "shareOfVoice": "Share of Voice",
+      "sentiment": "Sentiment",
+      "positive": "Positive",
+      "negative": "Negative",
+      "neutral": "Neutral",
+      "competitors": "Competitors",
+      "rank": "Rank",
+      "averagePosition": "Average Position",
+      "sentimentScore": "Sentiment Score"
+    },
+    "visibilityScore": {
+      "title": "Visibility Score",
+      "description": "Your brand visibility across AI providers",
+      "overallScore": "Overall Score",
+      "rank": "Rank",
+      "visibilityTooltip": "visibility"
     }
   },
   "pricing": {

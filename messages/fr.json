@@ -183,7 +183,7 @@
     "analyze": "Analyser",
     "noComparisonData": "Aucune donnée de comparaison disponible",
     "noComparisonDataDesc": "L'analyse peut encore être en cours ou aucun fournisseur n'a retourné de données.",
-    "analizing": "Analyse en cours...",
+    "analyzing": "Analyse en cours...",
     "results": "Résultats",
     "competitors": "Concurrents",
     "rankings": "Classements",
@@ -233,7 +233,8 @@
       "failedToScrape": "Échec du scraping",
       "noCompanyData": "Aucune donnée d'entreprise reçue",
       "failedToExtractCompany": "Échec de l'extraction des informations de l'entreprise",
-      "failedToExtractCompanyWithReason": "Échec de l'extraction des informations de l'entreprise : {reason}"
+      "failedToExtractCompanyWithReason": "Échec de l'extraction des informations de l'entreprise : {reason}",
+      "analysisPreparationFailed": "Échec de la préparation de l'analyse. Veuillez réessayer."
     },
     "analysis": {
       "startingAnalysis": "Démarrage de l'analyse...",
@@ -250,6 +251,29 @@
         "totalPrompts": "Total des prompts"
       },
       "yourBrand": "Votre marque"
+    },
+    "providerRankings": {
+      "title": "Classements des Fournisseurs",
+      "description": "Performance de votre marque par fournisseur IA",
+      "averageRank": "Rang Moyen",
+      "company": "Entreprise",
+      "visibility": "Visibilité",
+      "shareOfVoice": "Part de Voix",
+      "sentiment": "Sentiment",
+      "positive": "Positif",
+      "negative": "Négatif",
+      "neutral": "Neutre",
+      "competitors": "Concurrents",
+      "rank": "Rang",
+      "averagePosition": "Position Moyenne",
+      "sentimentScore": "Score de Sentiment"
+    },
+    "visibilityScore": {
+      "title": "Score de Visibilité",
+      "description": "Visibilité de votre marque sur les fournisseurs IA",
+      "overallScore": "Score Global",
+      "rank": "Rang",
+      "visibilityTooltip": "visibilité"
     }
   },
   "pricing": {

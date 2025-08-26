@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Trash2, CheckIcon } from 'lucide-react';
@@ -6,6 +6,7 @@ import { Company, AnalysisStage } from '@/lib/types';
 import { IdentifiedCompetitor, PromptCompletionStatus } from '@/lib/brand-monitor-reducer';
 import { getEnabledProviders } from '@/lib/provider-config';
 import { useTranslations } from 'next-intl';
+import { getDisplayPrompts, isCustomPrompt, getDefaultPromptIndex } from '@/lib/prompt-utils';
 
 interface AnalysisProgressSectionProps {
   company: Company;
@@ -25,7 +26,6 @@ interface AnalysisProgressSectionProps {
   onRemoveCustomPrompt: (prompt: string) => void;
   onAddPromptClick: () => void;
   onStartAnalysis: () => void;
-  detectServiceType: (company: Company) => string;
 }
 
 // Provider icon mapping
@@ -84,22 +84,47 @@ export function AnalysisProgressSection({
   onRemoveDefaultPrompt,
   onRemoveCustomPrompt,
   onAddPromptClick,
-  onStartAnalysis,
-  detectServiceType
+  onStartAnalysis
 }: AnalysisProgressSectionProps) {
   const t = useTranslations('brandMonitor.analysisProgress');
-  // Generate default prompts
-  const serviceType = detectServiceType(company);
-  const currentYear = new Date().getFullYear();
-  const defaultPrompts = [
-    `Best ${serviceType}s in ${currentYear}?`,
-    `Top ${serviceType}s for startups?`,
-    `Most popular ${serviceType}s today?`,
-    `Recommended ${serviceType}s for developers?`
-  ].filter((_, index) => !removedDefaultPrompts.includes(index));
+  const [displayPrompts, setDisplayPrompts] = useState<string[]>([]);
+  const [loadingPrompts, setLoadingPrompts] = useState(false);
   
-  // Use provided prompts or generate from defaults + custom
-  const displayPrompts = prompts.length > 0 ? prompts : [...defaultPrompts, ...customPrompts];
+  // Load prompts asynchronously
+  useEffect(() => {
+    async function loadPrompts() {
+      // Only use existing prompts if we're actively analyzing or if analysis has been completed
+      if (prompts.length > 0 && analyzing) {
+        setDisplayPrompts(prompts);
+        return;
+      }
+      
+      setLoadingPrompts(true);
+      try {
+        const adaptivePrompts = await getDisplayPrompts(
+          company,
+          customPrompts,
+          removedDefaultPrompts,
+          [], // Don't pass existing prompts to force adaptive generation
+          identifiedCompetitors
+        );
+        setDisplayPrompts(adaptivePrompts);
+      } catch (error) {
+        console.error('Error loading adaptive prompts:', error);
+        // Fallback to basic prompts
+        setDisplayPrompts([
+          'Best tools in 2024?',
+          'Top tools for startups?', 
+          'Most popular tools today?',
+          'Recommended tools for professionals?'
+        ]);
+      } finally {
+        setLoadingPrompts(false);
+      }
+    }
+    
+    loadPrompts();
+  }, [company, customPrompts, removedDefaultPrompts, analyzing, identifiedCompetitors]);
   
   return (
     <div className="flex items-center justify-center animate-panel-in">
@@ -171,8 +196,15 @@ export function AnalysisProgressSection({
             <CardContent className="space-y-6">
               {/* Prompts tiles */}
               <div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {displayPrompts.map((prompt, index) => {
+                {loadingPrompts ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-orange-500 mr-2" />
+                    <span className="text-gray-600">Génération de prompts adaptatifs...</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {displayPrompts.map((prompt, index) => {
+                    // For simplicity, check if it's custom by looking in customPrompts array
                     const isCustom = customPrompts.includes(prompt);
                     return (
                       <div key={`${prompt}-${index}`} className="group relative bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition-shadow">
@@ -182,9 +214,9 @@ export function AnalysisProgressSection({
                           </p>
                           {!analyzing && !isCustom && (
                             <button
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.stopPropagation();
-                                const originalIndex = defaultPrompts.findIndex(p => p === prompt);
+                                const originalIndex = await getDefaultPromptIndex(prompt, company);
                                 if (originalIndex !== -1) {
                                   onRemoveDefaultPrompt(originalIndex);
                                 }
@@ -244,7 +276,8 @@ export function AnalysisProgressSection({
                       </div>
                     );
                   })}
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Add Prompt Button */}

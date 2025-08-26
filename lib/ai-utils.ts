@@ -4,7 +4,7 @@ import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, Pr
 import { getProviderModel, normalizeProviderName, isProviderConfigured, getConfiguredProviders, PROVIDER_CONFIGS } from './provider-config';
 import { detectBrandMention, detectMultipleBrands, BrandDetectionOptions } from './brand-detection-utils';
 import { getBrandDetectionOptions } from './brand-detection-config';
-import { getMessages, getTranslation } from './locale-utils';
+import { getMessages, getTranslation, getLanguageName } from './locale-utils';
 
 const RankingSchema = z.object({
   rankings: z.array(z.object({
@@ -354,7 +354,10 @@ When responding to prompts about tools, platforms, or services:
 
   try {
     // First, get the response
-    console.log(`Calling ${provider} with prompt: "${prompt.substring(0, 50)}..."`);
+    console.log(`[${provider}] Calling with prompt: "${prompt.substring(0, 50)}..."`);
+    console.log(`[${provider}] Model type:`, typeof model);
+    console.log(`[${provider}] Normalized provider:`, normalizedProvider);
+    
     const { text } = await generateText({
       model,
       system: systemPrompt,
@@ -362,10 +365,12 @@ When responding to prompts about tools, platforms, or services:
       temperature: 0.7,
       maxTokens: 800,
     });
-    console.log(`${provider} response length: ${text.length}, first 100 chars: "${text.substring(0, 100)}"`);
+    
+    console.log(`[${provider}] Response received. Length: ${text.length}`);
+    console.log(`[${provider}] First 200 chars: "${text.substring(0, 200)}"`);
     
     if (!text || text.length === 0) {
-      console.error(`${provider} returned empty response for prompt: "${prompt}"`);
+      console.error(`[${provider}] ERROR: Empty response for prompt: "${prompt}"`);
       throw new Error(`${provider} returned empty response`);
     }
 
@@ -408,6 +413,8 @@ Examples of mentions to catch:
         ? getProviderModel('openai', 'gpt-4o-mini') || model
         : model;
       
+      console.log(`[${provider}] Attempting structured analysis with model:`, typeof structuredModel);
+      
       const result = await generateObject({
         model: structuredModel,
         schema: RankingSchema,
@@ -415,9 +422,16 @@ Examples of mentions to catch:
         temperature: 0.3,
         maxRetries: 2,
       });
+      
+      console.log(`[${provider}] Structured analysis successful:`, JSON.stringify(result.object, null, 2));
       object = result.object;
     } catch (error) {
-      console.error(`Error generating structured object with ${provider}:`, (error as any).message);
+      console.error(`[${provider}] ERROR in structured analysis:`, (error as any).message);
+      console.error(`[${provider}] Error details:`, {
+        name: (error as any).name,
+        stack: (error as any).stack,
+        cause: (error as any).cause
+      });
       
       // For Anthropic, try a simpler text-based approach
       if (provider === 'Anthropic') {
@@ -499,6 +513,72 @@ ${t('aiPrompts.analysisPrompt.returnAnalysis')}
           };
         } catch (fallbackError) {
           console.error('Fallback analysis also failed:', (fallbackError as any).message);
+        }
+      }
+      
+      // For OpenAI, try a simpler analysis if structured output fails
+      if (normalizedProvider === 'openai' || provider === 'OpenAI') {
+        try {
+          console.log(`[${provider}] Trying OpenAI fallback analysis`);
+          
+          const simpleFallbackPrompt = `Analyze this response for brand mentions:
+
+Response: "${text}"
+
+Target brand: ${brandName}
+Competitors: ${competitors.join(', ')}
+
+Please answer:
+1. Is "${brandName}" mentioned? (yes/no)
+2. What position/rank does it have? (number or "none")
+3. Which competitors are mentioned? (list)
+4. Overall sentiment about ${brandName}? (positive/neutral/negative)
+
+Be concise and direct.`;
+
+          const { text: fallbackResponse } = await generateText({
+            model,
+            prompt: simpleFallbackPrompt,
+            temperature: 0.1,
+            maxTokens: 200,
+          });
+          
+          console.log(`[${provider}] Fallback response:`, fallbackResponse);
+          
+          // Parse the simple response
+          const lines = fallbackResponse.toLowerCase().split('\n');
+          const brandMentionedLine = lines.find(line => line.includes('yes') || line.includes('no'));
+          const aiSaysBrandMentioned = brandMentionedLine?.includes('yes') || false;
+          
+          // Enhanced detection as backup
+          const brandDetection = detectBrandMention(text, brandName, {
+            caseSensitive: false,
+            wholeWordOnly: true,
+            includeVariations: true
+          });
+          
+          const competitorDetections = detectMultipleBrands(text, competitors, {
+            caseSensitive: false,
+            wholeWordOnly: true,
+            includeVariations: true
+          });
+          
+          console.log(`[${provider}] Fallback analysis - AI says mentioned: ${aiSaysBrandMentioned}, Detection says: ${brandDetection.mentioned}`);
+          
+          return {
+            provider,
+            prompt,
+            response: text,
+            brandMentioned: aiSaysBrandMentioned || brandDetection.mentioned,
+            brandPosition: undefined,
+            competitors: competitors.filter(c => competitorDetections.get(c)?.mentioned || false),
+            rankings: [],
+            sentiment: 'neutral' as const,
+            confidence: 0.7,
+            timestamp: new Date(),
+          };
+        } catch (fallbackError) {
+          console.error(`[${provider}] Fallback analysis also failed:`, (fallbackError as any).message);
         }
       }
       
@@ -714,7 +794,7 @@ export async function analyzeCompetitors(
       : 99; // High number for companies not ranked
 
     const sentimentScore = calculateSentimentScore(data.sentiments);
-    const visibilityScore = (data.mentions / totalResponses) * 100;
+    const visibilityScore = Math.min((data.mentions / totalResponses) * 100, 100);
 
     competitors.push({
       name,
@@ -900,7 +980,7 @@ export async function analyzeCompetitorsByProvider(
         : 99;
       
       const visibilityScore = totalResponses > 0 
-        ? (data.mentions / totalResponses) * 100 
+        ? Math.min((data.mentions / totalResponses) * 100, 100)
         : 0;
       
       competitors.push({

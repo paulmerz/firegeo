@@ -85,7 +85,7 @@ export async function scrapeCompanyInfo(url: string, maxAge?: number, locale?: s
       1. For mainProducts, list the ACTUAL PRODUCTS (e.g., "coolers", "tumblers", "drinkware") not product categories
       2. For competitors, extract FULL COMPANY NAMES (e.g., "RTIC", "IGLOO", "Coleman") not just initials
       3. Focus on what the company MAKES/SELLS, not what goes IN their products (e.g., Yeti makes coolers, not beverages)
-      4. Return the content in ${languageName} language`,
+      4. Return the content in ${languageName} language, including the industry`,
     });
 
     // Extract favicon URL - try multiple sources

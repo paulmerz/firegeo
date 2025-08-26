@@ -8,6 +8,7 @@ import { ProviderSpecificRanking } from '@/lib/types';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import Image from 'next/image';
 import { getConfiguredProviders } from '@/lib/provider-config';
+import { useTranslations } from 'next-intl';
 
 // Provider icon mapping
 const getProviderIcon = (provider: string) => {
@@ -127,6 +128,7 @@ export function ProviderRankingsTabs({
   sentimentScore,
   weeklyChange
 }: ProviderRankingsTabsProps) {
+  const t = useTranslations('brandMonitor.providerRankings');
   const [selectedProvider, setSelectedProvider] = useState(
     providerRankings?.[0]?.provider || 'OpenAI'
   );
@@ -136,11 +138,11 @@ export function ProviderRankingsTabs({
   const getSentimentBadge = (sentiment: string) => {
     switch (sentiment) {
       case 'positive':
-        return <Badge variant="secondary" className="bg-green-50 text-black text-xs">Positive</Badge>;
+        return <Badge variant="secondary" className="bg-green-50 text-black text-xs">{t('positive')}</Badge>;
       case 'negative':
-        return <Badge variant="secondary" className="bg-red-50 text-black text-xs">Negative</Badge>;
+        return <Badge variant="secondary" className="bg-red-50 text-black text-xs">{t('negative')}</Badge>;
       default:
-        return <Badge variant="secondary" className="bg-gray-50 text-black text-xs">Neutral</Badge>;
+        return <Badge variant="secondary" className="bg-gray-50 text-black text-xs">{t('neutral')}</Badge>;
     }
   };
 
@@ -161,14 +163,14 @@ export function ProviderRankingsTabs({
       <CardHeader className="border-b">
         <div className="flex justify-between items-center">
           <div>
-            <CardTitle className="text-xl font-semibold">Provider Rankings</CardTitle>
+            <CardTitle className="text-xl font-semibold">{t('title')}</CardTitle>
             <CardDescription className="text-sm text-gray-600 mt-1">
-              Your brand performance by AI provider
+              {t('description')}
             </CardDescription>
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold text-orange-600">#{brandRank}</p>
-            <p className="text-xs text-gray-500 mt-1">Average Rank</p>
+            <p className="text-xs text-gray-500 mt-1">{t('averageRank')}</p>
           </div>
         </div>
       </CardHeader>
@@ -197,10 +199,10 @@ export function ProviderRankingsTabs({
                   <thead>
                     <tr>
                       <th className="bg-gray-50 border-b border-r border-gray-200 text-left p-3 text-xs font-medium text-gray-900 w-8">#</th>
-                      <th className="bg-gray-50 border-b border-r border-gray-200 text-left p-3 text-xs font-medium text-gray-900 w-[200px]">Company</th>
-                      <th className="bg-gray-50 border-b border-r border-gray-200 text-right p-3 text-xs font-medium text-gray-900">Visibility</th>
-                      <th className="bg-gray-50 border-b border-r border-gray-200 text-right p-3 text-xs font-medium text-gray-900">Share of Voice</th>
-                      <th className="bg-gray-50 border-b border-gray-200 text-right p-3 text-xs font-medium text-gray-900">Sentiment</th>
+                      <th className="bg-gray-50 border-b border-r border-gray-200 text-left p-3 text-xs font-medium text-gray-900 w-[200px]">{t('company')}</th>
+                      <th className="bg-gray-50 border-b border-r border-gray-200 text-right p-3 text-xs font-medium text-gray-900">{t('visibility')}</th>
+                      <th className="bg-gray-50 border-b border-r border-gray-200 text-right p-3 text-xs font-medium text-gray-900">{t('shareOfVoice')}</th>
+                      <th className="bg-gray-50 border-b border-gray-200 text-right p-3 text-xs font-medium text-gray-900">{t('sentiment')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -259,31 +261,31 @@ export function ProviderRankingsTabs({
         {/* Metrics Row at Bottom */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-6 pt-6 border-t">
           <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-xs text-gray-500 mb-1">Competitors</p>
+            <p className="text-xs text-gray-500 mb-1">{t('competitors')}</p>
             <p className="text-lg font-semibold text-black">{competitors.length}</p>
           </div>
           <div className="bg-orange-50 rounded-lg p-4 text-center">
-            <p className="text-xs text-gray-500 mb-1">{brandName} Rank</p>
+            <p className="text-xs text-gray-500 mb-1">{brandName} {t('rank')}</p>
             <p className="text-lg font-semibold text-black">
               #{brandRank}
             </p>
           </div>
           <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-xs text-gray-500 mb-1">{brandName} Visibility</p>
+            <p className="text-xs text-gray-500 mb-1">{brandName} {t('visibility')}</p>
             <p className="text-lg font-semibold text-black">
               {brandVisibility}%
             </p>
           </div>
           <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-xs text-gray-500 mb-1">Share of Voice</p>
+            <p className="text-xs text-gray-500 mb-1">{t('shareOfVoice')}</p>
             <p className="text-lg font-semibold text-black">{shareOfVoice}%</p>
           </div>
           <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-xs text-gray-500 mb-1">Average Position</p>
+            <p className="text-xs text-gray-500 mb-1">{t('averagePosition')}</p>
             <p className="text-lg font-semibold text-black">#{averagePosition}</p>
           </div>
           <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-xs text-gray-500 mb-1">Sentiment Score</p>
+            <p className="text-xs text-gray-500 mb-1">{t('sentimentScore')}</p>
             <p className="text-lg font-semibold text-black">{sentimentScore}%</p>
           </div>
         </div>

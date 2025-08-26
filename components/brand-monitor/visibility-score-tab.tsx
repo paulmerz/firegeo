@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { CompetitorRanking } from '@/lib/types';
 import { IdentifiedCompetitor } from '@/lib/brand-monitor-reducer';
+import { useTranslations } from 'next-intl';
 
 interface VisibilityScoreTabProps {
   competitors: CompetitorRanking[];
@@ -16,6 +17,7 @@ export function VisibilityScoreTab({
   brandData,
   identifiedCompetitors
 }: VisibilityScoreTabProps) {
+  const t = useTranslations('brandMonitor.visibilityScore');
   const topCompetitor = competitors.filter(c => !c.isOwn)[0];
   const brandRank = competitors.findIndex(c => c.isOwn) + 1;
   const difference = topCompetitor ? brandData.visibilityScore - topCompetitor.visibilityScore : 0;
@@ -27,15 +29,15 @@ export function VisibilityScoreTab({
         <CardHeader className="border-b">
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle className="text-xl font-semibold">Visibility Score</CardTitle>
+              <CardTitle className="text-xl font-semibold">{t('title')}</CardTitle>
               <CardDescription className="text-sm text-gray-600 mt-1">
-                Your brand visibility across AI providers
+                {t('description')}
               </CardDescription>
             </div>
             {/* Visibility Score in top right */}
             <div className="text-right">
               <p className="text-3xl font-bold text-orange-600">{brandData.visibilityScore}%</p>
-              <p className="text-xs text-gray-500 mt-1">Overall Score</p>
+              <p className="text-xs text-gray-500 mt-1">{t('overallScore')}</p>
             </div>
           </div>
         </CardHeader>
@@ -99,7 +101,7 @@ export function VisibilityScoreTab({
                         padding: '8px 12px',
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                       }}
-                      formatter={(value: number, name: string) => [`${value}% visibility`, name]}
+                      formatter={(value: number, name: string) => [`${value}% ${t('visibilityTooltip')}`, name]}
                       labelStyle={{ fontWeight: 600 }}
                     />
                   </PieChart>
@@ -108,7 +110,7 @@ export function VisibilityScoreTab({
                 {/* Center text showing relative performance */}
                 <div className="absolute top-[50%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
                   <p className="text-3xl font-bold text-gray-900">#{brandRank}</p>
-                  <p className="text-sm text-gray-500 mt-1">Rank</p>
+                  <p className="text-sm text-gray-500 mt-1">{t('rank')}</p>
                   {difference !== 0 && (
                     <p className={`text-xs mt-2 font-medium ${difference > 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {difference > 0 ? '+' : ''}{Math.abs(difference).toFixed(1)}% vs #1
