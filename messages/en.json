@@ -251,29 +251,6 @@
         "totalPrompts": "Total Prompts"
       },
       "yourBrand": "Your Brand"
-    },
-    "providerRankings": {
-      "title": "Provider Rankings",
-      "description": "Your brand performance by AI provider",
-      "averageRank": "Average Rank",
-      "company": "Company",
-      "visibility": "Visibility",
-      "shareOfVoice": "Share of Voice",
-      "sentiment": "Sentiment",
-      "positive": "Positive",
-      "negative": "Negative",
-      "neutral": "Neutral",
-      "competitors": "Competitors",
-      "rank": "Rank",
-      "averagePosition": "Average Position",
-      "sentimentScore": "Sentiment Score"
-    },
-    "visibilityScore": {
-      "title": "Visibility Score",
-      "description": "Your brand visibility across AI providers",
-      "overallScore": "Overall Score",
-      "rank": "Rank",
-      "visibilityTooltip": "visibility"
     }
   },
   "pricing": {
@@ -456,7 +433,20 @@
       "mainProductsNote": "For mainProducts, list the ACTUAL PRODUCTS (e.g., \"coolers\", \"tumblers\", \"drinkware\") not product categories",
       "competitorsNote": "For competitors, extract FULL COMPANY NAMES (e.g., \"RTIC\", \"IGLOO\", \"Coleman\") not just initials",
       "focusNote": "Focus on what the company MAKES/SELLS, not what goes IN their products (e.g., Yeti makes coolers, not beverages)",
-      "languageNote": "Return the content in {locale_name} language"
+      "languageNote": "Return the content in {locale_name} language",
+      "nameExtractionTitle": "CRITICAL INSTRUCTIONS FOR COMPANY NAME EXTRACTION:",
+      "nameExtraction1": "Extract the COMPLETE and EXACT company name as it appears officially on the website",
+      "nameExtraction2": "PRESERVE ALL characters including: numbers, letters, special characters, spaces, punctuation",
+      "nameExtraction3": "DO NOT abbreviate, truncate, or modify any part of the name",
+      "nameExtraction4": "DO NOT remove letters or numbers that might seem redundant",
+      "nameExtraction5": "Look for the name in multiple places: page title, header, footer, contact info, about section",
+      "nameExtraction6": "If multiple variations exist, choose the most complete and official version",
+      "nameExtractionExamples": "Examples of CORRECT name extraction:",
+      "nameExample1": "\"5QB Avocats\" → \"5QB Avocats\" (NOT \"5Q Avocats\")",
+      "nameExample2": "\"ABC123 Solutions\" → \"ABC123 Solutions\" (NOT \"ABC Solutions\")",
+      "nameExample3": "\"Smith & Associates LLC\" → \"Smith & Associates LLC\" (NOT \"Smith Associates\")",
+      "nameExample4": "\"Tech-Pro Industries\" → \"Tech-Pro Industries\" (NOT \"TechPro Industries\")",
+      "namePrecisionNote": "The company name MUST be extracted with absolute precision - every character matters"
     },
     "analysisPrompt": {
       "analyzeResponse": "Analyze this AI response about {brandName} and competitors {competitors}:",

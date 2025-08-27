@@ -62,16 +62,60 @@ export async function getMessages(locale: string) {
 }
 
 /**
- * Get language name from locale code
+ * Get language instruction from locale code
+ * LLMs understand locale codes directly and can respond in any language
+ */
+export function getLanguageInstruction(locale: string): string {
+  // For most cases, just use the locale directly - LLMs understand it
+  const localeUpper = locale.toUpperCase();
+  
+  // Common locale mappings for clarity in prompts
+  const languageMap: { [key: string]: string } = {
+    'EN': 'English',
+    'FR': 'French (Français)', 
+    'ES': 'Spanish (Español)',
+    'DE': 'German (Deutsch)',
+    'IT': 'Italian (Italiano)',
+    'PT': 'Portuguese (Português)',
+    'NL': 'Dutch (Nederlands)',
+    'RU': 'Russian (Русский)',
+    'JA': 'Japanese (日本語)',
+    'KO': 'Korean (한국어)',
+    'ZH': 'Chinese (中文)',
+    'AR': 'Arabic (العربية)',
+    'HI': 'Hindi (हिन्दी)',
+    'TR': 'Turkish (Türkçe)',
+    'PL': 'Polish (Polski)',
+    'SV': 'Swedish (Svenska)',
+    'NO': 'Norwegian (Norsk)',
+    'DA': 'Danish (Dansk)',
+    'FI': 'Finnish (Suomi)',
+    'HU': 'Hungarian (Magyar)',
+    'CS': 'Czech (Čeština)',
+    'SK': 'Slovak (Slovenčina)',
+    'UK': 'Ukrainian (Українська)',
+    'BG': 'Bulgarian (Български)',
+    'RO': 'Romanian (Română)',
+    'HR': 'Croatian (Hrvatski)',
+    'SR': 'Serbian (Српски)',
+    'SL': 'Slovenian (Slovenščina)',
+    'ET': 'Estonian (Eesti)',
+    'LV': 'Latvian (Latviešu)',
+    'LT': 'Lithuanian (Lietuvių)',
+    'MT': 'Maltese (Malti)',
+    'GA': 'Irish (Gaeilge)',
+    'CY': 'Welsh (Cymraeg)',
+  };
+  
+  return languageMap[localeUpper] || `language with locale: ${locale}`;
+}
+
+/**
+ * Legacy function - kept for compatibility
+ * @deprecated Use getLanguageInstruction instead
  */
 export function getLanguageName(locale: string): string {
-  switch (locale) {
-    case 'fr':
-      return 'French';
-    case 'en':
-    default:
-      return 'English';
-  }
+  return getLanguageInstruction(locale);
 }
 
 /**

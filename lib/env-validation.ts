@@ -14,6 +14,8 @@ interface EnvConfig {
   GOOGLE_GENERATIVE_AI_API_KEY?: string;
   PERPLEXITY_API_KEY?: string;
   FIRECRAWL_API_KEY?: string;
+  GOOGLE_SEARCH_API_KEY?: string;
+  GOOGLE_SEARCH_ENGINE_ID?: string;
 }
 
 const requiredEnvVars = [
@@ -55,5 +57,7 @@ export function validateEnv(): EnvConfig {
     GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     PERPLEXITY_API_KEY: process.env.PERPLEXITY_API_KEY,
     FIRECRAWL_API_KEY: process.env.FIRECRAWL_API_KEY,
+    GOOGLE_SEARCH_API_KEY: process.env.GOOGLE_SEARCH_API_KEY,
+    GOOGLE_SEARCH_ENGINE_ID: process.env.GOOGLE_SEARCH_ENGINE_ID,
   };
 }

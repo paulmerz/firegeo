@@ -78,7 +78,7 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
         maxTokens: 128000,
         supportsFunctionCalling: true,
         supportsStructuredOutput: true,
-        supportsWebSearch: false,
+        supportsWebSearch: true,
       },
       {
         id: 'gpt-4o-mini',

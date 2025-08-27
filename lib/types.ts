@@ -67,6 +67,21 @@ export interface Company {
     competitors?: string[];
     ogImage?: string;
     favicon?: string;
+    // Additional metadata from scraping
+    ogTitle?: string;
+    ogDescription?: string;
+    metaKeywords?: string[];
+    rawMetadata?: any;
+  };
+  // Business profile
+  businessProfile?: {
+    businessType: string;
+    marketSegment: string;
+    targetCustomers: string;
+    primaryMarkets: string[];
+    technologies: string[];
+    businessModel: string;
+    confidenceScore: number;
   };
 }
 
@@ -145,7 +160,7 @@ export type SSEEventType =
   | 'start'
   | 'progress'
   | 'stage'
-  | 'competitor-found'
+  | 'competitor-found' // Legacy event type, kept for backward compatibility
   | 'prompt-generated'
   | 'analysis-start'
   | 'analysis-progress'
@@ -165,7 +180,7 @@ export interface SSEEvent<T = unknown> {
 
 export type AnalysisStage = 
   | 'initializing'
-  | 'identifying-competitors'
+  | 'identifying-competitors' // Legacy stage, kept for backward compatibility
   | 'generating-prompts'
   | 'analyzing-prompts'
   | 'calculating-scores'

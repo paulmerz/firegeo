@@ -281,50 +281,57 @@ export function BrandMonitor({
       dispatch({ type: 'SET_AVAILABLE_PROVIDERS', payload: defaultProviders.length > 0 ? defaultProviders : ['OpenAI', 'Anthropic'] });
     }
     
-    // Extract competitors from scraped data or use industry defaults
-    const extractedCompetitors = company.scrapedData?.competitors || [];
-    const industryCompetitors = getIndustryCompetitors(company.industry || '');
-    
-    // Merge extracted competitors with industry defaults, keeping URLs where available
-    const competitorMap = new Map<string, IdentifiedCompetitor>();
-    
-    // Add industry competitors first (they have URLs)
-    industryCompetitors.forEach(comp => {
-      const normalizedName = normalizeCompetitorName(comp.name);
-      competitorMap.set(normalizedName, comp as IdentifiedCompetitor);
-    });
-    
-    // Add extracted competitors and try to match them with known URLs
-    extractedCompetitors.forEach(name => {
-      const normalizedName = normalizeCompetitorName(name);
+    try {
+      const detectedLocale = navigator.language.split('-')[0] || 'en';
+      console.log('🚀 Starting competitor search...');
+      console.log('🌐 Detected browser locale:', navigator.language, '→', detectedLocale);
       
-      // Check if we already have this competitor
-      const existing = competitorMap.get(normalizedName);
-      if (existing) {
-        // If existing has URL but current doesn't, keep existing
-        if (!existing.url) {
-          const url = assignUrlToCompetitor(name);
-          competitorMap.set(normalizedName, { name, url });
-        }
-        return;
+      // Import search method configuration
+      const { ACTIVE_SEARCH_CONFIG, getApiEndpoint, buildRequestBody } = await import('@/lib/competitor-pipeline/search-method-config');
+      
+      const apiEndpoint = getApiEndpoint(ACTIVE_SEARCH_CONFIG.method);
+      const requestBody = buildRequestBody(ACTIVE_SEARCH_CONFIG, company, detectedLocale);
+      
+      console.log(`🔬 [SearchMethod] Active method: ${ACTIVE_SEARCH_CONFIG.method}`);
+      console.log(`🔧 [SearchMethod] Config:`, ACTIVE_SEARCH_CONFIG);
+      
+      const response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
       }
       
-      // New competitor - try to find a URL for it
-      const url = assignUrlToCompetitor(name);
-      competitorMap.set(normalizedName, { name, url });
-    });
-    
-    let competitors = Array.from(competitorMap.values())
-      .filter(comp => comp.name !== 'Competitor 1' && comp.name !== 'Competitor 2' && 
-                      comp.name !== 'Competitor 3' && comp.name !== 'Competitor 4' && 
-                      comp.name !== 'Competitor 5')
-      .slice(0, 10);
-
-    // Just use the first 6 competitors without AI validation
-    competitors = competitors.slice(0, 6);
-    
-    console.log('Identified competitors:', competitors);
-    dispatch({ type: 'SET_IDENTIFIED_COMPETITORS', payload: competitors });
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Unknown API error');
+      }
+      
+      // Handle AI web search results
+      const foundCompetitors = data.competitors.map((comp: any) => ({
+        name: comp.name,
+        url: comp.url
+      }));
+      
+      console.log('🏆 Found competitors:', foundCompetitors);
+      console.log('📊 Stats:', data.stats);
+      
+      if (data.warning) {
+        console.warn('⚠️ Warning:', data.warning);
+      }
+      
+      dispatch({ type: 'SET_IDENTIFIED_COMPETITORS', payload: foundCompetitors });
+      console.log('Final identified competitors:', foundCompetitors);
+    } catch (error) {
+      console.error('❌ Error in competitor search:', error);
+      dispatch({ type: 'SET_ERROR', payload: tErrors('failedToFindCompetitors') });
+    }
     
     // Show competitors on the same page with animation
     dispatch({ type: 'SET_SHOW_COMPETITORS', payload: true });
