@@ -1,140 +1,50 @@
-# FireGEO Open-Source SaaS Starter
+# FireGEO: AI-Powered SaaS Starter Kit
 
 <img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExNjh4N3VwdGw2YXg2ZXpvMHBlNDFlejd1MjBpZXBxNHZ5YXJxOGk5OSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/x2sTqbCW5m7z0qaNJM/giphy.gif" alt="FireGEO Demo" width="100%" />
 
-Get your SaaS running in minutes with authentication, billing, AI chat, and brand monitoring. Zero-config setup with Next.js 15, TypeScript, and PostgreSQL.
+FireGEO is a production-ready, open-source SaaS starter kit built with a modern, scalable tech stack. Launch your own SaaS application in minutes with pre-built features like user authentication, subscription billing, AI-powered chat, and an advanced brand monitoring tool.
+
+This starter kit is designed for developers who want to bypass the boilerplate and focus on building unique features. It provides a solid foundation with a zero-configuration setup, letting you go from clone to running application in a single command.
 
 ![Next.js](https://img.shields.io/badge/Next.js-15.3-black?style=flat-square&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?style=flat-square&logo=typescript)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38B2AC?style=flat-square&logo=tailwind-css)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-336791?style=flat-square&logo=postgresql)
 
-## Quick Start
+## ✨ Features
 
-### Prerequisites
-- Node.js 18+ and npm
-- PostgreSQL database
+FireGEO comes with a suite of pre-built features that form the core of a modern SaaS application.
 
-### One-Command Setup
+### 🤖 AI-Powered Chat
+- **Multi-Provider Support:** Integrated with OpenAI, Anthropic, Google Gemini, and Perplexity.
+- **Credit-Based Usage:** Chat functionality is tied to the subscription plan's "message credits," managed by Autumn.
+- **Conversation History:** Users can view and manage their past conversations.
+- **Streaming Responses:** AI responses are streamed in real-time for a better user experience.
 
-```bash
-# Clone the repository
-git clone https://github.com/mendableai/firegeo
-cd firegeo
+### 📈 AI Brand Monitor
+A sophisticated tool to analyze a company's online presence and brand visibility using AI.
+- **URL Scraping:** Users enter a URL, and the app scrapes it using Firecrawl to identify the company.
+- **Automated Competitor Analysis:** AI identifies and suggests competitors based on the initial company data.
+- **Dynamic Prompt Generation:** The system creates tailored questions to analyze the brand against its competitors.
+- **Multi-AI Provider Analysis:** Queries multiple AI models to get a comprehensive view of brand perception.
+- **In-Depth Reporting:** Visualizes results in a dashboard with a visibility score, comparison matrices, and provider-specific rankings.
 
-# Copy environment variables
-cp .env.example .env.local
-```
+### 💳 Subscription Billing
+- **Powered by Autumn:** Seamlessly integrates with [Autumn](https://useautumn.com) for subscription management.
+- **Stripe Integration:** Autumn handles the complexities of Stripe, including webhooks.
+- **Usage-Based & Tiered Plans:** Easily create free, pro, and enterprise plans with usage-based features (e.g., message credits).
+- **Customer Portal:** Pre-built integration with Stripe's customer portal for users to manage their subscriptions.
 
-**Required API Keys** (add to `.env.local`):
-- `DATABASE_URL` - PostgreSQL connection string (required)
-- `BETTER_AUTH_SECRET` - Generate with `openssl rand -base64 32` (required)
+### 🔒 Authentication
+- **Powered by Better Auth:** A complete, secure authentication system out of the box.
+- **Standard Flows:** Includes sign-up, login, and password reset functionalities.
+- **Social Logins (Coming Soon):** Easily extendable for social identity providers.
 
-
-```bash
-# Run the automated setup
-npm run setup
-```
-
-The setup script will automatically:
-- Install all dependencies
-- Test database connection
-- Generate Better Auth tables
-- Apply database migrations
-- Configure Autumn billing (if API key provided)
-- Get you ready to develop
-
-### Start Development
-
-```bash
-npm run dev
-```
-
-Visit [http://localhost:3000](http://localhost:3000) to see your app!
-
-## Manual Setup (Step-by-Step)
-
-If you prefer to run the setup commands individually or need more control over the configuration process:
-
-### 1. Install Dependencies
-
-```bash
-npm install
-```
-
-### 2. Set Up Environment Variables
-
-```bash
-# Copy the example environment file
-cp .env.example .env.local
-
-# Edit .env.local with your favorite editor
-nano .env.local  # or vim, code, etc.
-```
-
-### 3. Generate Authentication Secret
-
-```bash
-# Generate a secure secret for Better Auth
-openssl rand -base64 32
-# Copy the output to BETTER_AUTH_SECRET in .env.local
-```
-
-### 4. Initialize Database
-
-```bash
-# Push the database schema
-npm run db:push
-
-# Generate Better Auth tables
-npx @better-auth/cli generate --config better-auth.config.ts
-
-# Apply the generated migrations
-npm run db:push
-```
-
-### 5. Configure Autumn Billing
-
-```bash
-# Run the Autumn setup script
-npm run setup:autumn
-```
-
-### 6. Verify Setup
-
-```bash
-# Check database schema
-npm run db:studio
-
-# Test the development server
-npm run dev
-```
-
-### Common Setup Commands
-
-```bash
-# Database commands
-npm run db:push          # Push schema to database
-npm run db:studio        # Open Drizzle Studio GUI
-npm run db:migrate       # Run database migrations
-
-# Autumn billing commands
-npm run setup:autumn     # Run Autumn setup script
-
-# Development
-npm run dev              # Start development server
-npm run build            # Build for production
-npm run start            # Start production server
-
-# Utilities
-npm run lint             # Run ESLint
-```
-
-## Tech Stack
+## 🛠️ Tech Stack
 
 | Category | Technologies |
 |----------|-------------|
-| **Frontend** | Next.js 15.3, React 19, TypeScript 5.7 |
+| **Frontend** | Next.js 15, React 19, TypeScript 5.7 |
 | **Styling** | Tailwind CSS v4, shadcn/ui, Lucide Icons |
 | **Web Scraping** | Firecrawl |
 | **Database** | PostgreSQL, Drizzle ORM |
@@ -143,172 +53,132 @@ npm run lint             # Run ESLint
 | **AI Providers** | OpenAI, Anthropic, Google Gemini, Perplexity |
 | **Email** | Resend |
 
-## Project Structure
+## 🚀 Getting Started
 
-```
-fire-saas-geo-latest/
-├── app/                    # Next.js app directory
-│   ├── api/               # API routes
-│   │   ├── auth/         # Better Auth endpoints
-│   │   ├── autumn/       # Billing endpoints (handled by Autumn)
-│   │   ├── brand-monitor/# Brand analysis APIs
-│   │   └── chat/         # AI chat endpoints
-│   ├── (auth)/           # Auth pages (login, register, reset)
-│   ├── dashboard/        # User dashboard
-│   ├── chat/             # AI chat interface
-│   ├── brand-monitor/    # Brand monitoring tool
-│   └── pricing/          # Subscription plans
-├── components/            # React components
-│   ├── ui/               # shadcn/ui components
-│   ├── autumn/           # Billing components
-│   └── brand-monitor/    # Brand monitor UI
-├── lib/                   # Utility functions
-│   ├── auth.ts           # Auth configuration
-│   ├── db/               # Database schema & client
-│   ├── providers/        # AI provider configs
-│   └── api-wrapper.ts    # API middleware
-├── config/                # Configuration files
-├── public/                # Static assets
-└── better-auth/           # Auth migrations
-```
+Follow these steps to get your local development environment up and running.
 
-## Manual Setup (if needed)
+### Prerequisites
+- Node.js 18+ and npm
+- PostgreSQL database (You can get one for free from [Supabase](https://supabase.com))
 
-### 1. Configure Services & Database
-
-#### Database
-Create a PostgreSQL database at [Supabase](https://supabase.com)
-- Create a new project in Supabase
-- Go to Settings → Database
-- Copy the connection string (use "Transaction" mode) to `DATABASE_URL` in `.env.local`
-
-#### Autumn Billing (Detailed Setup)
-
-1. **Create Account**
-   - Sign up at [useautumn.com](https://useautumn.com)
-   - Complete email verification
-
-2. **Get API Key**
-   - Navigate to Settings → Developer
-   - Click "Create API Key"
-   - Copy the key to `AUTUMN_SECRET_KEY` in `.env.local`
-
-3. **Add Stripe Integration**
-   - Go to Integrations → Stripe in Autumn dashboard
-   - Add your Stripe secret key
-   - Autumn handles all webhook configuration automatically
-
-4. **Create Usage Feature**
-   - Go to Features → Create Feature
-   - **Name**: `Messages`
-   - **ID**: `messages` (must match exactly)
-   - **Type**: Select `Usage`
-   - **Unit**: `message`
-   - Click "Create Feature"
-
-5. **Create Free Product**
-   - Go to Products → Create Product
-   - **Name**: `Free`
-   - **ID**: Leave blank (auto-generated)
-   - **Price**: `$0/month`
-   - **Features**: 
-     - Add `Messages` feature
-     - Set limit to `100`
-   - Click "Create Product"
-
-6. **Create Pro Product**
-   - Go to Products → Create Product
-   - **Name**: `Pro`
-   - **ID**: `pro` (must match exactly)
-   - **Price**: `$20/month`
-   - **Features**:
-     - Add `Messages` feature
-     - Set limit to `0` (unlimited)
-   - Click "Create Product"
-
-#### Email
-Sign up at [resend.com](https://resend.com)
-- Verify domain → Copy API key to `RESEND_API_KEY`
-
-#### Web Scraping & AI
-
-Get your API keys from the following providers:
-
-- **Firecrawl**: [https://app.firecrawl.dev/api-keys](https://app.firecrawl.dev/api-keys) → Copy to `FIRECRAWL_API_KEY`
-- **OpenAI**: [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys) → Copy to `OPENAI_API_KEY`
-- **Anthropic (Claude)**: [https://console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) → Copy to `ANTHROPIC_API_KEY`
-- **Google AI (Gemini)**: [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) → Copy to `GOOGLE_GENERATIVE_AI_API_KEY`
-- **Perplexity**: [https://www.perplexity.ai/settings/api](https://www.perplexity.ai/settings/api) → Copy to `PERPLEXITY_API_KEY`
-
-### 2. Initialize & Run
+### 1. Clone the Repository
 
 ```bash
-# Push database schema
-npm run db:push
+git clone https://github.com/mendableai/firegeo
+cd firegeo
+```
 
-# Start development server
+### 2. Set Up Environment Variables
+
+Copy the example environment file and fill in your API keys and secrets.
+
+```bash
+cp .env.example .env.local
+```
+
+You'll need to edit `.env.local` to add your keys. See the **Configuration** section below for a detailed list of all variables. The most important ones to start are `DATABASE_URL` and `BETTER_AUTH_SECRET`.
+
+To generate a `BETTER_AUTH_SECRET`, run:
+```bash
+openssl rand -base64 32
+```
+
+### 3. Automated Setup
+
+Run the automated setup script. This will install dependencies, connect to your database, and run all necessary migrations and initializations.
+
+```bash
+npm run setup
+```
+
+The script will guide you through the process and let you know if any required keys are missing.
+
+### 4. Run the Development Server
+
+```bash
 npm run dev
 ```
 
-Visit http://localhost:3000
+Your application is now running at [http://localhost:3000](http://localhost:3000).
 
-## Environment Variables
+## 🏗️ How It Works (Architecture)
 
-```bash
-# Database
-DATABASE_URL=              # PostgreSQL connection string
+FireGEO is built on a modern, decoupled architecture that is easy to extend.
 
-# Authentication
-BETTER_AUTH_SECRET=        # Generated with openssl
-BETTER_AUTH_URL=           # Your app URL
-NEXT_PUBLIC_APP_URL=       # Public app URL
+-   **Frontend:** A Next.js 15 application using React 19 and Tailwind CSS for styling. All UI components are located in the `components/` directory.
+-   **Backend:** Next.js API Routes handle all backend logic. These are found in `app/api/`. The backend is responsible for communicating with the database and external services.
+-   **Database:** A PostgreSQL database with a schema managed by Drizzle ORM. The schema is defined in `lib/db/schema.ts`.
+-   **Authentication:** Handled by `better-auth`, which provides a secure, cookie-based authentication system.
+-   **Billing:** `autumn-js` integrates with the Autumn API, which acts as a billing layer on top of Stripe. This decouples your app from Stripe's complexities.
+-   **AI & Scraping:** The application communicates with external APIs like Firecrawl and various AI providers to power its core features. API clients and wrappers are in the `lib/` directory.
 
-# Billing
-AUTUMN_SECRET_KEY=         # From Autumn dashboard
+## ⚙️ Configuration
 
-# Brand Monitor
-FIRECRAWL_API_KEY=         # From Firecrawl
+This section details how to get the necessary API keys and set up the required services.
 
-# Email
-RESEND_API_KEY=            # From Resend
-EMAIL_FROM=                # Your email address
+### Environment Variables
 
-# AI Providers (add what you need)
-OPENAI_API_KEY=
-ANTHROPIC_API_KEY=
-PERPLEXITY_API_KEY=
-GOOGLE_GENERATIVE_AI_API_KEY=
-```
+| Variable | Description | Required for |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL connection string. | **Core** |
+| `BETTER_AUTH_SECRET` | Secure secret for auth. | **Core** |
+| `NEXT_PUBLIC_APP_URL` | Public URL of your app. | **Core** |
+| `AUTUMN_SECRET_KEY` | API key from Autumn for billing. | **Billing** |
+| `FIRECRAWL_API_KEY` | API key from Firecrawl for scraping. | **Brand Monitor** |
+| `RESEND_API_KEY` | API key from Resend for emails. | **Emails** |
+| `EMAIL_FROM` | "From" address for sending emails. | **Emails** |
+| `OPENAI_API_KEY` | OpenAI API key. | **AI Chat/Brand Monitor** |
+| `ANTHROPIC_API_KEY`| Anthropic API key. | **AI Chat/Brand Monitor** |
+| `PERPLEXITY_API_KEY`| Perplexity API key. | **AI Chat/Brand Monitor** |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Google Gemini API key. | **AI Chat/Brand Monitor** |
 
-## Available Scripts
+### Service Setup
 
-```bash
-npm run dev                  # Start development server
-npm run build                # Build for production
-npm run start                # Start production server
-npm run db:push              # Push schema to database
-npm run db:studio            # Open Drizzle Studio
-npm run db:migrate           # Run migrations
-```
+#### 1. Database (PostgreSQL)
+- Create a free PostgreSQL database at [Supabase](https://supabase.com).
+- Go to **Settings → Database**.
+- Copy the **connection string** (URI) and paste it as your `DATABASE_URL`.
 
+#### 2. Billing (Autumn)
+Autumn simplifies Stripe integration for SaaS billing.
+1.  **Sign up** at [useautumn.com](https://useautumn.com).
+2.  **Get API Key:** In your Autumn dashboard, go to **Settings → Developer** and create an API key. Add it as `AUTUMN_SECRET_KEY`.
+3.  **Connect Stripe:** Go to **Integrations → Stripe** and connect your Stripe account.
+4.  **Create Features & Products:** The `npm run setup` script can do this for you automatically if you provide your `AUTUMN_SECRET_KEY`. If you want to do it manually, create a "Usage" feature with ID `messages` and products that use this feature.
+
+#### 3. AI & Scraping Providers
+- **Firecrawl:** Get your API key from [app.firecrawl.dev](https://app.firecrawl.dev/api-keys).
+- **AI Providers:** Get keys from [OpenAI](https://platform.openai.com/api-keys), [Anthropic](https://console.anthropic.com/settings/keys), [Google AI Studio](https://aistudio.google.com/app/apikey), and [Perplexity](https://www.perplexity.ai/settings/api).
+
+## 📜 Available Scripts
+
+| Script | Description |
+|---|---|
+| `npm run dev` | Starts the development server with Turbopack. |
+| `npm run build` | Builds the application for production. |
+| `npm run start` | Starts the production server. |
+| `npm run lint` | Lints the codebase. |
+| `npm run setup` | Runs the automated setup wizard. |
+| `npm run db:push` | Pushes the Drizzle schema to the database. |
+| `npm run db:studio` | Opens the Drizzle Studio GUI to view your data. |
+| `npm run db:migrate` | Creates and runs database migrations. |
 
 ## Production Deployment
 
 ### Deploy to Vercel
 
+The easiest way to deploy is to use Vercel.
+
 ```bash
 vercel --prod
 ```
 
-### Configure Production Environment
+### Configuration
+1.  Add all your `.env.local` variables to your Vercel project's environment variables.
+2.  Set `NEXT_PUBLIC_APP_URL` to your production domain.
+3.  Ensure `NODE_ENV` is set to `production`.
 
-1. Add all `.env.local` variables to Vercel
-2. Update `NEXT_PUBLIC_APP_URL` to your domain
-3. Set `NODE_ENV=production`
-
-
-### Run Migrations
-
+After deploying, you may need to run database migrations if you've made schema changes:
 ```bash
 npm run db:push
 ```
@@ -337,15 +207,6 @@ npm run db:push
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## Resources
-
-- [Firecrawl API](https://docs.firecrawl.dev)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Better Auth Docs](https://better-auth.com)
-- [Autumn Documentation](https://docs.useautumn.com)
-- [Drizzle ORM](https://orm.drizzle.team)
-- [shadcn/ui](https://ui.shadcn.com)
-
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
