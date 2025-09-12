@@ -18,23 +18,35 @@ const autumn = new Autumn({
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔍 [Scrape API] Starting scrape request');
+    
     // Get the session
     const sessionResponse = await auth.api.getSession({
       headers: request.headers,
     });
 
     if (!sessionResponse?.user) {
+      console.error('❌ [Scrape API] No authenticated user');
       throw new AuthenticationError('Please log in to use this feature');
     }
+    
+    console.log(`🔍 [Scrape API] Authenticated user: ${sessionResponse.user.id}`);
 
     // Check if user has enough credits (1 credit for URL scraping)
     try {
+      console.log('🔍 [Scrape API] Checking credits...');
       const access = await autumn.check({
         customer_id: sessionResponse.user.id,
         feature_id: FEATURE_ID_MESSAGES,
       });
       
+      console.log(`🔍 [Scrape API] Credit check result:`, {
+        allowed: access.data?.allowed,
+        balance: access.data?.balance
+      });
+      
       if (!access.data?.allowed || (access.data?.balance && access.data.balance < 1)) {
+        console.error(`❌ [Scrape API] Insufficient credits: ${access.data?.balance || 0} available, 1 required`);
         throw new InsufficientCreditsError(
           'Insufficient credits. You need at least 1 credit to analyze a URL.',
           { required: 1, available: access.data?.balance || 0 }
@@ -44,13 +56,15 @@ export async function POST(request: NextRequest) {
       if (error instanceof InsufficientCreditsError) {
         throw error;
       }
-      console.error('[Brand Monitor Scrape] Credit check error:', error);
+      console.error('❌ [Scrape API] Credit check error:', error);
       throw new ExternalServiceError('Unable to verify credits. Please try again', 'autumn');
     }
 
     const { url, maxAge } = await request.json();
+    console.log(`🔍 [Scrape API] Request data:`, { url, maxAge });
 
     if (!url) {
+      console.error('❌ [Scrape API] No URL provided');
       throw new ValidationError('Invalid request', {
         url: 'URL is required'
       });
@@ -61,6 +75,8 @@ export async function POST(request: NextRequest) {
     if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
       normalizedUrl = `https://${normalizedUrl}`;
     }
+    
+    console.log(`🔍 [Scrape API] Normalized URL: ${normalizedUrl}`);
 
     // Track usage (1 credit for scraping)
     try {
@@ -76,8 +92,15 @@ export async function POST(request: NextRequest) {
 
     // Extract locale from request
     const locale = getLocaleFromRequest(request);
+    console.log(`🔍 [Scrape API] Locale: ${locale}`);
     
+    console.log(`🔍 [Scrape API] Starting company info scraping...`);
     const company = await scrapeCompanyInfo(normalizedUrl, maxAge, locale);
+    console.log(`✅ [Scrape API] Company info scraped successfully:`, {
+      name: company.name,
+      url: company.url,
+      industry: company.industry
+    });
 
     return NextResponse.json({ company });
   } catch (error) {

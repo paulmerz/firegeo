@@ -89,13 +89,19 @@ export function AnalysisProgressSection({
   const t = useTranslations('brandMonitor.analysisProgress');
   const [displayPrompts, setDisplayPrompts] = useState<string[]>([]);
   const [loadingPrompts, setLoadingPrompts] = useState(false);
+  const [promptsGenerated, setPromptsGenerated] = useState(false);
   
-  // Load prompts asynchronously
+  // Load prompts asynchronously - only on initial load
   useEffect(() => {
     async function loadPrompts() {
       // Only use existing prompts if we're actively analyzing or if analysis has been completed
       if (prompts.length > 0 && analyzing) {
         setDisplayPrompts(prompts);
+        return;
+      }
+      
+      // Only generate prompts if we haven't generated them yet
+      if (promptsGenerated) {
         return;
       }
       
@@ -109,6 +115,7 @@ export function AnalysisProgressSection({
           identifiedCompetitors
         );
         setDisplayPrompts(adaptivePrompts);
+        setPromptsGenerated(true);
       } catch (error) {
         console.error('Error loading adaptive prompts:', error);
         // Fallback to basic prompts
@@ -118,13 +125,25 @@ export function AnalysisProgressSection({
           'Most popular tools today?',
           'Recommended tools for professionals?'
         ]);
+        setPromptsGenerated(true);
       } finally {
         setLoadingPrompts(false);
       }
     }
     
     loadPrompts();
-  }, [company, customPrompts, removedDefaultPrompts, analyzing, identifiedCompetitors]);
+  }, [company, analyzing, identifiedCompetitors, prompts, promptsGenerated]);
+  
+  // Handle adding new custom prompts without regenerating
+  useEffect(() => {
+    if (promptsGenerated && !analyzing && customPrompts.length > 0) {
+      // Only add new custom prompts that aren't already displayed
+      const newCustomPrompts = customPrompts.filter(cp => !displayPrompts.includes(cp));
+      if (newCustomPrompts.length > 0) {
+        setDisplayPrompts(prev => [...prev, ...newCustomPrompts]);
+      }
+    }
+  }, [customPrompts, promptsGenerated, analyzing, displayPrompts]);
   
   return (
     <div className="flex items-center justify-center animate-panel-in">
@@ -204,7 +223,8 @@ export function AnalysisProgressSection({
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {displayPrompts.map((prompt, index) => {
-                    // For simplicity, check if it's custom by looking in customPrompts array
+                    // Check if it's custom by looking in customPrompts array
+                    // Also consider AI-generated prompts as "removable" (not custom, but not default either)
                     const isCustom = customPrompts.includes(prompt);
                     return (
                       <div key={`${prompt}-${index}`} className="group relative bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition-shadow">
@@ -212,25 +232,27 @@ export function AnalysisProgressSection({
                           <p className="text-base font-medium text-gray-900 flex-1">
                             {prompt}
                           </p>
-                          {!analyzing && !isCustom && (
+                          {!analyzing && (
                             <button
                               onClick={async (e) => {
                                 e.stopPropagation();
-                                const originalIndex = await getDefaultPromptIndex(prompt, company);
-                                if (originalIndex !== -1) {
-                                  onRemoveDefaultPrompt(originalIndex);
+                                
+                                // Update local state immediately for better UX
+                                setDisplayPrompts(prev => prev.filter(p => p !== prompt));
+                                
+                                if (isCustom) {
+                                  // Remove from custom prompts
+                                  onRemoveCustomPrompt(prompt);
+                                } else {
+                                  // Try to find the original index for default prompts
+                                  const originalIndex = await getDefaultPromptIndex(prompt, company);
+                                  if (originalIndex !== -1) {
+                                    onRemoveDefaultPrompt(originalIndex);
+                                  } else {
+                                    // If it's not a default prompt, treat it as a custom prompt for removal
+                                    onRemoveCustomPrompt(prompt);
+                                  }
                                 }
-                              }}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-50"
-                            >
-                              <Trash2 className="w-4 h-4 text-red-600" />
-                            </button>
-                          )}
-                          {!analyzing && isCustom && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onRemoveCustomPrompt(prompt);
                               }}
                               className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-50"
                             >

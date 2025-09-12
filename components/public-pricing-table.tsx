@@ -1,10 +1,9 @@
 'use client';
 
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useTranslations } from 'next-intl';
-import { useParams } from 'next/navigation';
 
 interface Product {
   id: string;
@@ -30,8 +29,6 @@ export function PublicPricingTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const t = useTranslations();
-  const params = useParams();
-  const locale = params.locale as string;
 
   useEffect(() => {
     fetch('/api/autumn/products', {
@@ -100,7 +97,7 @@ export function PublicPricingTable() {
             </li>
           </ul>
           <Link
-            href={`/${locale}/register`}
+            href={`/register`}
             className="btn-firecrawl-outline w-full inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 h-10 px-4"
           >
             {t('publicPricing.starter.button')}
@@ -139,7 +136,7 @@ export function PublicPricingTable() {
             </li>
           </ul>
           <Link
-            href={`/${locale}/register`}
+            href={`/register`}
             className="btn-firecrawl-orange w-full inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 h-10 px-4"
           >
             {t('publicPricing.pro.button')}
@@ -174,7 +171,7 @@ export function PublicPricingTable() {
             </li>
           </ul>
           <Link
-            href={`/${locale}/contact`}
+            href={`/contact`}
             className="btn-firecrawl-outline w-full inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 h-10 px-4"
           >
             {t('publicPricing.enterprise.button')}
@@ -230,7 +227,7 @@ export function PublicPricingTable() {
               ))}
             </ul>
             <Link
-              href={`/${locale}/register`}
+              href={`/register`}
               className={`${
                 isRecommended ? 'btn-firecrawl-orange' : 'btn-firecrawl-outline'
               } w-full inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 h-10 px-4`}

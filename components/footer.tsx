@@ -1,14 +1,11 @@
 'use client';
 
-import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from 'next-intl';
-import { useParams } from 'next/navigation';
+import { Link } from '@/i18n/routing';
 
 export function Footer() {
   const t = useTranslations();
-  const params = useParams();
-  const locale = params.locale as string;
 
   return (
     <footer className="bg-white text-zinc-600 border-t border-zinc-200">
@@ -18,8 +15,8 @@ export function Footer() {
           <div className="col-span-1 md:col-span-2">
             <div className="mb-4">
               <Image
-                src="/firecrawl-logo-with-fire.webp"
-                alt="Firecrawl"
+                src="/logo_voxum.svg"
+                alt="VOXUM"
                 width={120}
                 height={25}
               />
@@ -66,7 +63,7 @@ export function Footer() {
             <h3 className="text-zinc-900 font-semibold mb-4">{t('footer.product')}</h3>
             <ul className="space-y-2">
               <li>
-                <Link href={`/${locale}/plans`} className="hover:text-zinc-900 transition-colors">
+                <Link href={`/plans`} className="hover:text-zinc-900 transition-colors">
                   {t('footer.plans')}
                 </Link>
               </li>
@@ -119,7 +116,7 @@ export function Footer() {
         <div className="mt-12 pt-8 border-t border-zinc-200">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm">
-              © {new Date().getFullYear()} Firecrawl. {t('footer.allRightsReserved')}.
+              © {new Date().getFullYear()} VOXUM. {t('footer.allRightsReserved')}.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <a href="#" className="text-sm hover:text-zinc-900 transition-colors">

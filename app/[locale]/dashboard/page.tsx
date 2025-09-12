@@ -397,12 +397,15 @@ function DashboardContent({ session }: { session: any }) {
 export default function DashboardPage() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
+  const t = useTranslations();
+  const params = useParams();
+  const locale = params.locale as string;
 
   useEffect(() => {
     if (!isPending && !session) {
-      router.push('/login');
+      router.push(`/${locale}/login`);
     }
-  }, [session, isPending, router]);
+  }, [session, isPending, router, locale]);
 
   if (isPending || !session) {
     return (

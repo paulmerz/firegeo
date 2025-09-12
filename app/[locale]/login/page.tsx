@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams, useParams } from 'next/navigation';
-import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { Link, useRouter } from '@/i18n/routing';
 import Image from 'next/image';
 import { signIn } from '@/lib/auth-client';
 import { useTranslations } from 'next-intl';
@@ -14,9 +14,8 @@ function LoginForm() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
-  const params = useParams();
-  const locale = params.locale as string;
   const t = useTranslations();
+  const router = useRouter();
 
   useEffect(() => {
     if (searchParams.get('reset') === 'success') {
@@ -47,9 +46,9 @@ function LoginForm() {
         return;
       }
       
-      // Use router for client-side navigation after successful login
+      // Navigation après connexion (respecte la locale)
       const returnUrl = searchParams.get('from') || '/dashboard';
-      window.location.replace(returnUrl);
+      router.push(returnUrl || '/dashboard');
     } catch (err: any) {
       setError(err.message || t('auth.failedToLogin'));
       setLoading(false);
@@ -78,8 +77,8 @@ function LoginForm() {
           <div>
             <div className="lg:hidden mb-8 flex justify-center">
               <Image
-                src="/firecrawl-logo-with-fire.webp"
-                alt="Firecrawl"
+                src="/logo_voxum.svg"
+                alt="VOXUM"
                 width={180}
                 height={37}
                 priority
@@ -90,7 +89,7 @@ function LoginForm() {
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
               {t('auth.or')}{' '}
-              <Link href={`/${locale}/register`} className="font-medium text-orange-600 hover:text-orange-500">
+              <Link href={`/register`} className="font-medium text-orange-600 hover:text-orange-500">
                 {t('auth.createNewAccount')}
               </Link>
             </p>
@@ -143,7 +142,7 @@ function LoginForm() {
                   {t('auth.rememberMe')}
                 </label>
               </div>
-              <Link href={`/${locale}/forgot-password`} className="text-sm text-orange-600 hover:text-orange-500">
+              <Link href={`/forgot-password`} className="text-sm text-orange-600 hover:text-orange-500">
                 {t('auth.forgotPassword')}
               </Link>
             </div>

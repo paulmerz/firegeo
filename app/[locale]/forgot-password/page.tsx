@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
+import { useRouter } from '@/i18n/routing';
+import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { authClient } from '@/lib/auth-client';
@@ -14,8 +14,6 @@ export default function ForgotPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
-  const params = useParams();
-  const locale = params.locale as string;
   const t = useTranslations();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -108,8 +106,8 @@ export default function ForgotPasswordPage() {
           <div>
             <div className="lg:hidden mb-8 flex justify-center">
               <Image
-                src="/firecrawl-logo-with-fire.webp"
-                alt="Firecrawl"
+                src="/logo_voxum.svg"
+                alt="VOXUM"
                 width={180}
                 height={37}
                 priority

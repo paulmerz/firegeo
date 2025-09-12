@@ -168,7 +168,7 @@
   },
   "brandMonitor": {
     "title": "Surveillance de marque",
-    "fireGeoMonitor": "FireGEO Monitor",
+    "fireGeoMonitor": "VOXUM Monitor",
     "aiBrandVisibilityPlatform": "Plateforme de Visibilité de Marque IA",
     "trackHowAi": "Suivez comment les modèles IA classent votre marque par rapport aux concurrents",
     "newAnalysis": "Nouvelle analyse",
@@ -335,7 +335,7 @@
   },
   "home": {
     "hero": {
-      "title": "FireGEO Monitor",
+      "title": "VOXUM Monitor",
       "subtitle": "Plateforme de Visibilité de Marque IA",
       "description": "Suivez comment les modèles IA classent votre marque par rapport aux concurrents",
       "startAnalysis": "Commencer l'Analyse de Marque",
@@ -405,11 +405,11 @@
     },
     "faq": {
       "title": "Questions fréquemment posées",
-      "description": "Tout ce que vous devez savoir sur FireGEO Monitor",
+      "description": "Tout ce que vous devez savoir sur VOXUM Monitor",
       "questions": {
         "howItWorks": {
-          "question": "Comment fonctionne FireGEO Monitor ?",
-          "answer": "FireGEO Monitor analyse la visibilité de votre marque sur les principales plateformes IA comme ChatGPT, Claude et Perplexity. Entrez simplement l'URL de votre site web, et nous vous montrerons comment les modèles IA classent votre marque par rapport aux concurrents, quelles invites déclenchent votre apparition, et fournissons des insights actionnables pour améliorer votre visibilité IA."
+          "question": "Comment fonctionne VOXUM Monitor ?",
+          "answer": "VOXUM Monitor analyse la visibilité de votre marque sur les principales plateformes IA comme ChatGPT, Claude et Perplexity. Entrez simplement l'URL de votre site web, et nous vous montrerons comment les modèles IA classent votre marque par rapport aux concurrents, quelles invites déclenchent votre apparition, et fournissons des insights actionnables pour améliorer votre visibilité IA."
         },
         "providers": {
           "question": "Quels fournisseurs IA surveillez-vous ?",

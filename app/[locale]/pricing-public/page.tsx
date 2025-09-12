@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { Check, Loader2 } from 'lucide-react';
 import { useSession } from '@/lib/auth-client';
@@ -56,7 +56,7 @@ export default function PublicPricingPage() {
   const handleSelectPlan = (productId: string) => {
     if (session) {
       // If logged in, go to the regular pricing page for purchasing
-      router.push(`/pricing#${productId}`);
+      router.push(`/plans#${productId}`);
     } else {
       // If not logged in, go to register
       router.push('/register');

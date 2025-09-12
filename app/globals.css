@@ -123,33 +123,33 @@
 
 /* Firecrawl button styles */
 .btn-firecrawl-default {
-  background-color: #18181b;
-  color: white;
-  box-shadow: inset 0px -2px 0px 0px #18181b, 0px 1px 6px 0px rgba(24, 24, 27, 58%);
+  color: #fff;
+  background-color: #ec5902;
+  box-shadow: inset 0 -2px #f18a00, 0 1px 6px #18181b94;
 }
 .btn-firecrawl-default:hover {
-  background-color: #27272a;
+  background-color: #d14e02;
   transform: translateY(1px) scale(0.98);
-  box-shadow: inset 0px -1px 0px 0px #18181b, 0px 1px 3px 0px rgba(24, 24, 27, 40%);
+  box-shadow: inset 0px -1px 0px 0px #f18a00, 0px 1px 3px 0px rgba(24, 24, 27, 40%);
 }
 .btn-firecrawl-default:active {
   transform: translateY(2px) scale(0.97);
-  box-shadow: inset 0px 1px 1px 0px #18181b, 0px 1px 2px 0px rgba(24, 24, 27, 30%);
+  box-shadow: inset 0px 1px 1px 0px #f18a00, 0px 1px 2px 0px rgba(24, 24, 27, 30%);
 }
 
 .btn-firecrawl-orange {
-  background-color: #f97316;
-  color: white;
-  box-shadow: inset 0px -2px 0px 0px #c2410c, 0px 1px 6px 0px rgba(234, 88, 12, 58%);
+  color: #fff;
+  background-color: #1335cd;
+  box-shadow: inset 0 -2px #0c84c2, 0 1px 6px #0c5dea94;
 }
 .btn-firecrawl-orange:hover {
-  background-color: #ea580c;
+  background-color: #0f2bb8;
   transform: translateY(1px) scale(0.98);
-  box-shadow: inset 0px -1px 0px 0px #c2410c, 0px 1px 3px 0px rgba(234, 88, 12, 40%);
+  box-shadow: inset 0px -1px 0px 0px #0c84c2, 0px 1px 3px 0px rgba(12, 93, 234, 40%);
 }
 .btn-firecrawl-orange:active {
   transform: translateY(2px) scale(0.97);
-  box-shadow: inset 0px 1px 1px 0px #c2410c, 0px 1px 2px 0px rgba(234, 88, 12, 30%);
+  box-shadow: inset 0px 1px 1px 0px #0c84c2, 0px 1px 2px 0px rgba(12, 93, 234, 30%);
 }
 
 .btn-firecrawl-outline {
@@ -348,35 +348,35 @@
 }
 
 .autumn-pricing-table button[data-primary="true"] {
-  background-color: #f97316 !important;
-  color: white !important;
-  box-shadow: inset 0px -2px 0px 0px #c2410c, 0px 1px 6px 0px rgba(234, 88, 12, 58%) !important;
+  color: #fff !important;
+  background-color: #1335cd !important;
+  box-shadow: inset 0 -2px #0c84c2, 0 1px 6px #0c5dea94 !important;
 }
 
 .autumn-pricing-table button[data-primary="true"]:hover {
-  background-color: #ea580c !important;
+  background-color: #0f2bb8 !important;
   transform: translateY(1px) scale(0.98) !important;
-  box-shadow: inset 0px -1px 0px 0px #c2410c, 0px 1px 3px 0px rgba(234, 88, 12, 40%) !important;
+  box-shadow: inset 0px -1px 0px 0px #0c84c2, 0px 1px 3px 0px rgba(12, 93, 234, 40%) !important;
 }
 
 .autumn-pricing-table button[data-primary="true"]:active {
   transform: translateY(2px) scale(0.97) !important;
-  box-shadow: inset 0px 1px 1px 0px #c2410c, 0px 1px 2px 0px rgba(234, 88, 12, 30%) !important;
+  box-shadow: inset 0px 1px 1px 0px #0c84c2, 0px 1px 2px 0px rgba(12, 93, 234, 30%) !important;
 }
 
 .autumn-pricing-table button:not([data-primary="true"]) {
-  background-color: #18181b !important;
-  color: white !important;
-  box-shadow: inset 0px -2px 0px 0px #18181b, 0px 1px 6px 0px rgba(24, 24, 27, 58%) !important;
+  color: #fff !important;
+  background-color: #ec5902 !important;
+  box-shadow: inset 0 -2px #f18a00, 0 1px 6px #18181b94 !important;
 }
 
 .autumn-pricing-table button:not([data-primary="true"]):hover {
-  background-color: #27272a !important;
+  background-color: #d14e02 !important;
   transform: translateY(1px) scale(0.98) !important;
-  box-shadow: inset 0px -1px 0px 0px #18181b, 0px 1px 3px 0px rgba(24, 24, 27, 40%) !important;
+  box-shadow: inset 0px -1px 0px 0px #f18a00, 0px 1px 3px 0px rgba(24, 24, 27, 40%) !important;
 }
 
 .autumn-pricing-table button:not([data-primary="true"]):active {
   transform: translateY(2px) scale(0.97) !important;
-  box-shadow: inset 0px 1px 1px 0px #18181b, 0px 1px 2px 0px rgba(24, 24, 27, 30%) !important;
+  box-shadow: inset 0px 1px 1px 0px #f18a00, 0px 1px 2px 0px rgba(24, 24, 27, 30%) !important;
 }

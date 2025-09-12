@@ -1,11 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { Link, useRouter } from '@/i18n/routing';
 import Image from 'next/image';
 import { signUp } from '@/lib/auth-client';
 import { useTranslations } from 'next-intl';
-import { useParams } from 'next/navigation';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -15,8 +14,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [showExistingAccountOptions, setShowExistingAccountOptions] = useState(false);
   const t = useTranslations();
-  const params = useParams();
-  const locale = params.locale as string;
+  const router = useRouter();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,8 +34,8 @@ export default function RegisterPage() {
         // Wait a moment for the session to be properly set
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Force a hard navigation to ensure cookies are sent
-        window.location.href = '/';
+        // Redirige localisé vers la home
+        router.push('/');
       } else {
         throw response.error;
       }
@@ -101,8 +99,8 @@ export default function RegisterPage() {
           <div>
             <div className="lg:hidden mb-8 flex justify-center">
               <Image
-                src="/firecrawl-logo-with-fire.webp"
-                alt="Firecrawl"
+                src="/logo_voxum.svg"
+                alt="VOXUM"
                 width={180}
                 height={37}
                 priority
@@ -113,7 +111,7 @@ export default function RegisterPage() {
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
               {t('auth.or')}{' '}
-              <Link href={`/${locale}/login`} className="font-medium text-orange-600 hover:text-orange-500">
+              <Link href={`/login`} className="font-medium text-orange-600 hover:text-orange-500">
                 {t('auth.signInExisting')}
               </Link>
             </p>
@@ -183,13 +181,13 @@ export default function RegisterPage() {
                     </p>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Link 
-                        href={`/${locale}/login?email=${encodeURIComponent(email)}`}
+                        href={`/login?email=${encodeURIComponent(email)}`}
                         className="inline-flex items-center justify-center px-4 py-2 border border-orange-500 text-sm font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 focus:ring-offset-gray-900 transition-colors"
                       >
                         {t('auth.signInInstead')}
                       </Link>
                       <Link 
-                        href={`/${locale}/forgot-password`}
+                        href={`/forgot-password`}
                         className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md text-orange-400 hover:text-orange-300 focus:outline-none focus:underline transition-colors"
                       >
                         {t('auth.forgotPassword')}

@@ -41,17 +41,30 @@ const EnhancedCompanySchema = z.object({
 
 export async function scrapeCompanyInfo(url: string, maxAge?: number, locale?: string): Promise<Company> {
   try {
+    console.log(`🔍 [Scraper] Starting scrape for URL: ${url}`);
+    
     // Ensure URL has protocol
     let normalizedUrl = url.trim();
     if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
       normalizedUrl = `https://${normalizedUrl}`;
     }
     
+    console.log(`🔍 [Scraper] Normalized URL: ${normalizedUrl}`);
+    
     // Default to 1 week cache if not specified
     const cacheAge = maxAge ? Math.floor(maxAge / 1000) : 604800; // 1 week in seconds
     
+    // Check Firecrawl API key
+    if (!process.env.FIRECRAWL_API_KEY) {
+      console.error('❌ [Scraper] FIRECRAWL_API_KEY not configured');
+      throw new Error('FIRECRAWL_API_KEY not configured');
+    }
+    
+    console.log(`🔍 [Scraper] Using cache age: ${cacheAge} seconds`);
+    
     // Optimized Firecrawl scraping with enhanced parameters
     // Combines the best settings from both scrapeCompanyInfo and scrapeCompanyWithFirecrawl
+    console.log(`🔍 [Scraper] Calling Firecrawl API...`);
     const response = await firecrawl.scrapeUrl(normalizedUrl, {
       formats: ['markdown'],
       maxAge: cacheAge,
@@ -60,6 +73,13 @@ export async function scrapeCompanyInfo(url: string, maxAge?: number, locale?: s
       timeout: 20000, // 20 seconds timeout (increased from default)
       includeTags: ['title', 'meta', 'h1', 'h2', 'h3', 'p'], // Focused tags for better extraction
       excludeTags: ['script', 'style', 'nav', 'footer', 'aside', 'iframe', 'video'] // Comprehensive exclusions
+    });
+    
+    console.log(`🔍 [Scraper] Firecrawl response received:`, {
+      success: response.success,
+      error: response.error,
+      hasMarkdown: !!response.markdown,
+      markdownLength: response.markdown?.length || 0
     });
     if (!response.success) {
       // Handle specific timeout errors more gracefully
@@ -96,26 +116,62 @@ export async function scrapeCompanyInfo(url: string, maxAge?: number, locale?: s
  */
 async function processScrapedData(markdown: string, metadata: any, url: string, locale?: string): Promise<any> {
   try {
+    console.log(`🔍 [Processor] Processing scraped data for URL: ${url}`);
+    console.log(`🔍 [Processor] Markdown length: ${markdown.length} characters`);
+    console.log(`🔍 [Processor] Metadata:`, metadata);
+    
     const html = markdown;
     
-    // Use AI to extract structured information - use first available provider
+    // Use AI to extract structured information - try providers in order of preference
     const configuredProviders = getConfiguredProviders();
+    console.log(`🔍 [Processor] Available providers:`, configuredProviders.map(p => p.name));
+    
     if (configuredProviders.length === 0) {
+      console.error('❌ [Processor] No AI providers configured and enabled for content extraction');
       throw new Error('No AI providers configured and enabled for content extraction');
     }
     
-    // Use the first available provider with a fast model
-    const provider = configuredProviders[0];
-    const model = getProviderModel(provider.id, provider.models.find(m => m.name.toLowerCase().includes('mini') || m.name.toLowerCase().includes('flash'))?.id || provider.defaultModel);
-    if (!model) {
-      throw new Error(`${provider.name} model not available`);
+    // Try providers in order of preference (fastest first)
+    const providerOrder = ['openai', 'anthropic', 'google', 'perplexity'];
+    let selectedProvider = null;
+    let selectedModel = null;
+    
+    for (const providerId of providerOrder) {
+      const provider = configuredProviders.find(p => p.id === providerId);
+      if (provider) {
+        console.log(`🔍 [Processor] Trying provider: ${provider.name}`);
+        
+        // Try to find a fast model first, then fallback to default
+        const fastModel = provider.models.find(m => 
+          m.name.toLowerCase().includes('mini') || 
+          m.name.toLowerCase().includes('flash') ||
+          m.name.toLowerCase().includes('haiku')
+        );
+        
+        const modelId = fastModel?.id || provider.defaultModel;
+        const model = getProviderModel(provider.id, modelId);
+        
+        if (model) {
+          selectedProvider = provider;
+          selectedModel = model;
+          console.log(`✅ [Processor] Selected provider: ${provider.name} with model: ${model}`);
+          break;
+        } else {
+          console.warn(`⚠️ [Processor] Provider ${provider.name} available but no suitable model found`);
+        }
+      }
+    }
+    
+    if (!selectedProvider || !selectedModel) {
+      console.error('❌ [Processor] No working provider/model combination found');
+      throw new Error('No working provider/model combination found');
     }
     
     // Get language instruction for the prompt based on locale
     const languageInstruction = getLanguageInstruction(locale || 'en');
     
     const { object } = await generateObject({
-      model,
+      model: selectedModel,
       schema: EnhancedCompanySchema,
       prompt: `Analyze this company website and extract comprehensive business information for competitor research:
 

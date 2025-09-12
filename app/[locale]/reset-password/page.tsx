@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { useRouter, useSearchParams } from '@/i18n/routing';
+import { Link } from '@/i18n/routing';
 import Image from 'next/image';
 import { authClient } from '@/lib/auth-client';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
@@ -134,8 +134,8 @@ function ResetPasswordForm() {
           <div>
             <div className="lg:hidden mb-8 flex justify-center">
               <Image
-                src="/firecrawl-logo-with-fire.webp"
-                alt="Firecrawl"
+                src="/logo_voxum.svg"
+                alt="VOXUM"
                 width={180}
                 height={37}
                 priority

@@ -42,11 +42,15 @@ export function detectServiceType(company: Company): string {
   if (allContent.includes('fashion') || allContent.includes('clothing') || allContent.includes('apparel') || allContent.includes('vêtements') || allContent.includes('chaussures')) {
     return 'fashion brand';
   }
+  if (allContent.includes('health') || allContent.includes('santé') || allContent.includes('medical') || allContent.includes('médical') || allContent.includes('healthcare') || allContent.includes('soins') || allContent.includes('pharma') || allContent.includes('pharmaceutical')) {
+    return 'healthcare';
+  }
   
   // Fallback based on industry
   if (industry.includes('technology') || industry.includes('software')) return 'tool';
   if (industry.includes('fashion') || industry.includes('apparel')) return 'fashion brand';
   if (industry.includes('outdoor')) return 'gear brand';
+  if (industry.includes('health') || industry.includes('santé') || industry.includes('medical') || industry.includes('médical') || industry.includes('healthcare')) return 'healthcare';
   
   return 'tool'; // Default fallback
 }
@@ -62,7 +66,6 @@ export async function generateAdaptivePrompts(
     return getGenericPrompts();
   }
 
-  const serviceType = detectServiceType(company);
   const targetBrand = company.name;
   
   // Get up to 4 competitor names
@@ -70,6 +73,8 @@ export async function generateAdaptivePrompts(
   
   try {
     console.log('Generating AI prompts via API for:', targetBrand, 'vs', competitorNames);
+    console.log('Company industry:', company.industry);
+    console.log('Company description:', company.description);
     
     const response = await fetch('/api/generate-prompts', {
       method: 'POST',
@@ -78,7 +83,12 @@ export async function generateAdaptivePrompts(
       },
       body: JSON.stringify({
         targetBrand,
-        serviceType,
+        companyInfo: {
+          name: company.name,
+          industry: company.industry,
+          description: company.description,
+          website: company.url,
+        },
         competitors: competitorNames,
       }),
     });
@@ -104,9 +114,11 @@ export async function generateAdaptivePrompts(
     // Fallback to mock prompts in development, static prompts in production
     if (process.env.NODE_ENV === 'development') {
       console.log('Falling back to mock adaptive prompts for development');
+      const serviceType = detectServiceType(company); // Only used for fallback
       return getMockAdaptivePrompts(serviceType, targetBrand, competitorNames);
     }
     
+    const serviceType = detectServiceType(company); // Only used for fallback
     return getFallbackPrompts(serviceType);
   }
 }
@@ -123,7 +135,7 @@ export async function generateSimpleDefaultPrompts(
   try {
     const aiPrompts = await generateAdaptivePrompts(company, competitors);
     if (aiPrompts.length >= 4) {
-      return aiPrompts.slice(0, 4); // Return first 4 for UI
+      return aiPrompts; // Return all AI-generated prompts for UI
     }
   } catch (error) {
     console.warn('AI prompt generation failed, using fallback:', error);

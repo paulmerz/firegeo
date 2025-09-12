@@ -246,14 +246,35 @@ export function BrandMonitor({
         }, 50);
       }, 500);
     } catch (error: any) {
+      console.error('❌ [BrandMonitor] Scrape error:', error);
+      
       let errorMessage = tErrors('failedToExtractCompany');
       if (error instanceof ClientApiError) {
         errorMessage = error.getUserMessage();
       } else if (error.message) {
-        errorMessage = tErrors('failedToExtractCompanyWithReason', { reason: error.message });
+        // Log detailed error information for debugging
+        console.error('❌ [BrandMonitor] Error details:', {
+          message: error.message,
+          name: error.name,
+          stack: error.stack,
+          cause: error.cause
+        });
+        
+        // Provide more specific error messages based on error type
+        if (error.message.includes('FIRECRAWL_API_KEY not configured')) {
+          errorMessage = 'Clé API Firecrawl manquante. Veuillez configurer FIRECRAWL_API_KEY dans .env.local';
+        } else if (error.message.includes('No AI providers configured')) {
+          errorMessage = 'Aucun fournisseur IA configuré. Veuillez configurer au moins une clé API (OpenAI, Anthropic, etc.)';
+        } else if (error.message.includes('timed out')) {
+          errorMessage = 'Timeout lors du scraping. Le site web met trop de temps à répondre.';
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Erreur de réseau. Vérifiez votre connexion internet.';
+        } else {
+          errorMessage = tErrors('failedToExtractCompanyWithReason', { reason: error.message });
+        }
       }
+      
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      console.error('HandleScrape error:', error);
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { useState } from "react";
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
@@ -34,13 +34,13 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up animation-delay-400">
               <Link
-                href={`/${locale}/brand-monitor`}
+                href={`/brand-monitor`}
                 className="btn-firecrawl-orange inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[10px] text-base font-medium transition-all duration-200 h-12 px-8"
               >
                 {t('home.hero.startAnalysis')}
               </Link>
               <Link
-                href={`/${locale}/plans`}
+                href={`/plans`}
                 className="btn-firecrawl-default inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[10px] text-base font-medium transition-all duration-200 h-12 px-8"
               >
                 {t('home.hero.viewPricing')}
@@ -201,7 +201,7 @@ export default function Home() {
             </div>
 
             <div className="text-center mt-12">
-              <Link href={`/${locale}/plans`} className="text-orange-600 hover:text-orange-700 font-medium">
+              <Link href={`/plans`} className="text-orange-600 hover:text-orange-700 font-medium">
                 {t('home.pricing.viewDetailed')}
               </Link>
             </div>
@@ -222,7 +222,7 @@ export default function Home() {
             </p>
             <Link
               href={`/${locale}/brand-monitor`}
-              className="btn-firecrawl-default inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-base font-medium transition-all duration-200 h-12 px-8"
+              className="btn-firecrawl-orange inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-base font-medium transition-all duration-200 h-12 px-8"
             >
               {t('home.cta1.button')}
             </Link>
@@ -393,13 +393,13 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href={`/${locale}/brand-monitor`}
+              href={`/brand-monitor`}
               className="btn-firecrawl-orange inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-base font-medium transition-all duration-200 h-12 px-8"
             >
               {t('home.finalCta.analyzeButton')}
             </Link>
             <Link
-              href={`/${locale}/plans`}
+              href={`/plans`}
               className="inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-base font-medium transition-all duration-200 h-12 px-8 bg-zinc-800 text-white hover:bg-zinc-700"
             >
               {t('home.finalCta.pricingButton')}

@@ -6,14 +6,19 @@ import { z } from 'zod';
 
 const GeneratePromptsSchema = z.object({
   targetBrand: z.string(),
-  serviceType: z.string(),
+  companyInfo: z.object({
+    name: z.string(),
+    industry: z.string().optional(),
+    description: z.string().optional(),
+    website: z.string().optional(),
+  }),
   competitors: z.array(z.string()).max(4),
 });
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { targetBrand, serviceType, competitors } = GeneratePromptsSchema.parse(body);
+    const { targetBrand, companyInfo, competitors } = GeneratePromptsSchema.parse(body);
 
     // Extract locale from request headers
     const locale = getLocaleFromRequest(request);
@@ -47,12 +52,24 @@ export async function POST(request: NextRequest) {
 
     const brandsArray = [targetBrand, ...competitors];
     
+    // Build context about the target company
+    const companyContext = `
+Target Company: ${companyInfo.name}
+${companyInfo.industry ? `Industry: ${companyInfo.industry}` : ''}
+${companyInfo.description ? `Description: ${companyInfo.description}` : ''}
+${companyInfo.website ? `Website: ${companyInfo.website}` : ''}
+
+Competitor Brands: ${competitors.join(', ')}
+`;
+
     const prompt = `You are an expert in brand GEO (Generative Engine Optimization), specialized in how Large Language Models surface and recommend products or services.
 
-I want you to generate the 8 most searched-for, high-intent natural language queries that potential customers in the "${serviceType}" industry are most likely to type.
+Based on the company information provided below, analyze the business context and determine what industry/sector this company operates in. Then generate the 8 most searched-for, high-intent natural language queries that potential customers in that industry are most likely to type.
 
-These queries should be phrased as if a user is asking an LLM for advice, recommendations, or comparisons, and should naturally include or imply the presence of the following brands:
-${brandsArray.map((brand, index) => index === 0 ? `Target Brand: ${brand}` : `Competitor Brand ${index}: ${brand}`).join('\n')}
+Company Context:
+${companyContext}
+
+These queries should be phrased as if a user is asking an LLM for advice and recommendations.
 
 The goal is to reveal how consumers might frame requests where LLMs are most likely to provide product/service recommendations, so ${targetBrand} can better understand its visibility and positioning relative to competitors.
 
@@ -64,16 +81,21 @@ Return ONLY the result as a valid JSON array in the following format:
 Make sure the queries are:
 - Natural and conversational
 - High-intent (looking for recommendations/comparisons)
-- Relevant to ${serviceType}
+- Relevant to the company's actual industry/sector (determine this from the context provided)
 - Likely to surface brand recommendations
 - Varied in approach (some direct comparisons, some general requests, some specific needs)
 - Written in ${languageName}
 
 Examples of good queries:
-- "What are the best running shoes between Nike and Adidas?"
-- "Which payment platform is better for startups: Stripe or Square?"
-- "Is Zoom better than Teams for remote work?"
-- "What's the most reliable web scraping tool in 2024?"`;
+- "I am a beginner in running, which shoes should I buy?"
+- "I am building a marketplace, what payment platform should I use?"
+- "What are the best tools I should use as a digital nomad?"
+- "What's the most reliable web scraping tool in 2025?"`;
+
+    // Log the complete prompt being sent to the AI
+    console.log('=== PROMPT SENT TO AI ===');
+    console.log(prompt);
+    console.log('=== END PROMPT ===');
 
     const response = await generateText({
       model,
@@ -102,7 +124,7 @@ Examples of good queries:
             provider,
             metadata: {
               targetBrand,
-              serviceType,
+              companyInfo,
               competitors,
               totalPrompts: filteredPrompts.length
             }

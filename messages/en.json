@@ -168,7 +168,7 @@
   },
   "brandMonitor": {
     "title": "Brand Monitor",
-    "fireGeoMonitor": "FireGEO Monitor",
+    "fireGeoMonitor": "VOXUM Monitor",
     "aiBrandVisibilityPlatform": "AI Brand Visibility Platform",
     "trackHowAi": "Track how AI models rank your brand against competitors",
     "newAnalysis": "New Analysis",
@@ -312,7 +312,7 @@
   },
   "home": {
     "hero": {
-      "title": "FireGEO Monitor",
+      "title": "VOXUM Monitor",
       "subtitle": "AI Brand Visibility Platform",
       "description": "Track how AI models rank your brand against competitors",
       "startAnalysis": "Start Brand Analysis",
@@ -382,11 +382,11 @@
     },
     "faq": {
       "title": "Frequently asked questions",
-      "description": "Everything you need to know about FireGEO Monitor",
+      "description": "Everything you need to know about VOXUM Monitor",
       "questions": {
         "howItWorks": {
-          "question": "How does FireGEO Monitor work?",
-          "answer": "FireGEO Monitor analyzes your brand's visibility across major AI platforms like ChatGPT, Claude, and Perplexity. Simply enter your website URL, and we'll show you how AI models rank your brand against competitors, what prompts trigger your appearance, and provide actionable insights to improve your AI visibility."
+          "question": "How does VOXUM Monitor work?",
+          "answer": "VOXUM Monitor analyzes your brand's visibility across major AI platforms like ChatGPT, Claude, and Perplexity. Simply enter your website URL, and we'll show you how AI models rank your brand against competitors, what prompts trigger your appearance, and provide actionable insights to improve your AI visibility."
         },
         "providers": {
           "question": "Which AI providers do you monitor?",

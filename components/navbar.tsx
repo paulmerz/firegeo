@@ -1,13 +1,11 @@
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
 import { useSession, signOut } from '@/lib/auth-client';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useCustomer } from '@/hooks/useAutumnCustomer';
-import { useTranslations } from 'next-intl';
-import { useParams } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
+import { Link, useRouter } from '@/i18n/routing';
 
 // Separate component that only renders when Autumn is available
 function UserCredits() {
@@ -36,8 +34,7 @@ export function Navbar() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const t = useTranslations();
-  const params = useParams();
-  const locale = params.locale as string;
+  const locale = useLocale();
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -59,10 +56,10 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href={`/${locale}`} className="flex items-center">
+            <Link href={`/`} locale={locale} className="flex items-center">
               <Image
-                src="/firecrawl-logo-with-fire.webp"
-                alt="Firecrawl"
+                src="/logo_voxum.svg"
+                alt="VOXUM"
                 width={120}
                 height={25}
                 priority
@@ -74,13 +71,15 @@ export function Navbar() {
             {session && (
               <>
                 <Link
-                  href={`/${locale}/chat`}
+                  href={`/chat`}
+                  locale={locale}
                   className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
                 >
                   {t('common.chat')}
                 </Link>
                 <Link
-                  href={`/${locale}/brand-monitor`}
+                  href={`/brand-monitor`}
+                  locale={locale}
                   className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
                 >
                   {t('common.brandMonitor')}
@@ -88,7 +87,8 @@ export function Navbar() {
               </>
             )}
             <Link
-              href={`/${locale}/plans`}
+              href={`/plans`}
+              locale={locale}
               className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
             >
               {t('common.pricing')}
@@ -101,7 +101,8 @@ export function Navbar() {
             ) : session ? (
               <>
                 <Link
-                  href={`/${locale}/dashboard`}
+                  href={`/dashboard`}
+                  locale={locale}
                   className="btn-firecrawl-orange inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 h-8 px-3"
                 >
                   {t('common.dashboard')}
@@ -117,13 +118,15 @@ export function Navbar() {
             ) : (
               <>
                 <Link 
-                  href={`/${locale}/login`}
+                  href={`/login`}
+                  locale={locale}
                   className="bg-black text-white hover:bg-gray-800 inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 h-8 px-3 shadow-sm hover:shadow-md"
                 >
                   {t('common.login')}
                 </Link>
                 <Link 
-                  href={`/${locale}/register`}
+                  href={`/register`}
+                  locale={locale}
                   className="btn-firecrawl-orange inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 h-8 px-3"
                 >
                   {t('common.register')}

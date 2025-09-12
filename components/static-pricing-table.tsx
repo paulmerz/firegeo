@@ -3,9 +3,8 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Check, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
-import { useParams } from 'next/navigation';
 
 interface StaticProduct {
   id: string;
@@ -30,13 +29,11 @@ export default function StaticPricingTable({ products }: StaticPricingTableProps
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const router = useRouter();
   const t = useTranslations();
-  const params = useParams();
-  const locale = params.locale as string;
 
   const handleSignup = async (productId: string) => {
     setLoadingProductId(productId);
     // Redirect to register page with the product ID
-    router.push(`/${locale}/register?plan=${productId}`);
+    router.push(`/register?plan=${productId}`);
   };
 
   const hasRecommended = products.some((p) => p.recommendText);
