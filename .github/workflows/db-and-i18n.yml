@@ -25,6 +25,8 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+      - name: Ensure pnpm store exists (for caching)
+        run: mkdir -p "$(pnpm store path)"
       - run: corepack enable
       - run: pnpm install --no-frozen-lockfile
       # pgcrypto is ensured inside setup.js using node-postgres
@@ -49,6 +51,8 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+      - name: Ensure pnpm store exists (for caching)
+        run: mkdir -p "$(pnpm store path)"
       - run: corepack enable
       - run: pnpm install --no-frozen-lockfile
       # pgcrypto is ensured inside setup.js using node-postgres
