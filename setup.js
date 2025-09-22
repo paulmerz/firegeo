@@ -119,6 +119,16 @@ async function testDatabase() {
   }
 }
 
+// Ensure required extensions (runs on Neon via connection string)
+async function ensureExtensions() {
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  try {
+    await pool.query('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
+  } finally {
+    await pool.end();
+  }
+}
+
 // Apply SQL migrations
 async function applyMigrations(dir, description) {
   if (!fs.existsSync(dir)) return;
@@ -167,6 +177,7 @@ async function main() {
     // Prerequisites
     await checkPrerequisites();
     await testDatabase();
+    await ensureExtensions();
     
     // Install dependencies
     process.stdout.write('Installing dependencies... ');

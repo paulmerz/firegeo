@@ -26,10 +26,7 @@ jobs:
           cache: pnpm
       - run: corepack enable
       - run: pnpm install --no-frozen-lockfile
-      - name: Ensure pgcrypto
-        run: |
-          sudo apt-get update && sudo apt-get install -y postgresql-client
-          psql "$DATABASE_URL" -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+      # pgcrypto is ensured inside setup.js using node-postgres
       - name: Run migrations
         run: node setup.js
       - name: i18n check
@@ -52,10 +49,7 @@ jobs:
           cache: pnpm
       - run: corepack enable
       - run: pnpm install --no-frozen-lockfile
-      - name: Ensure pgcrypto
-        run: |
-          sudo apt-get update && sudo apt-get install -y postgresql-client
-          psql "$DATABASE_URL" -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+      # pgcrypto is ensured inside setup.js using node-postgres
       - name: Run migrations
         run: node setup.js
       - name: i18n check
