@@ -3,7 +3,8 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Globe, Building2, ExternalLink, Plus, Trash2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Globe, Building2, ExternalLink, Plus, Trash2, Brain } from 'lucide-react';
 import { Company } from '@/lib/types';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
@@ -27,6 +28,8 @@ interface CompanyCardProps {
   onRemoveCompetitor?: (index: number) => void;
   onAddCompetitor?: () => void;
   onContinueToAnalysis?: () => void;
+  useIntelliSearch?: boolean;
+  onIntelliSearchToggle?: (enabled: boolean) => void;
 }
 
 export function CompanyCard({ 
@@ -37,7 +40,9 @@ export function CompanyCard({
   identifiedCompetitors = [],
   onRemoveCompetitor,
   onAddCompetitor,
-  onContinueToAnalysis 
+  onContinueToAnalysis,
+  useIntelliSearch = false,
+  onIntelliSearchToggle
 }: CompanyCardProps) {
   const t = useTranslations('brandMonitor');
   const [logoError, setLogoError] = React.useState(false);
@@ -120,30 +125,53 @@ export function CompanyCard({
                 </span>
               </div>
             </div>
-            <button 
-              onClick={onAnalyze} 
-              disabled={analyzing}
-              className="h-9 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#36322F] text-[#fff] hover:bg-[#4a4542] disabled:bg-[#8c8885] disabled:hover:bg-[#8c8885] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100 px-4 py-1"
-            >
-              {analyzing ? (
-                <>
-                  <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin mr-2" />
-                  {t('analyzing')}
-                </>
-              ) : (
-                t('identifyCompetitors')
-              )}
-            </button>
+            <div className="flex items-center gap-3">
+              {/* IntelliSearch Toggle - Temporarily disabled */}
+              {/* {onIntelliSearchToggle && (
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="intellisearch-toggle"
+                    checked={useIntelliSearch}
+                    onCheckedChange={onIntelliSearchToggle}
+                    disabled={analyzing}
+                  />
+                  <label 
+                    htmlFor="intellisearch-toggle" 
+                    className="text-sm font-medium text-gray-700 select-none cursor-pointer flex items-center gap-1"
+                    title={t('intelliSearchTooltip')}
+                  >
+                    <Brain className="h-4 w-4" />
+                    {t('intelliSearch')}
+                  </label>
+                </div>
+              )} */}
+              
+              {/* Identify Competitors Button */}
+              <button 
+                onClick={onAnalyze} 
+                disabled={analyzing}
+                className="h-9 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#36322F] text-[#fff] hover:bg-[#4a4542] disabled:bg-[#8c8885] disabled:hover:bg-[#8c8885] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100 px-4 py-1"
+              >
+                {analyzing ? (
+                  <>
+                    <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin mr-2" />
+                    {t('analyzing')}
+                  </>
+                ) : (
+                  t('identifyCompetitors')
+                )}
+              </button>
+            </div>
           </div>
 
-          <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+          <p className="text-sm text-gray-600 mb-4">
             {company.description}
           </p>
 
           {/* Keywords inline */}
           {company.scrapedData?.keywords && company.scrapedData.keywords.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {company.scrapedData.keywords.slice(0, 6).map((keyword, idx) => (
+              {company.scrapedData.keywords.map((keyword, idx) => (
                 <span
                   key={idx}
                   className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
@@ -151,11 +179,6 @@ export function CompanyCard({
                   {keyword}
                 </span>
               ))}
-              {company.scrapedData.keywords.length > 6 && (
-                <span className="text-xs text-gray-500">
-                  +{company.scrapedData.keywords.length - 6} {t('more')}
-                </span>
-              )}
             </div>
           )}
         </div>
@@ -244,11 +267,12 @@ export function CompanyCard({
               <div className="flex items-center gap-4 mt-6 pt-6 border-t">
                 {onAddCompetitor && (
                   <button
-                    onClick={onAddCompetitor}
-                    className="h-10 px-4 rounded-[10px] text-sm font-medium flex items-center gap-1 transition-all duration-200 bg-orange-500 text-white hover:bg-orange-600 [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#c2410c,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(234,_88,_12,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#c2410c,_0px_1px_3px_0px_rgba(234,_88,_12,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#c2410c,_0px_1px_2px_0px_rgba(234,_88,_12,_30%)]"
+                    onClick={identifiedCompetitors.length >= 9 ? undefined : onAddCompetitor}
+                    disabled={identifiedCompetitors.length >= 9}
+                    className="h-10 px-4 rounded-[10px] text-sm font-medium flex items-center gap-1 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-orange-500 text-white hover:bg-orange-600 disabled:hover:bg-orange-500 [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#c2410c,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(234,_88,_12,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#c2410c,_0px_1px_3px_0px_rgba(234,_88,_12,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#c2410c,_0px_1px_2px_0px_rgba(234,_88,_12,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
                   >
                     <Plus className="w-4 h-4" />
-                    {t('addCompetitorButton')}
+                    {identifiedCompetitors.length >= 9 ? t('maxCompetitorsReached') : t('addCompetitorButton')}
                   </button>
                 )}
                 

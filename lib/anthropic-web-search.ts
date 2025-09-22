@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { AIResponse } from './types';
+import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
 
 interface WebSearchResult {
   url: string;
@@ -46,6 +47,20 @@ After searching, analyze your response and determine:
 3. What is the sentiment towards ${brandName}?
 4. Which competitors are mentioned and their positions?`;
 
+    // Track API call for web search analysis
+    const callId = apiUsageTracker.trackCall({
+      provider: 'anthropic',
+      model: 'claude-3-5-sonnet-latest',
+      operation: 'analysis',
+      success: true,
+      metadata: { 
+        type: 'web_search',
+        brandName,
+        competitorsCount: competitors.length
+      }
+    });
+
+    const startTime = Date.now();
     // Call Anthropic with web search tool
     const message = await client.messages.create({
       model: 'claude-3-5-sonnet-latest', // This model supports web search
@@ -61,6 +76,15 @@ After searching, analyze your response and determine:
         name: 'web_search',
         max_uses: 3, // Limit searches to control costs
       }],
+    });
+    const duration = Date.now() - startTime;
+
+    // Update API call with duration and estimated tokens
+    apiUsageTracker.updateCall(callId, {
+      duration,
+      inputTokens: Math.ceil(fullPrompt.length / 4), // Rough estimation
+      outputTokens: Math.ceil((message.content[0]?.text?.length || 0) / 4),
+      cost: estimateCost('anthropic', 'claude-3-5-sonnet-latest', Math.ceil(fullPrompt.length / 4), Math.ceil((message.content[0]?.text?.length || 0) / 4))
     });
 
     // Extract the response text and citations

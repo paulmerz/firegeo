@@ -5,8 +5,15 @@ import { AuthenticationError, ExternalServiceError, handleApiError } from '@/lib
 import { FEATURE_ID_MESSAGES } from '@/config/constants';
 
 const autumn = new Autumn({
-  apiKey: process.env.AUTUMN_SECRET_KEY!,
+  secretKey: process.env.AUTUMN_SECRET_KEY!,
 });
+
+// Simple in-memory dedupe to avoid accidental multiple debits on fast re-renders
+// Key: `${userId}:${reason}` → timestamp
+const lastDebitByReason = new Map<string, number>();
+const DEDUPE_WINDOWS_MS: Record<string, number> = {
+  // plus de débit au rendu
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,6 +36,70 @@ export async function GET(request: NextRequest) {
       allowed: access.data?.allowed || false,
       balance: access.data?.balance || 0,
     });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const sessionResponse = await auth.api.getSession({
+      headers: request.headers,
+    });
+
+    if (!sessionResponse?.user) {
+      throw new AuthenticationError('Please log in to manage credits');
+    }
+
+    const { value, reason } = await request.json();
+    if (!value || typeof value !== 'number' || value <= 0) {
+      return NextResponse.json({ error: 'Invalid value' }, { status: 400 });
+    }
+
+    // Dedupe for specific reasons
+    if (reason && typeof reason === 'string') {
+      const windowMs = DEDUPE_WINDOWS_MS[reason];
+      if (windowMs) {
+        const key = `${sessionResponse.user.id}:${reason}`;
+        const now = Date.now();
+        const last = lastDebitByReason.get(key) || 0;
+        if (now - last < windowMs) {
+          // Treat as success with no additional debit
+          const access = await autumn.check({
+            customer_id: sessionResponse.user.id,
+            feature_id: FEATURE_ID_MESSAGES,
+          });
+          return NextResponse.json({ success: true, balance: access.data?.balance || 0, deduped: true });
+        }
+        lastDebitByReason.set(key, now);
+      }
+    }
+
+    // Check balance before debit
+    const access = await autumn.check({
+      customer_id: sessionResponse.user.id,
+      feature_id: FEATURE_ID_MESSAGES,
+    });
+
+    if (!access.data?.allowed || (access.data?.balance ?? 0) < value) {
+      throw new ExternalServiceError('Insufficient credits', 'autumn');
+    }
+
+    // Track usage
+    await autumn.track({
+      customer_id: sessionResponse.user.id,
+      feature_id: FEATURE_ID_MESSAGES,
+      value,
+      // metadata optional; SDK may ignore unknown fields
+    } as any);
+
+    // Return new balance
+    const updated = await autumn.check({
+      customer_id: sessionResponse.user.id,
+      feature_id: FEATURE_ID_MESSAGES,
+    });
+
+    return NextResponse.json({ success: true, balance: updated.data?.balance || 0 });
   } catch (error) {
     return handleApiError(error);
   }

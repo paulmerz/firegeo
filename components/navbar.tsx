@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useSession, signOut } from '@/lib/auth-client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useCustomer } from '@/hooks/useAutumnCustomer';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
@@ -15,15 +15,51 @@ function UserCredits() {
   if (!session) {
     return null;
   }
-  
+
+  const userId = (session as any)?.user?.id || (session as any)?.userId || (session as any)?.user?.email;
+  const storageKey = userId ? `autumn_credits_${userId}` : undefined;
+
   const { customer } = useCustomer();
-  const messageUsage = customer?.features?.messages;
-  const remainingMessages = messageUsage ? (messageUsage.balance || 0) : 0;
   const t = useTranslations('common');
-  
+
+  const [displayCredits, setDisplayCredits] = useState<number | null>(null);
+
+  // 1) Lecture initiale depuis le cache local si disponible
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      const cached = localStorage.getItem(storageKey);
+      if (cached != null) {
+        const parsed = Number(cached);
+        if (!Number.isNaN(parsed)) {
+          setDisplayCredits(parsed);
+        }
+      }
+    } catch {}
+  }, [storageKey]);
+
+  // 2) Quand Autumn répond, on met à jour l'état et le cache
+  useEffect(() => {
+    const messageUsage = customer?.features?.messages;
+    const balance = messageUsage?.balance;
+    if (typeof balance === 'number' && balance >= 0) {
+      setDisplayCredits(balance);
+      if (storageKey) {
+        try {
+          localStorage.setItem(storageKey, String(balance));
+        } catch {}
+      }
+    }
+  }, [customer, storageKey]);
+
+  // 3) Si aucune valeur (ni cache ni Autumn), masquer pour éviter clignotement à 0
+  if (displayCredits == null) {
+    return null;
+  }
+
   return (
     <div className="flex items-center text-sm font-medium text-gray-700">
-      <span>{remainingMessages}</span>
+      <span>{displayCredits}</span>
       <span className="ml-1">{t('credits')}</span>
     </div>
   );
@@ -70,13 +106,13 @@ export function Navbar() {
           <div className="flex items-center space-x-4">
             {session && (
               <>
-                <Link
+                {/* <Link
                   href={`/chat`}
                   locale={locale}
                   className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
                 >
                   {t('common.chat')}
-                </Link>
+                </Link> */}
                 <Link
                   href={`/brand-monitor`}
                   locale={locale}

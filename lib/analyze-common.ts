@@ -1,7 +1,9 @@
 import { AIResponse, AnalysisProgressData, Company, PartialResultData, ProgressData, PromptGeneratedData, ScoringProgressData, SSEEvent } from './types';
 import { generatePromptsForCompany, analyzePromptWithProvider, calculateBrandScores, analyzeCompetitors, identifyCompetitors, analyzeCompetitorsByProvider } from './ai-utils';
 import { analyzePromptWithProvider as analyzePromptWithProviderEnhanced } from './ai-utils-enhanced';
+import { canonicalizeBrandsWithOpenAI } from './openai-web-search';
 import { getConfiguredProviders } from './provider-config';
+import { apiUsageTracker } from './api-usage-tracker';
 
 export interface AnalysisConfig {
   company: Company;
@@ -23,6 +25,7 @@ export interface AnalysisResult {
   providerComparison: any;
   errors?: string[];
   webSearchUsed?: boolean;
+  apiUsageSummary?: any;
 }
 
 /**
@@ -81,6 +84,16 @@ export async function performAnalysis({
     competitors = await identifyCompetitors(company, sendEvent);
   }
 
+  // Canonicalize competitors once (single OpenAI call) and propagate
+  try {
+    const { canonicalNames, mapping } = await canonicalizeBrandsWithOpenAI(competitors, locale);
+    console.log('[Canonicalizer] Raw -> Canonical mapping:', mapping);
+    console.log('[Canonicalizer] Canonical competitors:', canonicalNames);
+    competitors = canonicalNames;
+  } catch (e) {
+    console.warn('[Canonicalizer] Failed to canonicalize competitors, using raw list:', (e as Error)?.message);
+  }
+
   // Stage 2: Generate prompts
   // Skip the 100% progress for competitors and go straight to the next stage
   await sendEvent({
@@ -124,8 +137,7 @@ export async function performAnalysis({
     });
   }
 
-  // Stage 3: Analyze with AI providers
-  // Skip the 100% progress for prompts and go straight to the next stage
+  // Stage 3: Analyze with AI providers (0-70% of total progress)
   await sendEvent({
     type: 'stage',
     stage: 'analyzing-prompts',
@@ -175,6 +187,37 @@ export async function performAnalysis({
       { name: 'Anthropic', model: 'claude-3', icon: '🔮' },
       { name: 'Google', model: 'gemini-pro', icon: '🌟' }
     ];
+  }
+
+  // If still no providers available, return early with error
+  if (workingProviders.length === 0) {
+    console.error('No providers available for analysis');
+    await sendEvent({
+      type: 'error',
+      stage: 'analyzing-prompts',
+      data: {
+        message: 'Aucun fournisseur d\'IA configuré. Veuillez configurer au moins une clé API (OpenAI, Anthropic, Google, ou Perplexity).'
+      },
+      timestamp: new Date()
+    });
+    return {
+      company,
+      knownCompetitors: [],
+      prompts: analysisPrompts,
+      responses: [],
+      scores: {
+        visibilityScore: 0,
+        sentimentScore: 0,
+        shareOfVoice: 0,
+        overallScore: 0,
+        averagePosition: 0
+      },
+      competitors: [],
+      providerRankings: [],
+      providerComparison: [],
+      errors: ['No AI providers configured'],
+      webSearchUsed: useWebSearch,
+    };
   }
 
   // Recalculate total analyses with working providers
@@ -296,6 +339,13 @@ export async function performAnalysis({
           }
           
           responses.push(response);
+          console.log(`[AnalyzeCommon] ✅ Response added to collection. Total responses: ${responses.length}`);
+          console.log(`[AnalyzeCommon] Response details:`, {
+            provider: response.provider,
+            promptPreview: response.prompt.substring(0, 50) + '...',
+            responseLength: response.response.length,
+            brandMentioned: response.brandMentioned
+          });
 
           // Send partial result
           await sendEvent({
@@ -332,7 +382,21 @@ export async function performAnalysis({
 
         } catch (error) {
           console.error(`Error with ${provider.name} for prompt "${prompt.prompt}":`, error);
-          errors.push(`${provider.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          
+          // Check if it's an authentication error
+          const isAuthError = error instanceof Error && (
+            error.message.includes('401') || 
+            error.message.includes('invalid') || 
+            error.message.includes('Authorization Required') ||
+            error.message.includes('authentication_error')
+          );
+          
+          if (isAuthError) {
+            console.log(`Skipping ${provider.name} - authentication error (API key issue)`);
+            errors.push(`${provider.name}: API key not configured or invalid`);
+          } else {
+            errors.push(`${provider.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
           
           // Send analysis failed event
           await sendEvent({
@@ -371,20 +435,114 @@ export async function performAnalysis({
     await Promise.all(batchPromises);
   }
 
-  // Stage 4: Calculate scores
+  // Stage 4: Extract brands from responses (70-90% of total progress)
+  await sendEvent({
+    type: 'stage',
+    stage: 'extracting-brands',
+    data: {
+      stage: 'extracting-brands',
+      progress: 70,
+      message: 'Extracting brand mentions from AI responses...'
+    } as ProgressData,
+    timestamp: new Date()
+  });
+
+  // Analyze competitors by provider with progress tracking
+  const { providerRankings, providerComparison } = await analyzeCompetitorsByProvider(
+    company, 
+    responses, 
+    competitors,
+    sendEvent
+  );
+
+  await sendEvent({
+    type: 'progress',
+    stage: 'extracting-brands',
+    data: {
+      stage: 'extracting-brands',
+      progress: 90,
+      message: 'Brand extraction complete'
+    } as ProgressData,
+    timestamp: new Date()
+  });
+
+  // Stage 5: Calculate scores (90-100% of total progress)
   await sendEvent({
     type: 'stage',
     stage: 'calculating-scores',
     data: {
       stage: 'calculating-scores',
-      progress: 0,
+      progress: 90,
       message: 'Calculating brand visibility scores...'
     } as ProgressData,
     timestamp: new Date()
   });
 
   // Analyze competitors from all responses
-  const competitorRankings = await analyzeCompetitors(company, responses, competitors);
+  let competitorRankings = await analyzeCompetitors(company, responses, competitors);
+
+  // Harmonize with provider-level detections: if a brand has 0 mentions across all providers,
+  // force its visibility score to 0% to avoid discrepancies (e.g., 0 mentions showing ~6%).
+  try {
+    const zeroMentionBrands = new Set<string>();
+    providerComparison.forEach((row: any) => {
+      const providersData = row?.providers || {};
+      const totalMentions = Object.values(providersData).reduce((sum: number, p: any) => sum + (p?.mentions || 0), 0);
+      if (totalMentions === 0) {
+        zeroMentionBrands.add(row.competitor);
+      }
+    });
+
+    if (zeroMentionBrands.size > 0) {
+      competitorRankings = competitorRankings.map(r =>
+        zeroMentionBrands.has(r.name)
+          ? { ...r, mentions: 0, visibilityScore: 0 }
+          : r
+      );
+    }
+  } catch (e) {
+    console.warn('[AnalyzeCommon] Failed to harmonize zero-mention brands:', (e as Error)?.message);
+  }
+
+  // Recompute global visibility as average of provider scores for consistency
+  try {
+    competitorRankings = competitorRankings.map(r => {
+      // Find this brand in providerComparison
+      const providerRow = providerComparison.find(row => row.competitor === r.name);
+      if (!providerRow || !providerRow.providers) return r;
+
+      // Calculate average visibility score across all providers
+      const providerScores = Object.values(providerRow.providers)
+        .map((p: any) => p?.visibilityScore || 0)
+        .filter(score => typeof score === 'number' && !isNaN(score));
+      
+      if (providerScores.length === 0) return r;
+
+      const averageVisibility = providerScores.reduce((sum, score) => sum + score, 0) / providerScores.length;
+      
+      // Calculate total mentions across all providers for share of voice
+      const totalMentions = Object.values(providerRow.providers)
+        .reduce((sum: number, p: any) => sum + (p?.mentions || 0), 0);
+
+      return {
+        ...r,
+        mentions: totalMentions,
+        visibilityScore: Math.round(averageVisibility * 10) / 10,
+      };
+    });
+
+    // Recompute share of voice with the adjusted mentions
+    const totalMentionsAdjusted = competitorRankings.reduce((sum, c) => sum + c.mentions, 0);
+    competitorRankings = competitorRankings.map(c => ({
+      ...c,
+      shareOfVoice: totalMentionsAdjusted > 0 ? Math.round((c.mentions / totalMentionsAdjusted) * 1000) / 10 : 0,
+    }));
+
+    // Sort after adjustments
+    competitorRankings.sort((a, b) => b.visibilityScore - a.visibilityScore);
+  } catch (e) {
+    console.warn('[AnalyzeCommon] Failed to recompute global visibility from providerComparison:', (e as Error)?.message);
+  }
 
   // Send scoring progress for each competitor
   for (let i = 0; i < competitorRankings.length; i++) {
@@ -401,13 +559,6 @@ export async function performAnalysis({
     });
   }
 
-  // Analyze competitors by provider
-  const { providerRankings, providerComparison } = await analyzeCompetitorsByProvider(
-    company, 
-    responses, 
-    competitors
-  );
-
   // Calculate final scores
   const scores = calculateBrandScores(responses, company.name, competitorRankings);
 
@@ -422,7 +573,7 @@ export async function performAnalysis({
     timestamp: new Date()
   });
 
-  // Stage 5: Finalize
+  // Stage 6: Finalize
   await sendEvent({
     type: 'stage',
     stage: 'finalizing',
@@ -433,6 +584,26 @@ export async function performAnalysis({
     } as ProgressData,
     timestamp: new Date()
   });
+
+  console.log(`[AnalyzeCommon] 🎯 Final analysis result:`, {
+    totalResponses: responses.length,
+    totalPrompts: analysisPrompts.length,
+    responsesPerPrompt: responses.length / Math.max(analysisPrompts.length, 1),
+    webSearchUsed: useWebSearch,
+    errors: errors.length
+  });
+  
+  if (responses.length > 0) {
+    console.log(`[AnalyzeCommon] ✅ Responses summary:`, 
+      responses.map(r => ({
+        provider: r.provider,
+        promptPreview: r.prompt.substring(0, 30) + '...',
+        brandMentioned: r.brandMentioned
+      }))
+    );
+  } else {
+    console.error(`[AnalyzeCommon] ❌ No responses collected!`);
+  }
 
   return {
     company,
@@ -445,6 +616,7 @@ export async function performAnalysis({
     providerComparison,
     errors: errors.length > 0 ? errors : undefined,
     webSearchUsed: useWebSearch,
+    apiUsageSummary: apiUsageTracker.getSummary(),
   };
 }
 

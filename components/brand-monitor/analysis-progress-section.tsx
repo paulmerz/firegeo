@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Trash2, CheckIcon } from 'lucide-react';
+import { Loader2, Plus, Trash2, CheckIcon, Info } from 'lucide-react';
 import { Company, AnalysisStage } from '@/lib/types';
 import { IdentifiedCompetitor, PromptCompletionStatus } from '@/lib/brand-monitor-reducer';
 import { getEnabledProviders } from '@/lib/provider-config';
@@ -25,7 +25,8 @@ interface AnalysisProgressSectionProps {
   onRemoveDefaultPrompt: (index: number) => void;
   onRemoveCustomPrompt: (prompt: string) => void;
   onAddPromptClick: () => void;
-  onStartAnalysis: () => void;
+  onStartAnalysis: (displayPrompts: string[]) => void;
+  onCreditsUpdate?: () => void;
 }
 
 // Provider icon mapping
@@ -84,7 +85,8 @@ export function AnalysisProgressSection({
   onRemoveDefaultPrompt,
   onRemoveCustomPrompt,
   onAddPromptClick,
-  onStartAnalysis
+  onStartAnalysis,
+  onCreditsUpdate
 }: AnalysisProgressSectionProps) {
   const t = useTranslations('brandMonitor.analysisProgress');
   const [displayPrompts, setDisplayPrompts] = useState<string[]>([]);
@@ -105,6 +107,8 @@ export function AnalysisProgressSection({
         return;
       }
       
+      // Set flag before starting async work to avoid double calls in React StrictMode
+      setPromptsGenerated(true);
       setLoadingPrompts(true);
       try {
         const adaptivePrompts = await getDisplayPrompts(
@@ -115,7 +119,22 @@ export function AnalysisProgressSection({
           identifiedCompetitors
         );
         setDisplayPrompts(adaptivePrompts);
-        setPromptsGenerated(true);
+        // Debit 2 credits once when prompts are successfully displayed
+        try {
+          const res = await fetch('/api/credits', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: 2, reason: 'prompts_display' })
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({} as any));
+            console.warn('[Credits] Debit on prompts_display failed:', err?.error || res.statusText);
+          } else if (onCreditsUpdate) {
+            onCreditsUpdate();
+          }
+        } catch (e) {
+          console.warn('[Credits] Debit on prompts_display error:', e);
+        }
       } catch (error) {
         console.error('Error loading adaptive prompts:', error);
         // Fallback to basic prompts
@@ -152,8 +171,13 @@ export function AnalysisProgressSection({
           <Card className="p-2 bg-card text-card-foreground gap-6 rounded-xl border py-6 shadow-sm border-gray-200 h-full flex flex-col">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl font-semibold">
+                <CardTitle className="text-xl font-semibold flex items-center gap-2">
                   {analyzing ? t('title') : t('prompts')}
+                  {!analyzing && (
+                    <span className="inline-flex items-center" title="1 crédit par prompt / 1 credit per prompt" aria-label="1 crédit par prompt">
+                      <Info className="w-4 h-4 text-gray-400" />
+                    </span>
+                  )}
                 </CardTitle>
                 {/* Competitors list on the right */}
                 {!analyzing && (
@@ -317,7 +341,7 @@ export function AnalysisProgressSection({
               {/* Start Analysis Button */}
               <div className="flex justify-center pt-4">
                 <button
-                  onClick={onStartAnalysis}
+                  onClick={() => onStartAnalysis(displayPrompts)}
                   disabled={analyzing}
                   className="h-10 px-6 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-orange-500 text-white hover:bg-orange-600 [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#c2410c,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(234,_88,_12,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#c2410c,_0px_1px_3px_0px_rgba(234,_88,_12,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#c2410c,_0px_1px_2px_0px_rgba(234,_88,_12,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
                 >

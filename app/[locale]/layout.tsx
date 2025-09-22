@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Providers } from "@/components/providers";
+import { NetworkStatusAlert } from "@/components/ui/network-status-alert";
 import { routing } from '@/i18n/routing';
 import { Geist, Geist_Mono } from "next/font/google";
 
@@ -51,6 +52,7 @@ export default async function LocaleLayout({
               {children}
             </main>
             <Footer />
+            <NetworkStatusAlert />
           </div>
         </Providers>
       </NextIntlClientProvider>

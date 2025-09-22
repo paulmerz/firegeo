@@ -17,9 +17,10 @@ import {
   ERROR_MESSAGES,
   SSE_MAX_DURATION
 } from '@/config/constants';
+import { apiUsageTracker } from '@/lib/api-usage-tracker';
 
 const autumn = new Autumn({
-  apiKey: process.env.AUTUMN_SECRET_KEY!,
+  secretKey: process.env.AUTUMN_SECRET_KEY!,
 });
 
 export const runtime = 'nodejs'; // Use Node.js runtime for streaming
@@ -36,49 +37,7 @@ export async function POST(request: NextRequest) {
       throw new AuthenticationError('Please log in to use brand monitor');
     }
 
-    // Check if user has enough credits (10 credits per analysis)
-    try {
-      console.log('[Brand Monitor] Checking access - Customer ID:', sessionResponse.user.id);
-      const access = await autumn.check({
-        customer_id: sessionResponse.user.id,
-        feature_id: FEATURE_ID_MESSAGES,
-      });
-      console.log('[Brand Monitor] Access check result:', JSON.stringify(access.data, null, 2));
-      
-      if (!access.data?.allowed || (access.data?.balance && access.data.balance < CREDITS_PER_BRAND_ANALYSIS)) {
-        console.log('[Brand Monitor] Insufficient credits - Balance:', access.data?.balance);
-        throw new InsufficientCreditsError(
-          ERROR_MESSAGES.INSUFFICIENT_CREDITS_BRAND_ANALYSIS,
-          CREDITS_PER_BRAND_ANALYSIS,
-          access.data?.balance || 0
-        );
-      }
-    } catch (err) {
-      console.error('[Brand Monitor] Failed to check access:', err);
-      throw new ExternalServiceError('Unable to verify credits. Please try again', 'autumn');
-    }
-
-    // Track usage (10 credits)
-    try {
-      console.log('[Brand Monitor] Tracking usage - Customer ID:', sessionResponse.user.id, 'Count:', CREDITS_PER_BRAND_ANALYSIS);
-      const trackResult = await autumn.track({
-        customer_id: sessionResponse.user.id,
-        feature_id: FEATURE_ID_MESSAGES,
-        count: CREDITS_PER_BRAND_ANALYSIS,
-      });
-      console.log('[Brand Monitor] Track result:', JSON.stringify(trackResult, null, 2));
-    } catch (err) {
-      console.error('[Brand Monitor] Failed to track usage:', err);
-      // Log more details about the error
-      if (err instanceof Error) {
-        console.error('[Brand Monitor] Error details:', {
-          message: err.message,
-          stack: err.stack,
-          response: (err as any).response?.data
-        });
-      }
-      throw new ExternalServiceError('Unable to process credit deduction. Please try again', 'autumn');
-    }
+  // Plus de débit forfaitaire ici. Le coût est désormais distribué par action (URL, concurrents, prompts).
 
     const { company, prompts: customPrompts, competitors: userSelectedCompetitors, useWebSearch = false } = await request.json();
 
@@ -87,6 +46,11 @@ export async function POST(request: NextRequest) {
         company: 'Company name is required'
       });
     }
+
+    // Start tracking for this analysis
+    const analysisId = `analysis-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    apiUsageTracker.startAnalysis(analysisId);
+    console.log(`🔍 [ApiUsageTracker] Début du tracking pour l'analyse: ${analysisId}`);
 
 
 
@@ -117,8 +81,8 @@ export async function POST(request: NextRequest) {
       try {
         // Send initial credit info
         await sendEvent({
-          type: 'credits',
-          stage: 'credits',
+          type: 'progress',
+          stage: 'initializing',
           data: {
             remainingCredits,
             creditsUsed: CREDITS_PER_BRAND_ANALYSIS
@@ -140,11 +104,15 @@ export async function POST(request: NextRequest) {
         });
 
         // Send final complete event with all data
+        // Log API usage summary
+        apiUsageTracker.logSummary();
+        
         await sendEvent({
           type: 'complete',
           stage: 'finalizing',
           data: {
-            analysis: analysisResult
+            analysis: analysisResult,
+            apiUsageSummary: apiUsageTracker.getSummary()
           },
           timestamp: new Date()
         });
@@ -152,7 +120,7 @@ export async function POST(request: NextRequest) {
         console.error('Analysis error:', error);
         await sendEvent({
           type: 'error',
-          stage: 'error',
+          stage: 'finalizing',
           data: {
             message: error instanceof Error ? error.message : 'Analysis failed'
           },

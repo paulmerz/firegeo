@@ -6,7 +6,8 @@ import {
   CompetitorFoundData, 
   PromptGeneratedData, 
   AnalysisProgressData, 
-  PartialResultData 
+  PartialResultData,
+  BrandExtractionProgressData
 } from '@/lib/types';
 
 interface UseSSEHandlerProps {
@@ -14,9 +15,10 @@ interface UseSSEHandlerProps {
   dispatch: React.Dispatch<BrandMonitorAction>;
   onCreditsUpdate?: () => void;
   onAnalysisComplete?: (analysis: any) => void;
+  onApiUsageSummary?: (summary: any) => void;
 }
 
-export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComplete }: UseSSEHandlerProps) {
+export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComplete, onApiUsageSummary }: UseSSEHandlerProps) {
   // Use ref to track current prompt status to avoid closure issues in SSE handler
   const promptCompletionStatusRef = useRef(state.promptCompletionStatus);
   const analyzingPromptsRef = useRef(state.analyzingPrompts);
@@ -29,10 +31,50 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
     analyzingPromptsRef.current = state.analyzingPrompts;
   }, [state.analyzingPrompts]);
 
+  // Fonction pour calculer la progression globale
+  const calculateGlobalProgress = (stage: string, stageProgress: number, promptCompletionStatus: any, analyzingPrompts: string[]) => {
+    switch (stage) {
+      case 'analyzing-prompts':
+        // Calculer la progression basée sur les prompts terminés (0-70%)
+        if (!promptCompletionStatus || !analyzingPrompts || analyzingPrompts.length === 0) {
+          return 0;
+        }
+        
+        const enabledProviders = ['OpenAI', 'Anthropic', 'Google']; // Peut être récupéré dynamiquement
+        const totalTasks = analyzingPrompts.length * enabledProviders.length;
+        let completedTasks = 0;
+        
+        analyzingPrompts.forEach(prompt => {
+          const normalizedPrompt = prompt.trim();
+          enabledProviders.forEach(provider => {
+            const status = promptCompletionStatus[normalizedPrompt]?.[provider];
+            if (status === 'completed' || status === 'failed' || status === 'skipped') {
+              completedTasks++;
+            }
+          });
+        });
+        
+        const promptProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 70 : 0;
+        return Math.min(Math.round(promptProgress), 70);
+        
+      case 'extracting-brands':
+        // Utiliser directement la progression envoyée (70-90%)
+        return stageProgress;
+        
+      case 'calculating-scores':
+        // Utiliser directement la progression envoyée (90-100%)
+        return stageProgress;
+        
+      default:
+        return stageProgress;
+    }
+  };
+
   const handleSSEEvent = (eventData: any) => {
     console.log('[SSE] Received event:', eventData.type, eventData.data);
     
-    switch (eventData.type) {
+    try {
+      switch (eventData.type) {
       case 'credits':
         // Handle credit update event
         if (onCreditsUpdate) {
@@ -40,17 +82,25 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
         }
         break;
         
-      case 'progress':
+      case 'progress': {
         const progressData = eventData.data as ProgressData;
+        const globalProgress = calculateGlobalProgress(
+          progressData.stage,
+          progressData.progress,
+          promptCompletionStatusRef.current,
+          analyzingPromptsRef.current
+        );
+        
         dispatch({
           type: 'UPDATE_ANALYSIS_PROGRESS',
           payload: {
             stage: progressData.stage,
-            progress: progressData.progress,
+            progress: globalProgress,
             message: progressData.message
           }
         });
         break;
+      }
 
       case 'competitor-found':
         const competitorData = eventData.data as CompetitorFoundData;
@@ -189,7 +239,7 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
         }
         break;
 
-      case 'analysis-complete':
+      case 'analysis-complete': {
         const analysisCompleteData = eventData.data as AnalysisProgressData;
         
         if (!analysisCompleteData.prompt || !analysisCompleteData.provider) {
@@ -241,10 +291,72 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
             }
           });
         }
+        
+        // Recalculer la progression globale après chaque prompt terminé
+        const updatedStatus = {
+          ...promptCompletionStatusRef.current,
+          [normalizedCompletePrompt]: {
+            ...promptCompletionStatusRef.current[normalizedCompletePrompt],
+            [analysisCompleteData.provider]: analysisCompleteData.status === 'failed' ? 'failed' : 'completed'
+          }
+        };
+        
+        const recomputedProgress = calculateGlobalProgress(
+          'analyzing-prompts',
+          0,
+          updatedStatus,
+          analyzingPromptsRef.current
+        );
+        
+        dispatch({
+          type: 'UPDATE_ANALYSIS_PROGRESS',
+          payload: {
+            stage: 'analyzing-prompts',
+            progress: recomputedProgress,
+            message: `Analyzing prompts... (${recomputedProgress}%)`
+          }
+        });
+        
+        break;
+      }
+
+      case 'brand-extraction-progress':
+        // Gestion de la progression d'extraction de marques
+        const brandExtractionData = eventData.data as BrandExtractionProgressData;
+        dispatch({
+          type: 'UPDATE_ANALYSIS_PROGRESS',
+          payload: {
+            stage: brandExtractionData.stage,
+            progress: brandExtractionData.progress,
+            message: brandExtractionData.message
+          }
+        });
+        break;
+        
+      case 'stage':
+        // Gestion des changements de stage pour éviter que la progression retombe à 0
+        const stageData = eventData.data as ProgressData;
+        let adjustedProgress = stageData.progress;
+        
+        // S'assurer que la progression ne retombe jamais en arrière
+        if (stageData.stage === 'extracting-brands' && stageData.progress < 70) {
+          adjustedProgress = 70;
+        } else if (stageData.stage === 'calculating-scores' && stageData.progress < 90) {
+          adjustedProgress = 90;
+        }
+        
+        dispatch({
+          type: 'UPDATE_ANALYSIS_PROGRESS',
+          payload: {
+            stage: stageData.stage,
+            progress: adjustedProgress,
+            message: stageData.message
+          }
+        });
         break;
 
       case 'complete':
-        const completeData = eventData.data as { analysis: any };
+        const completeData = eventData.data as { analysis: any; apiUsageSummary?: any };
         dispatch({
           type: 'ANALYSIS_COMPLETE',
           payload: completeData.analysis
@@ -257,26 +369,61 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
         if (onAnalysisComplete) {
           onAnalysisComplete(completeData.analysis);
         }
+        // Handle API usage summary if provided
+        if (onApiUsageSummary && completeData.apiUsageSummary) {
+          onApiUsageSummary(completeData.apiUsageSummary);
+        }
         break;
 
       case 'error':
         const errorData = eventData.data as { message?: string };
+        let errorMessage = 'Analysis failed';
+        
+        if (errorData && typeof errorData === 'object') {
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (typeof errorData === 'string') {
+            errorMessage = errorData;
+          } else {
+            // Handle case where error data is an object without message
+            errorMessage = JSON.stringify(errorData);
+          }
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        }
+        
         dispatch({
           type: 'SET_ERROR',
-          payload: errorData.message || 'Analysis failed'
+          payload: errorMessage
         });
-        console.error('Analysis error:', eventData.data);
+        console.error('Analysis error:', errorData);
         break;
+        
+      default:
+        console.warn('[SSE] Unknown event type:', eventData.type);
+        break;
+    }
+    } catch (error) {
+      console.error('[SSE] Error handling event:', error, 'Event data:', eventData);
+      dispatch({
+        type: 'SET_ERROR',
+        payload: 'Error processing analysis event'
+      });
     }
   };
 
-  const startSSEConnection = async (url: string, options?: RequestInit) => {
+  const startSSEConnection = async (url: string, options?: RequestInit, onConnected?: () => void) => {
     try {
       const response = await fetch(url, options);
       
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to analyze');
+      }
+
+      // Notify when connection is established successfully (HTTP 200)
+      if (onConnected) {
+        try { onConnected(); } catch (e) { console.warn('[SSE] onConnected callback error:', e); }
       }
 
       const reader = response.body?.getReader();

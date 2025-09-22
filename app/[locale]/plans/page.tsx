@@ -1,63 +1,10 @@
 'use client';
 
-import PricingTable from '@/components/autumn/pricing-table';
-import StaticPricingTable from '@/components/static-pricing-table';
-import { useSession } from '@/lib/auth-client';
 import { useTranslations } from 'next-intl';
+import PricingSection from '@/components/pricing-section';
 
 export default function PricingPage() {
-  const { data: session } = useSession();
   const t = useTranslations();
-
-  const localizedStaticProducts = [
-    {
-      id: "free",
-      name: t('pricing.plans.free.name'),
-      description: t('pricing.plans.free.description'),
-      price: {
-        primaryText: t('pricing.plans.free.price'),
-        secondaryText: t('pricing.plans.free.priceDesc')
-      },
-      items: [
-        { 
-          primaryText: t('pricing.plans.free.feature1'),
-          secondaryText: t('pricing.plans.free.feature1Desc')
-        },
-        {
-          primaryText: t('pricing.plans.free.feature2'),
-          secondaryText: t('pricing.plans.free.feature2Desc')
-        },
-        {
-          primaryText: t('pricing.plans.free.feature3'),
-          secondaryText: t('pricing.plans.free.feature3Desc')
-        }
-      ]
-    },
-    {
-      id: "pro",
-      name: t('pricing.plans.pro.name'),
-      description: t('pricing.plans.pro.description'),
-      recommendText: t('pricing.plans.pro.recommendText'),
-      price: {
-        primaryText: t('pricing.plans.pro.price'),
-        secondaryText: t('pricing.plans.pro.priceDesc')
-      },
-      items: [
-        { 
-          primaryText: t('pricing.plans.pro.feature1'),
-          secondaryText: t('pricing.plans.pro.feature1Desc')
-        },
-        {
-          primaryText: t('pricing.plans.pro.feature2'),
-          secondaryText: t('pricing.plans.pro.feature2Desc')
-        },
-        {
-          primaryText: t('pricing.plans.pro.feature3'),
-          secondaryText: t('pricing.plans.pro.feature3Desc')
-        }
-      ]
-    }
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 py-12">
@@ -71,20 +18,53 @@ export default function PricingPage() {
           <p className="text-xl text-zinc-600 max-w-2xl mx-auto">
             {t('pricing.choosePerfectPlan')}
           </p>
-          {session && (
-            <p className="text-sm text-zinc-500 mt-4">
-              {t('pricing.loggedInAs')} {session.user?.email}
-            </p>
-          )}
         </div>
 
         <div className="bg-white rounded-[20px] shadow-xl p-8 border border-zinc-200">
-          {/* Use static component for unauthenticated users to avoid API calls */}
-          {session ? (
-            <PricingTable />
-          ) : (
-            <StaticPricingTable products={localizedStaticProducts} />
-          )}
+          <PricingSection
+            showHeader={false}
+            products={[
+              {
+                id: 'start',
+                name: t('pricing.voxum.start.name'),
+                price: { primaryText: t('pricing.voxum.start.price'), secondaryText: t('pricing.voxum.start.priceDesc') },
+                items: [
+                  { primaryText: t('pricing.voxum.start.feature1') },
+                  { primaryText: t('pricing.voxum.start.feature2') },
+                ],
+              },
+              {
+                id: 'watch',
+                name: t('pricing.voxum.watch.name'),
+                recommendText: t('home.pricing.mostPopular'),
+                price: { primaryText: t('pricing.voxum.watch.price'), secondaryText: t('pricing.voxum.watch.priceDesc') },
+                items: [
+                  { primaryText: t('pricing.voxum.watch.feature1') },
+                  { primaryText: t('pricing.voxum.watch.feature2') },
+                ],
+              },
+              {
+                id: 'pro',
+                name: t('pricing.voxum.pro.name'),
+                price: { primaryText: t('pricing.voxum.pro.price'), secondaryText: t('pricing.voxum.pro.priceDesc') },
+                items: [
+                  { primaryText: t('pricing.voxum.pro.feature1') },
+                  { primaryText: t('pricing.voxum.pro.feature2') },
+                  { primaryText: t('pricing.voxum.pro.feature3') },
+                ],
+              },
+              {
+                id: 'enterprise',
+                name: t('pricing.voxum.enterprise.name'),
+                price: { primaryText: t('pricing.voxum.enterprise.price') },
+                items: [
+                  { primaryText: t('pricing.voxum.enterprise.feature1') },
+                  { primaryText: t('pricing.voxum.enterprise.feature2') },
+                  { primaryText: t('pricing.voxum.enterprise.feature3') },
+                ],
+              },
+            ]}
+          />
         </div>
       </div>
     </div>

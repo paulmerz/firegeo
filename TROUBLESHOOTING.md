@@ -136,3 +136,5 @@ Si le problème persiste :
 3. Indiquez l'URL que vous essayez de scraper
 4. Précisez les différences entre les deux ordinateurs
 
+
+

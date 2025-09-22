@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/dialog";
 import { getAttachContent } from "@/lib/autumn/attach-content";
 import { useCustomer } from "@/hooks/useAutumnCustomer";
+import { isNetworkError } from "@/lib/network-utils";
+import { useTranslations } from "next-intl";
 
 export interface AttachDialogProps {
   open: boolean;
@@ -24,6 +26,7 @@ export interface AttachDialogProps {
 export default function AttachDialog(params?: AttachDialogProps) {
   const { attach, refetch } = useCustomer();
   const [loading, setLoading] = useState(false);
+  const tErrors = useTranslations('errors');
   const [optionsInput, setOptionsInput] = useState<FeatureOption[]>(
     params?.preview?.options || []
   );
@@ -129,7 +132,19 @@ export default function AttachDialog(params?: AttachDialogProps) {
                 }
               } catch (error) {
                 console.error('Error attaching product:', error);
-                alert('An error occurred. Please try again or contact support.');
+                
+                // Check if it's a network error and show appropriate message
+                let errorMessage = 'An error occurred. Please try again or contact support.';
+                if (isNetworkError(error)) {
+                  errorMessage = tErrors('connectionLost');
+                } else if (error && typeof error === 'object' && 'message' in error) {
+                  const apiError = error as any;
+                  if (apiError.message?.includes('internet') || apiError.message?.includes('connection')) {
+                    errorMessage = tErrors('noInternetConnection');
+                  }
+                }
+                
+                alert(errorMessage);
               } finally {
                 setLoading(false);
               }

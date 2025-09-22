@@ -55,7 +55,7 @@ export interface ProviderConfig {
  */
 export const PROVIDER_ENABLED_CONFIG: Record<string, boolean> = {
   openai: true,      // OpenAI is enabled
-  anthropic: true,   // Anthropic is enabled
+  anthropic: false,   // Anthropic is enabled
   google: false,     // Google is disabled
   perplexity: true,  // Perplexity is enabled
 };
@@ -105,15 +105,14 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       streamingResponse: true,
       maxRequestsPerMinute: 500,
     },
-    getModel: (modelId?: string, options?: any) => {
+    getModel: (modelId?: any, options?: any) => {
       if (!process.env.OPENAI_API_KEY) return null;
-      const model = modelId || PROVIDER_CONFIGS.openai.defaultModel;
+      const model = typeof modelId === 'string'
+        ? modelId
+        : (modelId?.id || PROVIDER_CONFIGS.openai.defaultModel);
       
-      // Use responses API for web search if requested
-      if (options?.useWebSearch && model === 'gpt-4o-mini') {
-        return openai.responses(model);
-      }
-      
+      // Note: Web search is now handled by the dedicated openai-web-search.ts module
+      // This function returns the standard AI SDK model for non-web-search use cases
       return openai(model);
     },
     isConfigured: () => !!process.env.OPENAI_API_KEY,
@@ -236,6 +235,14 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
         maxTokens: 127000,
         supportsFunctionCalling: false,
         supportsStructuredOutput: false,
+        supportsWebSearch: true,
+      },
+      {
+        id: 'sonar-reasoning',
+        name: 'Sonar Reasoning',
+        maxTokens: 127000,
+        supportsFunctionCalling: false,
+        supportsStructuredOutput: true,
         supportsWebSearch: true,
       },
     ],

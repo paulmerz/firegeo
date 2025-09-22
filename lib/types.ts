@@ -108,6 +108,7 @@ export interface AIResponse {
   sentiment: 'positive' | 'neutral' | 'negative';
   confidence: number;
   timestamp: Date;
+  webSearchSources?: any[]; // Sources from web search
   // Enhanced detection information
   detectionDetails?: {
     brandMatches?: {
@@ -128,7 +129,7 @@ export interface AIResponse {
 }
 
 export interface CompanyRanking {
-  position: number;
+  position: number | null;
   company: string;
   reason?: string;
   sentiment?: 'positive' | 'neutral' | 'negative';
@@ -167,6 +168,9 @@ export type SSEEventType =
   | 'analysis-complete'
   | 'scoring-start'
   | 'scoring-complete'
+  | 'brand-extraction-start'
+  | 'brand-extraction-progress'
+  | 'brand-extraction-complete'
   | 'partial-result'
   | 'complete'
   | 'error';
@@ -183,6 +187,7 @@ export type AnalysisStage =
   | 'identifying-competitors' // Legacy stage, kept for backward compatibility
   | 'generating-prompts'
   | 'analyzing-prompts'
+  | 'extracting-brands'
   | 'calculating-scores'
   | 'finalizing';
 
@@ -235,6 +240,15 @@ export interface ErrorData {
   code?: string;
   stage: AnalysisStage;
   retryable?: boolean;
+}
+
+export interface BrandExtractionProgressData {
+  stage: 'extracting-brands';
+  provider: string;
+  responseIndex: number;
+  totalResponses: number;
+  progress: number;
+  message: string;
 }
 
 // Progress callback type for AI utils

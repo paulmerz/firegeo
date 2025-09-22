@@ -76,12 +76,12 @@ export async function scrapeCompanyInfo(url: string, maxAge?: number, locale?: s
     });
     
     console.log(`🔍 [Scraper] Firecrawl response received:`, {
-      success: response.success,
-      error: response.error,
-      hasMarkdown: !!response.markdown,
-      markdownLength: response.markdown?.length || 0
+      success: (response as any)?.success,
+      error: (response as any)?.error,
+      hasMarkdown: ('markdown' in (response as any)) && !!(response as any).markdown,
+      markdownLength: ('markdown' in (response as any)) && (response as any).markdown ? (response as any).markdown.length : 0
     });
-    if (!response.success) {
+    if (!(response as any)?.success) {
       // Handle specific timeout errors more gracefully
       if (response.error && response.error.includes('timed out')) {
         console.warn(`⚠️ [Scraper] Timeout scraping ${normalizedUrl}, retrying with basic mode...`);
@@ -99,15 +99,131 @@ export async function scrapeCompanyInfo(url: string, maxAge?: number, locale?: s
           throw new Error(`Scraping failed after retry: ${retryResponse.error}`);
         }
         
-        return processScrapedData(retryResponse.markdown || '', retryResponse.metadata, normalizedUrl, locale);
+        const rr: any = retryResponse as any;
+        return processScrapedData(rr.markdown || '', rr.metadata, normalizedUrl, locale);
       }
       
-      throw new Error(response.error);
+      throw new Error((response as any)?.error);
     }
-    return processScrapedData(response.markdown || '', response.metadata, normalizedUrl, locale);
+    const r: any = response as any;
+    return processScrapedData(r.markdown || '', r.metadata, normalizedUrl, locale);
   } catch (error) {
     console.error('Error scraping company info:', error);
     throw error;
+  }
+}
+
+/**
+ * Deep crawl using Firecrawl /crawl to gather multiple pages for better business understanding
+ */
+export async function crawlCompanyInfo(url: string, maxAge?: number, locale?: string): Promise<Company> {
+  try {
+    console.log(`🕷️ [Crawler] Starting crawl for URL: ${url}`);
+    let normalizedUrl = url.trim();
+    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+      normalizedUrl = `https://${normalizedUrl}`;
+    }
+    const cacheAge = maxAge ? Math.floor(maxAge / 1000) : 604800;
+    if (!process.env.FIRECRAWL_API_KEY) {
+      console.error('❌ [Crawler] FIRECRAWL_API_KEY not configured');
+      throw new Error('FIRECRAWL_API_KEY not configured');
+    }
+
+    // Crawl parameters tuned for business comprehension
+    const crawlOptions: any = {
+      maxDepth: 2,
+      limit: 20,
+      allowExternalLinks: false,
+      // Keep options minimal to satisfy v1 API; advanced filters removed
+    };
+
+    console.log('🕷️ [Crawler] Calling Firecrawl crawlUrl with options:', crawlOptions);
+    const result: any = await (firecrawl as any).crawlUrl(normalizedUrl, crawlOptions);
+    if (!result) {
+      throw new Error('Crawl returned empty result');
+    }
+
+    // Some SDK versions return a job id and require polling
+    let pages: any[] = [];
+    if (result?.success && (result as any).data && Array.isArray((result as any).data)) {
+      // Direct pages array
+      pages = ((result as any).data as any[]).filter(Boolean);
+    } else if (Array.isArray((result as any).pages)) {
+      pages = ((result as any).pages as any[]).filter(Boolean);
+    } else {
+      const jobId = (result as any).jobId || (result as any).id || (result as any).data?.id;
+      if (!jobId && result?.error) {
+        throw new Error(result.error);
+      }
+      if (jobId) {
+        console.log(`🕷️ [Crawler] Received job id: ${jobId}. Polling status...`);
+        const startedAt = Date.now();
+        const timeoutMs = 45000;
+        while (Date.now() - startedAt < timeoutMs) {
+          await new Promise(r => setTimeout(r, 1000));
+          let statusResp: any = null;
+          try {
+            // Try both method names for compatibility
+            const checker = (firecrawl as any).checkCrawlStatus || (firecrawl as any).getCrawlStatus;
+            if (checker) {
+              statusResp = await checker.call(firecrawl, jobId);
+            }
+          } catch (e) {
+            console.warn('🕷️ [Crawler] Status polling error (non-fatal):', e);
+          }
+
+          const statusObj: any = statusResp || {};
+          const isCompleted = statusObj?.status?.toLowerCase?.() === 'completed' || statusObj?.completed === true;
+          const hasData = Array.isArray(statusObj?.data) || Array.isArray(statusObj?.pages);
+          if (isCompleted || hasData) {
+            pages = (statusObj?.pages || statusObj?.data || []).filter(Boolean);
+            break;
+          }
+        }
+      }
+    }
+
+    console.log(`🕷️ [Crawler] Pages crawled: ${pages.length}`);
+    if (!pages || pages.length === 0) {
+      console.warn('🕷️ [Crawler] No pages returned from crawl. Falling back to single-page scrape.');
+      return scrapeCompanyInfo(url, maxAge, locale);
+    }
+
+    // Concatenate top pages content (prioritize about/products/services)
+    const prioritize = (path: string) => {
+      const p = path.toLowerCase();
+      if (p.includes('about') || p.includes('a-propos') || p.includes('company')) return 3;
+      if (p.includes('product') || p.includes('products') || p.includes('services') || p.includes('solutions')) return 3;
+      if (p.includes('technology') || p.includes('innovation')) return 2;
+      if (p.includes('blog') || p.includes('news')) return 1;
+      return 0;
+    };
+
+    const sorted = pages
+      .map(p => ({
+        path: p.path || p.url || '',
+        markdown: p.markdown || p.content || '',
+        metadata: p.metadata || {},
+        score: prioritize((p.path || p.url || ''))
+      }))
+      .sort((a, b) => b.score - a.score);
+
+    const combinedMarkdown = sorted
+      .slice(0, 20)
+      .map(p => `\n\n# Source: ${p.path}\n\n${p.markdown || ''}`)
+      .join('\n');
+
+    // Merge some metadata (take homepage-like first if present)
+    const homepageMeta = sorted.find(p => {
+      const path = (p.path || '').toLowerCase();
+      return path === '/' || path.endsWith('.com') || path.endsWith('.fr') || path.includes('index');
+    })?.metadata || sorted[0]?.metadata || {};
+
+    return processScrapedData(combinedMarkdown, homepageMeta, normalizedUrl, locale);
+  } catch (error) {
+    console.error('Error crawling company info:', error);
+    // Fallback to single page scrape
+    return scrapeCompanyInfo(url, maxAge, locale);
   }
 }
 
@@ -117,7 +233,8 @@ export async function scrapeCompanyInfo(url: string, maxAge?: number, locale?: s
 async function processScrapedData(markdown: string, metadata: any, url: string, locale?: string): Promise<any> {
   try {
     console.log(`🔍 [Processor] Processing scraped data for URL: ${url}`);
-    console.log(`🔍 [Processor] Markdown length: ${markdown.length} characters`);
+    // Log le markdown complet pour inspection
+    console.log(`🔍 [Processor] Combined Markdown:\n${markdown}`);
     console.log(`🔍 [Processor] Metadata:`, metadata);
     
     const html = markdown;
@@ -170,6 +287,7 @@ async function processScrapedData(markdown: string, metadata: any, url: string, 
     // Get language instruction for the prompt based on locale
     const languageInstruction = getLanguageInstruction(locale || 'en');
     
+    console.log('SELECTED MODEL (scrapeCompanyInfo.generateObject):', typeof selectedModel === 'string' ? selectedModel : selectedModel);
     const { object } = await generateObject({
       model: selectedModel,
       schema: EnhancedCompanySchema,

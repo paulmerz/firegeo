@@ -34,6 +34,8 @@ export type BrandMonitorAction =
   | { type: 'TOGGLE_MODAL'; payload: { modal: 'addPrompt' | 'addCompetitor'; show: boolean } }
   | { type: 'SET_NEW_PROMPT_TEXT'; payload: string }
   | { type: 'SET_NEW_COMPETITOR'; payload: { name?: string; url?: string } }
+  | { type: 'SET_USE_WEB_SEARCH'; payload: boolean }
+  | { type: 'SET_USE_INTELLISEARCH'; payload: boolean }
   | { type: 'RESET_STATE' }
   | { type: 'SCRAPE_SUCCESS'; payload: Company }
   | { type: 'ANALYSIS_COMPLETE'; payload: Analysis };
@@ -101,6 +103,7 @@ export interface Analysis {
   providerRankings?: any[]; // ProviderSpecificRanking[]
   providerComparison?: any[]; // ProviderComparisonData[]
   errors?: string[];
+  webSearchUsed?: boolean;
 }
 
 export type ResultsTab = 'visibility' | 'matrix' | 'rankings' | 'metrics' | 'prompts';
@@ -126,6 +129,8 @@ export interface BrandMonitorState {
   showCompanyCard: boolean;
   showPromptsList: boolean;
   showCompetitors: boolean;
+  useWebSearch: boolean;
+  useIntelliSearch: boolean;
   
   // Prompts
   customPrompts: string[];
@@ -172,6 +177,8 @@ export const initialBrandMonitorState: BrandMonitorState = {
   showCompanyCard: false,
   showPromptsList: false,
   showCompetitors: false,
+  useWebSearch: true,
+  useIntelliSearch: false, // Activé par défaut pour améliorer les analyses
   customPrompts: [],
   removedDefaultPrompts: [],
   analyzingPrompts: [],
@@ -259,6 +266,10 @@ export function brandMonitorReducer(
       };
       
     case 'ADD_COMPETITOR':
+      // Limit to maximum 9 competitors
+      if (state.identifiedCompetitors.length >= 9) {
+        return state;
+      }
       return { 
         ...state, 
         identifiedCompetitors: [...state.identifiedCompetitors, action.payload] 
@@ -340,6 +351,12 @@ export function brandMonitorReducer(
         ...(action.payload.name !== undefined && { newCompetitorName: action.payload.name }),
         ...(action.payload.url !== undefined && { newCompetitorUrl: action.payload.url })
       };
+      
+    case 'SET_USE_WEB_SEARCH':
+      return { ...state, useWebSearch: action.payload };
+      
+    case 'SET_USE_INTELLISEARCH':
+      return { ...state, useIntelliSearch: action.payload };
       
     case 'RESET_STATE':
       return initialBrandMonitorState;

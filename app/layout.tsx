@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SaaS Starter",
+  title: "Voxum",
   description: "Next.js SaaS Starter with Better Auth",
 };
 

@@ -14,6 +14,7 @@ interface PromptsResponsesTabProps {
   onToggleExpand: (index: number | null) => void;
   brandName: string;
   competitors: string[];
+  webSearchUsed?: boolean;
 }
 
 // Provider icon mapping
@@ -65,7 +66,8 @@ export function PromptsResponsesTab({
   expandedPromptIndex,
   onToggleExpand,
   brandName,
-  competitors
+  competitors,
+  webSearchUsed = false
 }: PromptsResponsesTabProps) {
   const t = useTranslations('brandMonitor');
   const [allExpanded, setAllExpanded] = useState(false);
@@ -106,6 +108,26 @@ export function PromptsResponsesTab({
   
   return (
     <div className="space-y-2">
+      {/* Web Search Indicator */}
+      {webSearchUsed && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span className="text-sm font-medium text-blue-800">
+              Recherche en ligne activée
+            </span>
+            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+              Données récentes
+            </Badge>
+          </div>
+          <p className="text-xs text-blue-600 mt-1">
+            Les modèles d'IA ont effectué des recherches en ligne pour obtenir des informations plus récentes et précises
+          </p>
+        </div>
+      )}
+      
       {/* Search and Controls */}
       {prompts.length > 0 && (
         <div className="flex items-center gap-4 mb-4">
@@ -166,6 +188,20 @@ export function PromptsResponsesTab({
         const promptResponses = responses?.filter(response => 
           response.prompt === promptData.prompt
         ) || [];
+        
+        // Debug logging to identify prompt matching issues
+        console.log(`[PromptsResponsesTab] Prompt ${idx} - Expected: "${promptData.prompt?.substring(0, 50)}..."`);
+        console.log(`[PromptsResponsesTab] Total responses available: ${responses?.length || 0}`);
+        console.log(`[PromptsResponsesTab] Matched responses: ${promptResponses.length}`);
+        
+        if (responses && responses.length > 0) {
+          console.log(`[PromptsResponsesTab] Available response prompts:`, 
+            responses.map((r, i) => `${i}: "${r.prompt?.substring(0, 50)}..."`));
+        }
+        
+        if (responses && responses.length > 0 && promptResponses.length === 0) {
+          console.warn(`[PromptsResponsesTab] ❌ No responses matched for prompt ${idx}`);
+        }
         
         // Check if any provider mentioned the brand
         const hasBrandMention = promptResponses.some(r => r.brandMentioned);
@@ -299,12 +335,73 @@ export function PromptsResponsesTab({
                             />
                           )}
                         </div>
+                        
+                        {/* Web Search Sources */}
+                        {response.webSearchSources && response.webSearchSources.length > 0 && (
+                          <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                            <div className="flex items-center gap-1 mb-2">
+                              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                              </svg>
+                              <span className="text-xs font-medium text-blue-800">Sources de recherche web</span>
+                            </div>
+                            <div className="space-y-1">
+                              {response.webSearchSources.slice(0, 3).map((source: any, sourceIdx: number) => {
+                                const title = (source.title || '').toString().trim();
+                                const url = (source.url || '').toString().trim();
+                                const norm = title.toLowerCase();
+                                const isGenericTitle = !title ||
+                                  norm === 'citation' ||
+                                  norm.startsWith('citation') ||
+                                  norm.includes('url found') ||
+                                  norm.includes('source from response') ||
+                                  norm.includes('source from reasoning') ||
+                                  norm.includes('extracted');
+                                const displayText = isGenericTitle ? url : title;
+                                return (
+                                  <div key={sourceIdx} className="text-xs text-blue-700">
+                                    {url ? (
+                                      <a 
+                                        href={url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="hover:text-blue-900 underline"
+                                      >
+                                        {displayText || url}
+                                      </a>
+                                    ) : (
+                                      <span>{displayText || 'Source'}</span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              {response.webSearchSources.length > 3 && (
+                                <div className="text-xs text-blue-600 italic">
+                                  +{response.webSearchSources.length - 3} autres sources
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                       );
                     })}
                   </div>
                 ) : (
-                  <div className="text-gray-500 text-sm text-center py-4">No responses available for this prompt</div>
+                  <div className="text-center py-6 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                      <span className="text-red-800 font-medium">Aucune réponse disponible</span>
+                    </div>
+                    <p className="text-red-700 text-sm mb-2">
+                      Aucun fournisseur d'IA n'a pu traiter ce prompt.
+                    </p>
+                    <p className="text-red-600 text-xs">
+                      Vérifiez que les clés API sont configurées (OpenAI, Anthropic, Google, ou Perplexity).
+                    </p>
+                  </div>
                 )}
               </div>
             </div>

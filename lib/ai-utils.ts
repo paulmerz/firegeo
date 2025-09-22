@@ -1,3 +1,4 @@
+
 import { generateText, generateObject } from 'ai';
 import { z } from 'zod';
 import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData } from './types';
@@ -5,6 +6,8 @@ import { getProviderModel, normalizeProviderName, isProviderConfigured, getConfi
 import { detectBrandMention, detectMultipleBrands, BrandDetectionOptions } from './brand-detection-utils';
 import { getBrandDetectionOptions } from './brand-detection-config';
 import { getMessages, getTranslation, getLanguageName } from './locale-utils';
+import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
+
 
 const RankingSchema = z.object({
   rankings: z.array(z.object({
@@ -48,7 +51,7 @@ export async function identifyCompetitors(company: Company, progressCallback?: P
       throw new Error(`${provider.name} model not available`);
     }
     
-    const prompt = `Identify 6-9 real, established competitors of ${company.name} in the ${company.industry || 'technology'} industry.
+    const prompt = `Identify maximum 9 real, established competitors of ${company.name} in the ${company.industry || 'technology'} industry.
 
 Company: ${company.name}
 Industry: ${company.industry}
@@ -74,9 +77,10 @@ IMPORTANT:
 - Only include companies you are confident actually exist
 - Focus on TRUE competitors with similar offerings
 - Exclude retailers, marketplaces, or aggregators unless the company itself is one
-- Aim for 6-9 competitors total
+- Search for the maximum number of competitors, the refine and select the most relevant ones with a maximum of 9
 - Do NOT include general retailers or platforms that just sell/distribute products`;
 
+    console.log('SELECTED MODEL (identifyCompetitors.generateObject):', typeof model === 'string' ? model : model);
     const { object } = await generateObject({
       model,
       schema: CompetitorSchema,
@@ -106,10 +110,10 @@ IMPORTANT:
       .map(c => c.name)
       .slice(0, 9); // Limit to 9 competitors max
 
-    // Add any competitors found during scraping
+    // Add any competitors found during scraping (but maintain 9 max limit)
     if (company.scrapedData?.competitors) {
       company.scrapedData.competitors.forEach(comp => {
-        if (!competitors.includes(comp)) {
+        if (!competitors.includes(comp) && competitors.length < 9) {
           competitors.push(comp);
         }
       });
@@ -356,17 +360,44 @@ When responding to prompts about tools, platforms, or services:
 6. Return the content in ${languageName} language`;
 
   try {
+    // Track API call for analysis
+    const callId = apiUsageTracker.trackCall({
+      provider: normalizedProvider,
+      model: (model as any).id || 'unknown',
+      operation: 'analysis',
+      success: true,
+      metadata: { 
+        prompt: prompt.substring(0, 100) + '...',
+        brandName,
+        competitorsCount: competitors.length,
+        locale
+      }
+    });
+
     // First, get the response
     console.log(`[${provider}] Calling with prompt: "${prompt.substring(0, 50)}..."`);
     console.log(`[${provider}] Model type:`, typeof model);
     console.log(`[${provider}] Normalized provider:`, normalizedProvider);
     
-    const { text } = await generateText({
+    const startTime = Date.now();
+    const { text, usage } = await generateText({
       model,
       system: systemPrompt,
       prompt,
       temperature: 0.7,
       maxTokens: 800,
+    });
+    const duration = Date.now() - startTime;
+
+    // Extract tokens from usage
+    const tokens = extractTokensFromUsage(usage);
+    
+    // Update API call with actual usage
+    apiUsageTracker.updateCall(callId, {
+      inputTokens: tokens.inputTokens,
+      outputTokens: tokens.outputTokens,
+      cost: estimateCost(normalizedProvider, (model as any).id || 'unknown', tokens.inputTokens, tokens.outputTokens),
+      duration
     });
     
     console.log(`[${provider}] Response received. Length: ${text.length}`);
@@ -734,6 +765,11 @@ export async function analyzeCompetitors(
   // Create a set of companies to track (company + its known competitors)
   const trackedCompanies = new Set([company.name, ...knownCompetitors]);
   
+  // Log des marques recherchées
+  console.log(`[AnalyzeCompetitors] 🎯 Marque cible: "${company.name}"`);
+  console.log(`[AnalyzeCompetitors] 🏆 Concurrents trackés: [${Array.from(trackedCompanies).join(', ')}]`);
+  console.log(`[AnalyzeCompetitors] 📊 Total réponses à analyser: ${responses.length}`);
+  
   // Initialize competitor data
   const competitorMap = new Map<string, {
     mentions: number;
@@ -751,9 +787,17 @@ export async function analyzeCompetitors(
   });
 
   // Process all responses
-  responses.forEach(response => {
+  responses.forEach((response, responseIndex) => {
     // Track which companies were mentioned in this response
     const mentionedInResponse = new Set<string>();
+    
+    // Log des outputs de prompts et réponses
+    console.log(`[AnalyzeCompetitors] 📝 Réponse ${responseIndex + 1}/${responses.length} (${response.provider}):`);
+    console.log(`  Prompt: "${response.prompt?.substring(0, 100)}..."`);
+    console.log(`  Réponse: "${response.response?.substring(0, 200)}..."`);
+    console.log(`  Brand mentionné: ${response.brandMentioned}`);
+    console.log(`  Concurrents détectés: [${response.competitors?.join(', ') || 'aucun'}]`);
+    console.log(`  Rankings: ${response.rankings?.length || 0} entrées`);
     
     // Process rankings if available
     if (response.rankings) {
@@ -766,9 +810,12 @@ export async function analyzeCompetitors(
           if (!mentionedInResponse.has(ranking.company)) {
             data.mentions++;
             mentionedInResponse.add(ranking.company);
+            console.log(`    ✅ ${ranking.company} mentionné dans ranking (position ${ranking.position})`);
           }
           
-          data.positions.push(ranking.position);
+          if (ranking.position !== null) {
+            data.positions.push(ranking.position);
+          }
           if (ranking.sentiment) {
             data.sentiments.push(ranking.sentiment);
           }
@@ -780,6 +827,7 @@ export async function analyzeCompetitors(
     if (response.brandMentioned && trackedCompanies.has(company.name) && !mentionedInResponse.has(company.name)) {
       const brandData = competitorMap.get(company.name)!;
       brandData.mentions++;
+      console.log(`    ✅ ${company.name} mentionné comme marque`);
       if (response.brandPosition) {
         brandData.positions.push(response.brandPosition);
       }
@@ -799,17 +847,29 @@ export async function analyzeCompetitors(
     const sentimentScore = calculateSentimentScore(data.sentiments);
     const visibilityScore = Math.min((data.mentions / totalResponses) * 100, 100);
 
-    competitors.push({
-      name,
-      mentions: data.mentions,
-      averagePosition: Math.round(avgPosition * 10) / 10,
-      sentiment: determineSentiment(data.sentiments),
-      sentimentScore,
-      shareOfVoice: 0, // Will calculate after all competitors are processed
-      visibilityScore: Math.round(visibilityScore * 10) / 10,
-      weeklyChange: undefined, // No historical data available yet
-      isOwn: name === company.name,
-    });
+    // Log des pourcentages calculés
+    console.log(`[AnalyzeCompetitors] 📊 ${name}: ${data.mentions} mentions / ${totalResponses} réponses = ${visibilityScore.toFixed(1)}%`);
+    
+    // Inclure TOUTES les marques sélectionnées au départ (knownCompetitors + company)
+    // même si elles ont 0% de score - c'est important pour la cohérence de l'UI
+    const isSelectedBrand = name === company.name || knownCompetitors.includes(name);
+    
+    if (isSelectedBrand) {
+      competitors.push({
+        name,
+        mentions: data.mentions,
+        averagePosition: Math.round(avgPosition * 10) / 10,
+        sentiment: determineSentiment(data.sentiments),
+        sentimentScore,
+        shareOfVoice: 0, // Will calculate after all competitors are processed
+        visibilityScore: Math.round(visibilityScore * 10) / 10,
+        weeklyChange: undefined, // No historical data available yet
+        isOwn: name === company.name,
+      });
+      console.log(`[AnalyzeCompetitors] ✅ Including ${name} in final results (selected brand, ${data.mentions} mentions, ${visibilityScore.toFixed(1)}%)`);
+    } else {
+      console.log(`[AnalyzeCompetitors] ❌ Excluding ${name} from final results (not in selected brands)`);
+    }
   });
 
   // Calculate share of voice
@@ -898,106 +958,174 @@ export function calculateBrandScores(responses: AIResponse[], brandName: string,
 export async function analyzeCompetitorsByProvider(
   company: Company,
   responses: AIResponse[],
-  knownCompetitors: string[]
+  knownCompetitors: string[],
+  sendEvent?: (event: any) => Promise<void>
 ): Promise<{
   providerRankings: ProviderSpecificRanking[];
   providerComparison: ProviderComparisonData[];
 }> {
-  const trackedCompanies = new Set([company.name, ...knownCompetitors]);
+  // 1. ÉTAPE 1: Figer les marques à analyser
+  const allBrands = [company.name, ...knownCompetitors];
+  const trackedCompanies = new Set(allBrands);
   
-  // Get configured providers from centralized config
-  const configuredProviders = getConfiguredProviders();
-  const providers = configuredProviders.map(p => p.name);
+  console.log(`[ProviderComparison] 🎯 Marque cible: "${company.name}"`);
+  console.log(`[ProviderComparison] 🏆 Concurrents trackés: [${Array.from(trackedCompanies).join(', ')}]`);
+  console.log(`[ProviderComparison] 📊 Total réponses à analyser: ${responses.length}`);
   
-  // If no providers available, use mock mode
-  if (providers.length === 0) {
-    console.warn('No AI providers configured, using default provider list');
-    providers.push('OpenAI', 'Anthropic', 'Google');
-  }
+  // 2. ÉTAPE 2: Nettoyer les marques avec OpenAI
+  const { cleanBrandsWithAI, extractBrandsFromText, calculateBrandVisibilityByProvider } = await import('./brand-detection-enhanced');
   
-  // Initialize provider-specific data
-  const providerData = new Map<string, Map<string, {
-    mentions: number;
-    positions: number[];
-    sentiments: ('positive' | 'neutral' | 'negative')[];
-  }>>();
-
-  // Initialize for each provider
-  providers.forEach(provider => {
-    const competitorMap = new Map();
-    trackedCompanies.forEach(companyName => {
-      competitorMap.set(companyName, {
-        mentions: 0,
-        positions: [],
-        sentiments: [],
-      });
-    });
-    providerData.set(provider, competitorMap);
-  });
-
-  // Process responses by provider
+  console.log(`[ProviderComparison] 🧹 Nettoyage des marques avec OpenAI...`);
+  const cleanedBrands = await cleanBrandsWithAI(allBrands);
+  
+  // 3. ÉTAPE 4: Extraire les marques de chaque réponse LLM (parallélisé)
+  console.log(`[ProviderComparison] 🔍 Extraction des marques des réponses LLM...`);
+  const brandExtractions = new Map();
+  
+  // Grouper les réponses par provider
+  const responsesByProvider = new Map<string, AIResponse[]>();
   responses.forEach(response => {
-    const providerMap = providerData.get(response.provider);
-    if (!providerMap) return;
-
-    // Process rankings
-    if (response.rankings) {
-      response.rankings.forEach(ranking => {
-        if (trackedCompanies.has(ranking.company)) {
-          const data = providerMap.get(ranking.company)!;
-          data.mentions++;
-          data.positions.push(ranking.position);
-          if (ranking.sentiment) {
-            data.sentiments.push(ranking.sentiment);
+    if (!responsesByProvider.has(response.provider)) {
+      responsesByProvider.set(response.provider, []);
+    }
+    responsesByProvider.get(response.provider)!.push(response);
+  });
+  
+  // Calculer le nombre total de réponses à traiter pour la progression
+  const totalResponses = responses.filter(r => r.response && r.response.trim()).length;
+  let processedResponses = 0;
+  
+  // Analyser chaque provider en parallèle
+  const providerExtractionPromises = Array.from(responsesByProvider.entries()).map(async ([provider, providerResponses]) => {
+    console.log(`[ProviderComparison] 📝 Analyse ${provider}: ${providerResponses.length} réponses`);
+    
+    // Traiter toutes les réponses de ce provider en parallèle
+    const responseExtractionPromises = providerResponses
+      .filter(response => response.response && response.response.trim())
+      .map(async (response, index) => {
+        console.log(`[ProviderComparison] 📄 Analyse réponse ${index + 1}/${providerResponses.length} (${provider})`);
+        
+        try {
+          const extraction = await extractBrandsFromText(response.response, cleanedBrands, `${provider}-${index + 1}`);
+          
+          // Mise à jour de la progression (70-90% de la progression totale)
+          processedResponses++;
+          const extractionProgress = (processedResponses / totalResponses) * 20; // 20% pour l'extraction (70% à 90%)
+          const progress = Math.round(70 + extractionProgress);
+          
+          if (sendEvent) {
+            await sendEvent({
+              type: 'brand-extraction-progress',
+              stage: 'extracting-brands',
+              data: {
+                stage: 'extracting-brands',
+                provider,
+                responseIndex: index + 1,
+                totalResponses: providerResponses.length,
+                progress,
+                message: `Extracting brands from ${provider} response ${index + 1}/${providerResponses.length}`
+              },
+              timestamp: new Date()
+            });
           }
+          
+          return extraction;
+        } catch (error) {
+          console.error(`[ProviderComparison] ❌ Erreur extraction ${provider}-${index + 1}:`, error);
+          processedResponses++;
+          
+          // Mise à jour de la progression même en cas d'erreur
+          const extractionProgress = (processedResponses / totalResponses) * 20;
+          const progress = Math.round(70 + extractionProgress);
+          
+          if (sendEvent) {
+            await sendEvent({
+              type: 'brand-extraction-progress',
+              stage: 'extracting-brands',
+              data: {
+                stage: 'extracting-brands',
+                provider,
+                responseIndex: index + 1,
+                totalResponses: providerResponses.length,
+                progress,
+                message: `Error extracting brands from ${provider} response ${index + 1}/${providerResponses.length}`
+              },
+              timestamp: new Date()
+            });
+          }
+          
+          return null;
         }
       });
-    }
-
-    // Count brand mentions
-    if (response.brandMentioned && trackedCompanies.has(company.name)) {
-      const brandData = providerMap.get(company.name)!;
-      if (!response.rankings?.some(r => r.company === company.name)) {
-        brandData.mentions++;
-        if (response.brandPosition) {
-          brandData.positions.push(response.brandPosition);
-        }
-        brandData.sentiments.push(response.sentiment);
-      }
-    }
+    
+    const providerExtractions = await Promise.all(responseExtractionPromises);
+    return { provider, extractions: providerExtractions.filter(e => e !== null) };
   });
-
-  // Calculate provider-specific rankings
-  const providerRankings: ProviderSpecificRanking[] = [];
   
+  // Attendre toutes les extractions
+  const providerResults = await Promise.all(providerExtractionPromises);
+  
+  // Stocker les résultats
+  providerResults.forEach(({ provider, extractions }) => {
+    brandExtractions.set(provider, extractions);
+  });
+  
+  // 4. ÉTAPE 5: Calculer les détections par provider
+  console.log(`[ProviderComparison] 📊 Calcul des détections par provider...`);
+  const providerDetections = calculateBrandVisibilityByProvider(brandExtractions, company.name, knownCompetitors);
+  
+  // 5. ÉTAPE 6: Construire les résultats dans le format attendu
+  const providers = Array.from(responsesByProvider.keys());
+  const providerRankings: ProviderSpecificRanking[] = [];
+  const providerComparison: ProviderComparisonData[] = [];
+  
+  // Créer les rankings par provider basés sur la nouvelle détection
   providers.forEach(provider => {
-    const competitorMap = providerData.get(provider)!;
-    const providerResponses = responses.filter(r => r.provider === provider);
-    const totalResponses = providerResponses.length;
-    
     const competitors: CompetitorRanking[] = [];
+    const providerResponses = responsesByProvider.get(provider)!;
+    const totalResponses = providerResponses.length;
+    const providerBrandDetections = providerDetections.get(provider);
     
-    competitorMap.forEach((data, name) => {
-      const avgPosition = data.positions.length > 0
-        ? data.positions.reduce((a, b) => a + b, 0) / data.positions.length
+    console.log(`[ProviderComparison] 🔍 Construction des résultats pour ${provider}: ${totalResponses} réponses`);
+    
+    allBrands.forEach(brandName => {
+      const detection = providerBrandDetections?.get(brandName);
+      const mentioned = detection?.mentioned || false;
+      const mentionCount = detection?.mentionCount || 0;
+      const totalResponses = detection?.totalResponses || providerResponses.length;
+      const visibilityScore = detection?.percentage || 0; // Utiliser le pourcentage réel
+      
+      // Pour les positions et sentiments, on garde la logique existante des rankings
+      const brandRankings = providerResponses
+        .flatMap(r => r.rankings || [])
+        .filter(r => r.company === brandName);
+      
+      const positions = brandRankings
+        .map(r => r.position)
+        .filter(p => p !== null && p !== undefined) as number[];
+      
+      const sentiments = brandRankings
+        .map(r => r.sentiment)
+        .filter(s => s !== null && s !== undefined) as ('positive' | 'neutral' | 'negative')[];
+      
+      const avgPosition = positions.length > 0
+        ? positions.reduce((a, b) => a + b, 0) / positions.length
         : 99;
       
-      const visibilityScore = totalResponses > 0 
-        ? Math.min((data.mentions / totalResponses) * 100, 100)
-        : 0;
-      
       competitors.push({
-        name,
-        mentions: data.mentions,
+        name: brandName,
+        mentions: mentionCount, // Utiliser le nombre réel de mentions
         averagePosition: Math.round(avgPosition * 10) / 10,
-        sentiment: determineSentiment(data.sentiments),
-        sentimentScore: calculateSentimentScore(data.sentiments),
+        sentiment: determineSentiment(sentiments),
+        sentimentScore: calculateSentimentScore(sentiments),
         shareOfVoice: 0, // Will calculate after
         visibilityScore: Math.round(visibilityScore * 10) / 10,
-        isOwn: name === company.name,
+        isOwn: brandName === company.name,
       });
+      
+      console.log(`[ProviderComparison] 📊 ${brandName} (${provider}): ${mentionCount}/${totalResponses} = ${visibilityScore}%`);
     });
-
+    
     // Calculate share of voice for this provider
     const totalMentions = competitors.reduce((sum, c) => sum + c.mentions, 0);
     competitors.forEach(c => {
@@ -1005,7 +1133,7 @@ export async function analyzeCompetitorsByProvider(
         ? Math.round((c.mentions / totalMentions) * 1000) / 10 
         : 0;
     });
-
+    
     // Sort by visibility score
     competitors.sort((a, b) => b.visibilityScore - a.visibilityScore);
     
@@ -1015,18 +1143,18 @@ export async function analyzeCompetitorsByProvider(
     });
   });
 
-  // Create provider comparison data
-  const providerComparison: ProviderComparisonData[] = [];
-  
-  trackedCompanies.forEach(companyName => {
+  // Créer la matrice de comparaison avec la nouvelle détection
+  allBrands.forEach(brandName => {
     const comparisonData: ProviderComparisonData = {
-      competitor: companyName,
+      competitor: brandName,
       providers: {},
-      isOwn: companyName === company.name,
+      isOwn: brandName === company.name,
     };
 
+    let hasAnyMentions = false;
+
     providerRankings.forEach(({ provider, competitors }) => {
-      const competitor = competitors.find(c => c.name === companyName);
+      const competitor = competitors.find(c => c.name === brandName);
       if (competitor) {
         comparisonData.providers[provider] = {
           visibilityScore: competitor.visibilityScore,
@@ -1034,13 +1162,31 @@ export async function analyzeCompetitorsByProvider(
           mentions: competitor.mentions,
           sentiment: competitor.sentiment,
         };
+        
+        if (competitor.mentions > 0) {
+          hasAnyMentions = true;
+        }
       }
     });
 
-    providerComparison.push(comparisonData);
+    console.log(`[ProviderComparison] 🔍 Analyse ${brandName}:`);
+    console.log(`  - hasAnyMentions: ${hasAnyMentions}`);
+    console.log(`  - isOwn: ${brandName === company.name}`);
+    console.log(`  - providers avec données: ${Object.keys(comparisonData.providers).length}`);
+
+    // Inclure TOUTES les marques sélectionnées au départ (knownCompetitors + company)
+    // même si elles ont 0% de score - c'est important pour la cohérence de l'UI
+    const isSelectedBrand = brandName === company.name || knownCompetitors.includes(brandName);
+    
+    if (isSelectedBrand) {
+      providerComparison.push(comparisonData);
+      console.log(`[ProviderComparison] ✅ Including ${brandName} in matrix (selected brand, score: ${hasAnyMentions ? 'with mentions' : '0%'})`);
+    } else {
+      console.log(`[ProviderComparison] ❌ Excluding ${brandName} from matrix (not in selected brands)`);
+    }
   });
 
-  // Sort comparison data by average visibility across providers
+  // Trier par score de visibilité moyen
   providerComparison.sort((a, b) => {
     const avgA = Object.values(a.providers).reduce((sum, p) => sum + p.visibilityScore, 0) / Object.keys(a.providers).length;
     const avgB = Object.values(b.providers).reduce((sum, p) => sum + p.visibilityScore, 0) / Object.keys(b.providers).length;

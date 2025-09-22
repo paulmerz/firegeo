@@ -4,14 +4,16 @@ import React, { useReducer, useCallback, useState, useEffect, useRef } from 'rea
 import { useTranslations } from 'next-intl';
 import { Company } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sparkles, RefreshCw } from 'lucide-react';
 import { CREDITS_PER_BRAND_ANALYSIS } from '@/config/constants';
 import { ClientApiError } from '@/lib/client-errors';
 import { 
   brandMonitorReducer, 
   initialBrandMonitorState,
   BrandMonitorAction,
-  IdentifiedCompetitor
+  IdentifiedCompetitor,
+  Analysis
 } from '@/lib/brand-monitor-reducer';
 import {
   validateUrl,
@@ -36,6 +38,9 @@ import { AddPromptModal } from './modals/add-prompt-modal';
 import { AddCompetitorModal } from './modals/add-competitor-modal';
 import { ProviderComparisonMatrix } from './provider-comparison-matrix';
 import { ProviderRankingsTabs } from './provider-rankings-tabs';
+import { WebSearchToggle } from './web-search-toggle';
+import { Switch } from '@/components/ui/switch';
+import { ApiUsageSummary } from './api-usage-summary';
 
 // Hooks
 import { useSSEHandler } from './hooks/use-sse-handler';
@@ -61,6 +66,9 @@ export function BrandMonitor({
   const saveAnalysis = useSaveBrandAnalysis();
   const [isLoadingExistingAnalysis, setIsLoadingExistingAnalysis] = useState(false);
   const hasSavedRef = useRef(false);
+  const [useDeepCrawl, setUseDeepCrawl] = useState(false);
+  const [isRefreshingMatrix, setIsRefreshingMatrix] = useState(false);
+  const [apiUsageSummary, setApiUsageSummary] = useState<any>(null);
   
   const { startSSEConnection } = useSSEHandler({ 
     state, 
@@ -94,6 +102,9 @@ export function BrandMonitor({
           }
         });
       }
+    },
+    onApiUsageSummary: (summary) => {
+      setApiUsageSummary(summary);
     }
   });
   
@@ -125,14 +136,18 @@ export function BrandMonitor({
     newPromptText,
     newCompetitorName,
     newCompetitorUrl,
-    scrapingCompetitors
+    scrapingCompetitors,
+    useWebSearch,
+    useIntelliSearch
   } = state;
   
   // Remove the auto-save effect entirely - we'll save manually when analysis completes
   
   // Load selected analysis if provided or reset when null
   useEffect(() => {
+    console.log('🔄 [BrandMonitor] selectedAnalysis changed:', selectedAnalysis);
     if (selectedAnalysis && selectedAnalysis.analysisData) {
+      console.log('📊 [BrandMonitor] Loading existing analysis');
       setIsLoadingExistingAnalysis(true);
       // Restore the analysis state from saved data
       dispatch({ type: 'SET_ANALYSIS', payload: selectedAnalysis.analysisData });
@@ -147,6 +162,7 @@ export function BrandMonitor({
       setTimeout(() => setIsLoadingExistingAnalysis(false), 100);
     } else if (selectedAnalysis === null) {
       // Reset state when explicitly set to null (New Analysis clicked)
+      console.log('🔄 [BrandMonitor] Resetting state for new analysis');
       dispatch({ type: 'RESET_STATE' });
       hasSavedRef.current = false;
       setIsLoadingExistingAnalysis(false);
@@ -201,7 +217,8 @@ export function BrandMonitor({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           url,
-          maxAge: 7 * 24 * 60 * 60 * 1000 // 1 week in milliseconds
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week in milliseconds
+          useDeepCrawl: false // Temporarily disabled
         }),
       });
 
@@ -226,6 +243,22 @@ export function BrandMonitor({
       
       if (!data.company) {
         throw new Error(tErrors('noCompanyData'));
+      }
+      // Debit 1 credit on successful scrape result
+      try {
+        const debitRes = await fetch('/api/credits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: 1, reason: 'scrape_success' })
+        });
+        if (!debitRes.ok) {
+          const err = await debitRes.json().catch(() => ({} as any));
+          console.warn('[Credits] Debit on scrape_success failed:', err?.error || debitRes.statusText);
+        } else if (onCreditsUpdate) {
+          onCreditsUpdate();
+        }
+      } catch (e) {
+        console.warn('[Credits] Debit on scrape_success error:', e);
       }
       
       // Scrape was successful - credits have been deducted, refresh the navbar
@@ -282,7 +315,7 @@ export function BrandMonitor({
   
   const handlePrepareAnalysis = useCallback(async () => {
     if (!company) return;
-    
+
     dispatch({ type: 'SET_PREPARING_ANALYSIS', payload: true });
     
     // Check which providers are available
@@ -311,7 +344,7 @@ export function BrandMonitor({
       const { ACTIVE_SEARCH_CONFIG, getApiEndpoint, buildRequestBody } = await import('@/lib/competitor-pipeline/search-method-config');
       
       const apiEndpoint = getApiEndpoint(ACTIVE_SEARCH_CONFIG.method);
-      const requestBody = buildRequestBody(ACTIVE_SEARCH_CONFIG, company, detectedLocale);
+      const requestBody = buildRequestBody(ACTIVE_SEARCH_CONFIG, company, detectedLocale, useIntelliSearch);
       
       console.log(`🔬 [SearchMethod] Active method: ${ACTIVE_SEARCH_CONFIG.method}`);
       console.log(`🔧 [SearchMethod] Config:`, ACTIVE_SEARCH_CONFIG);
@@ -332,6 +365,23 @@ export function BrandMonitor({
       
       if (!data.success) {
         throw new Error(data.error || 'Unknown API error');
+      }
+
+      // Debit 2 credits only after successful competitor generation
+      try {
+        const debitRes = await fetch('/api/credits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: 2, reason: 'identify_competitors_success' })
+        });
+        if (!debitRes.ok) {
+          const err = await debitRes.json().catch(() => ({} as any));
+          console.warn('[Credits] Debit on identify_competitors_success failed:', err?.error || debitRes.statusText);
+        } else if (onCreditsUpdate) {
+          onCreditsUpdate();
+        }
+      } catch (e) {
+        console.warn('[Credits] Debit on identify_competitors_success error:', e);
       }
       
       // Handle AI web search results
@@ -357,7 +407,7 @@ export function BrandMonitor({
     // Show competitors on the same page with animation
     dispatch({ type: 'SET_SHOW_COMPETITORS', payload: true });
     dispatch({ type: 'SET_PREPARING_ANALYSIS', payload: false });
-  }, [company]);
+  }, [company, useIntelliSearch, onCreditsUpdate, tErrors]);
   
   const handleProceedToPrompts = useCallback(() => {
     // Add a fade-out class to the current view
@@ -372,7 +422,7 @@ export function BrandMonitor({
     }, 300);
   }, []);
   
-  const handleAnalyze = useCallback(async () => {
+  const handleAnalyze = useCallback(async (displayPrompts: string[]) => {
     if (!company) return;
 
     // Reset saved flag for new analysis
@@ -390,21 +440,12 @@ export function BrandMonitor({
     }
 
     try {
-      // Use centralized prompt preparation logic
-      const competitorNames = identifiedCompetitors.map(c => c.name);
-      const allPrompts = await preparePromptsForAnalysis(
-        company,
-        customPrompts,
-        removedDefaultPrompts,
-        competitorNames,
-        true // Use AI-generated prompts for better analysis
-      );
-      
-      // Store the prompts for UI display - make sure they're normalized
-      const normalizedPrompts = allPrompts.map(p => p.trim());
+      // Use the prompts that are already displayed in the UI instead of regenerating
+      // This ensures consistency and avoids unnecessary API calls
+      const normalizedPrompts = displayPrompts.map(p => p.trim());
       dispatch({ type: 'SET_ANALYZING_PROMPTS', payload: normalizedPrompts });
 
-      console.log('Starting analysis...');
+      console.log('Starting analysis with existing prompts:', normalizedPrompts.length);
       
       dispatch({ type: 'SET_ANALYZING', payload: true });
       dispatch({ type: 'SET_ANALYSIS_PROGRESS', payload: {
@@ -429,28 +470,111 @@ export function BrandMonitor({
       });
       dispatch({ type: 'SET_PROMPT_COMPLETION_STATUS', payload: initialStatus });
 
-      await startSSEConnection('/api/brand-monitor/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          company, 
-          prompts: normalizedPrompts,
-          competitors: identifiedCompetitors 
-        }),
-      });
+      await startSSEConnection(
+        '/api/brand-monitor/analyze',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            company, 
+            prompts: normalizedPrompts,
+            competitors: identifiedCompetitors,
+            useWebSearch
+          }),
+        },
+        async () => {
+          // Debit credits for prompts only after SSE connection (HTTP 200)
+          try {
+            const debitRes = await fetch('/api/credits', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ value: normalizedPrompts.length, reason: 'prompts_analysis' })
+            });
+            if (!debitRes.ok) {
+              const err = await debitRes.json().catch(() => ({} as any));
+              console.warn('[Credits] Debit for prompts failed:', err?.error || debitRes.statusText);
+            } else if (onCreditsUpdate) {
+              onCreditsUpdate();
+            }
+          } catch (e) {
+            console.warn('[Credits] Debit for prompts error:', e);
+          }
+        }
+      );
     } catch (error) {
       console.error('Error preparing prompts or starting analysis:', error);
       dispatch({ type: 'SET_ERROR', payload: tErrors('analysisPreparationFailed') });
     } finally {
       dispatch({ type: 'SET_ANALYZING', payload: false });
     }
-  }, [company, removedDefaultPrompts, customPrompts, identifiedCompetitors, startSSEConnection, creditsAvailable, tErrors, tAnalysis]);
+  }, [company, identifiedCompetitors, startSSEConnection, creditsAvailable, tErrors, tAnalysis, useWebSearch, onCreditsUpdate]);
   
   const handleRestart = useCallback(() => {
     dispatch({ type: 'RESET_STATE' });
     hasSavedRef.current = false;
     setIsLoadingExistingAnalysis(false);
   }, []);
+  
+  const handleWebSearchToggle = useCallback((enabled: boolean) => {
+    dispatch({ type: 'SET_USE_WEB_SEARCH', payload: enabled });
+  }, []);
+  
+  const handleIntelliSearchToggle = useCallback((enabled: boolean) => {
+    dispatch({ type: 'SET_USE_INTELLISEARCH', payload: enabled });
+  }, []);
+  
+  const handleRefreshMatrix = useCallback(async () => {
+    if (!company || !analysis?.responses || !identifiedCompetitors) {
+      console.error('Données manquantes pour le refresh de la matrice');
+      return;
+    }
+
+    setIsRefreshingMatrix(true);
+    
+    try {
+      console.log('[RefreshMatrix] 🔄 Début du recalcul de la matrice...');
+      
+      // Préparer les données pour l'API
+      const knownCompetitors = identifiedCompetitors.map(c => c.name);
+      
+      const response = await fetch('/api/brand-monitor/refresh-matrix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company,
+          responses: analysis.responses,
+          knownCompetitors
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur lors du refresh');
+      }
+
+      const data = await response.json();
+      console.log('[RefreshMatrix] ✅ Matrice recalculée avec succès');
+      
+      // Mettre à jour l'analyse avec les nouvelles données
+      const updatedAnalysis = {
+        ...analysis,
+        providerRankings: data.providerRankings,
+        providerComparison: data.providerComparison,
+        lastMatrixRefresh: data.timestamp
+      };
+      
+      dispatch({ type: 'SET_ANALYSIS', payload: updatedAnalysis });
+      
+    } catch (error) {
+      console.error('[RefreshMatrix] ❌ Erreur:', error);
+      dispatch({ 
+        type: 'SET_ERROR', 
+        payload: `Erreur lors du rafraîchissement: ${error instanceof Error ? error.message : 'Erreur inconnue'}` 
+      });
+    } finally {
+      setIsRefreshingMatrix(false);
+    }
+  }, [company, analysis, identifiedCompetitors]);
   
   const batchScrapeAndValidateCompetitors = useCallback(async (competitors: IdentifiedCompetitor[]) => {
     const validatedCompetitors = competitors.map(comp => ({
@@ -484,6 +608,20 @@ export function BrandMonitor({
             onUrlChange={handleUrlChange}
             onSubmit={handleScrape}
           />
+            {/* Deep Crawl Toggle - Temporarily disabled */}
+            {/* <div className="w-full max-w-5xl px-6">
+              <div className="mt-3 flex items-center gap-2 pl-12">
+                <Switch
+                  id="deep-crawl-toggle"
+                  checked={useDeepCrawl}
+                  onCheckedChange={setUseDeepCrawl}
+                  disabled={loading || analyzing}
+                />
+                <label htmlFor="deep-crawl-toggle" className="text-sm text-gray-700 select-none cursor-pointer">
+                  Activer le crawl profond (plus lent, meilleure compréhension du site)
+                </label>
+              </div>
+            </div> */}
           </div>
         </div>
       )}
@@ -502,10 +640,15 @@ export function BrandMonitor({
                 identifiedCompetitors={identifiedCompetitors}
                 onRemoveCompetitor={(idx) => dispatch({ type: 'REMOVE_COMPETITOR', payload: idx })}
                 onAddCompetitor={() => {
-                  dispatch({ type: 'TOGGLE_MODAL', payload: { modal: 'addCompetitor', show: true } });
-                  dispatch({ type: 'SET_NEW_COMPETITOR', payload: { name: '', url: '' } });
+                  // Only allow adding if we have less than 9 competitors
+                  if (identifiedCompetitors.length < 9) {
+                    dispatch({ type: 'TOGGLE_MODAL', payload: { modal: 'addCompetitor', show: true } });
+                    dispatch({ type: 'SET_NEW_COMPETITOR', payload: { name: '', url: '' } });
+                  }
                 }}
                 onContinueToAnalysis={handleProceedToPrompts}
+                useIntelliSearch={useIntelliSearch}
+                onIntelliSearchToggle={handleIntelliSearchToggle}
               />
             </div>
             </div>
@@ -516,6 +659,28 @@ export function BrandMonitor({
       {/* Prompts List Section */}
       {showPromptsList && company && !analysis && (
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+          {/* Web Search Toggle */}
+          <div className="mb-6 flex justify-center">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-gray-700">
+                  Recherche en ligne pour améliorer l'analyse
+                </span>
+                <WebSearchToggle
+                  enabled={useWebSearch}
+                  onChange={handleWebSearchToggle}
+                  disabled={analyzing}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                {useWebSearch 
+                  ? "Les modèles d'IA effectueront des recherches en ligne pour des informations plus récentes et précises"
+                  : "Les modèles d'IA utiliseront uniquement leurs connaissances pré-entraînées"
+                }
+              </p>
+            </div>
+          </div>
+          
           <AnalysisProgressSection
           company={company}
           analyzing={analyzing}
@@ -535,6 +700,7 @@ export function BrandMonitor({
             dispatch({ type: 'SET_NEW_PROMPT_TEXT', payload: '' });
           }}
           onStartAnalysis={handleAnalyze}
+          onCreditsUpdate={onCreditsUpdate}
         />
         </div>
       )}
@@ -543,6 +709,16 @@ export function BrandMonitor({
       {analysis && brandData && (
         <div className="flex-1 flex justify-center animate-panel-in pt-8">
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+            {/* API Usage Summary */}
+            {apiUsageSummary && (
+              <div className="mb-6">
+                <ApiUsageSummary 
+                  summary={apiUsageSummary} 
+                  isVisible={true}
+                />
+              </div>
+            )}
+            
             <div className="flex gap-6 relative">
             {/* Sidebar Navigation */}
             <ResultsNavigation
@@ -576,9 +752,25 @@ export function BrandMonitor({
                             
                           </CardDescription>
                         </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-orange-600">{brandData.visibilityScore}%</p>
-                          <p className="text-xs text-gray-500 mt-1">{tAnalysis('comparisonMatrix.averageScore')}</p>
+                        <div className="flex items-center gap-4">
+                          {/* DEV ONLY: Bouton pour recalculer la matrice de comparaison sans refaire l'analyse complète
+                              Décommentez cette section si vous voulez tester les améliorations de détection de marques */}
+                          {/* 
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleRefreshMatrix}
+                            disabled={isRefreshingMatrix}
+                            className="flex items-center gap-2"
+                          >
+                            <RefreshCw className={`w-4 h-4 ${isRefreshingMatrix ? 'animate-spin' : ''}`} />
+                            {isRefreshingMatrix ? 'Recalcul...' : 'Rafraîchir'}
+                          </Button>
+                          */}
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-orange-600">{brandData.visibilityScore}%</p>
+                            <p className="text-xs text-gray-500 mt-1">{tAnalysis('comparisonMatrix.averageScore')}</p>
+                          </div>
                         </div>
                       </div>
                     </CardHeader>
@@ -602,7 +794,18 @@ export function BrandMonitor({
                 {activeResultsTab === 'rankings' && analysis.providerRankings && (
                   <div id="provider-rankings" className="h-full">
                     <ProviderRankingsTabs 
-                      providerRankings={analysis.providerRankings} 
+                      providerRankings={(() => {
+                        // Filtrer les providerRankings pour ne montrer que les marques qui sont aussi dans providerComparison
+                        // Cela assure la cohérence entre les deux onglets
+                        if (!analysis.providerComparison) return analysis.providerRankings;
+                        
+                        const comparisonBrands = new Set(analysis.providerComparison.map(c => c.competitor));
+                        
+                        return analysis.providerRankings.map(ranking => ({
+                          ...ranking,
+                          competitors: ranking.competitors.filter((c: any) => comparisonBrands.has(c.name))
+                        }));
+                      })()} 
                       brandName={company?.name || tAnalysis('yourBrand')}
                       shareOfVoice={brandData.shareOfVoice}
                       averagePosition={Math.round(brandData.averagePosition)}
@@ -636,6 +839,7 @@ export function BrandMonitor({
                         onToggleExpand={(index) => dispatch({ type: 'SET_EXPANDED_PROMPT_INDEX', payload: index })}
                         brandName={analysis.company?.name || ''}
                         competitors={analysis.competitors?.map(c => c.name) || []}
+                        webSearchUsed={analysis.webSearchUsed}
                       />
                     </CardContent>
                   </Card>
@@ -660,11 +864,26 @@ export function BrandMonitor({
         isOpen={showAddPromptModal}
         promptText={newPromptText}
         onPromptTextChange={(text) => dispatch({ type: 'SET_NEW_PROMPT_TEXT', payload: text })}
-        onAdd={() => {
-          if (newPromptText.trim()) {
-            dispatch({ type: 'ADD_CUSTOM_PROMPT', payload: newPromptText.trim() });
+        onAdd={async () => {
+          const trimmed = newPromptText.trim();
+          if (!trimmed) return;
+          try {
+            const debitRes = await fetch('/api/credits', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ value: 1, reason: 'add_prompt' })
+            });
+            if (!debitRes.ok) {
+              const data = await debitRes.json().catch(() => ({} as any));
+              dispatch({ type: 'SET_ERROR', payload: tErrors('insufficientCreditsAnalysis', { credits: 1 }) });
+              return;
+            }
+            if (onCreditsUpdate) onCreditsUpdate();
+            dispatch({ type: 'ADD_CUSTOM_PROMPT', payload: trimmed });
             dispatch({ type: 'TOGGLE_MODAL', payload: { modal: 'addPrompt', show: false } });
             dispatch({ type: 'SET_NEW_PROMPT_TEXT', payload: '' });
+          } catch (e) {
+            dispatch({ type: 'SET_ERROR', payload: tErrors('analysisPreparationFailed') });
           }
         }}
         onClose={() => {

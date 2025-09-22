@@ -11,6 +11,8 @@ import { Check, Loader2 } from "lucide-react";
 import AttachDialog from "@/components/autumn/attach-dialog";
 import { getPricingTableContent } from "@/lib/autumn/pricing-table-content";
 import { Product, ProductItem } from "autumn-js";
+import { isNetworkError } from "@/lib/network-utils";
+import { useTranslations } from "next-intl";
 export default function PricingTable({
   productDetails,
 }: {
@@ -19,6 +21,7 @@ export default function PricingTable({
   const { attach } = useCustomer();
   const [isAnnual, setIsAnnual] = useState(false);
   const { products, isLoading, error } = usePricingTable({ productDetails });
+  const tErrors = useTranslations('errors');
 
   if (isLoading) {
     return (
@@ -29,12 +32,18 @@ export default function PricingTable({
   }
 
   if (error) {
-    return <div> Something went wrong...</div>;
+    let errorMessage = 'Something went wrong...';
+    if (isNetworkError(error)) {
+      errorMessage = tErrors('noInternetConnection');
+    }
+    return <div className="text-center p-4 text-red-600">{errorMessage}</div>;
   }
+
+  const visibleProducts = (products || []).filter((p) => p.id !== 'free');
 
   const intervals = Array.from(
     new Set(
-      products?.map((p) => p.properties?.interval_group).filter((i) => !!i)
+      visibleProducts?.map((p) => p.properties?.interval_group).filter((i) => !!i)
     )
   );
 
@@ -58,14 +67,14 @@ export default function PricingTable({
 
   return (
     <div className={cn("root")}>
-      {products && (
+      {visibleProducts && visibleProducts.length > 0 && (
         <PricingTableContainer
-          products={products as any}
+          products={visibleProducts as any}
           isAnnualToggle={isAnnual}
           setIsAnnualToggle={setIsAnnual}
           multiInterval={multiInterval}
         >
-          {products.filter(intervalFilter).map((product, index) => (
+          {visibleProducts.filter(intervalFilter).map((product, index) => (
             <PricingCard
               key={index}
               productId={product.id}
@@ -338,6 +347,7 @@ export const PricingCardButton = React.forwardRef<
   PricingCardButtonProps
 >(({ recommended, children, className, onClick, ...props }, ref) => {
   const [loading, setLoading] = useState(false);
+  const tErrors = useTranslations('errors');
 
   const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
     setLoading(true);
@@ -345,6 +355,11 @@ export const PricingCardButton = React.forwardRef<
       await onClick?.(e);
     } catch (error) {
       console.error(error);
+      
+      // Show user-friendly error message for network issues
+      if (isNetworkError(error)) {
+        alert(tErrors('connectionLost'));
+      }
     } finally {
       setLoading(false);
     }

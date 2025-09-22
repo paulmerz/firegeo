@@ -3,18 +3,92 @@ import { z } from 'zod';
 import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData } from './types';
 import { getProviderModel, normalizeProviderName, isProviderConfigured, getProviderConfig, PROVIDER_CONFIGS } from './provider-config';
 import { analyzeWithAnthropicWebSearch } from './anthropic-web-search';
+import { analyzePromptWithOpenAIWebSearch, isOpenAIWebSearchAvailable } from './openai-web-search';
 import { getLanguageName } from './locale-utils';
+import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
+
+/**
+ * Extract brand name from complex brand strings
+ * Focus on the actual brand, not the product
+ */
+function extractBrandName(brandString: string): string {
+  let brand = brandString.trim();
+  
+  // Handle parentheses format like "Citroën (Ami)" -> "Citroën"
+  const parenthesesMatch = brand.match(/^([^(]+)\s*\(/);
+  if (parenthesesMatch) {
+    brand = parenthesesMatch[1].trim();
+  }
+  
+  // Handle comma format like "Renault, Twizy" -> "Renault"
+  const commaMatch = brand.match(/^([^,]+),/);
+  if (commaMatch) {
+    brand = commaMatch[1].trim();
+  }
+  
+  return brand;
+}
+
+/**
+ * Create simple variations for basic brand names (case, accents)
+ * For complex multi-word brands, use AI-powered detection
+ */
+function createSimpleBrandVariations(brandString: string): string[] {
+  const coreBrand = extractBrandName(brandString);
+  const variations = new Set<string>();
+  
+  // Add original
+  variations.add(coreBrand);
+  
+  // Add lowercase
+  const lower = coreBrand.toLowerCase();
+  variations.add(lower);
+  
+  // Add without accents
+  const normalized = lower
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  if (normalized !== lower) {
+    variations.add(normalized);
+  }
+  
+  // Add uppercase version of normalized
+  if (normalized !== lower) {
+    variations.add(normalized.charAt(0).toUpperCase() + normalized.slice(1));
+  }
+  
+  const list = Array.from(variations).filter(v => v.length > 1);
+  return filterBrandVariations(coreBrand, list);
+}
+
+/**
+ * Create smart variations of a brand name for better detection
+ * Uses simple variations for basic brands, AI for complex ones
+ */
+async function createSmartBrandVariations(brandString: string, locale?: string): Promise<string[]> {
+  const coreBrand = extractBrandName(brandString);
+  
+  // For simple brands (1-2 words), use deterministic approach
+  if (!coreBrand.includes(' ') || coreBrand.split(/\s+/).length <= 2) {
+    return createSimpleBrandVariations(brandString);
+  }
+  
+  // For complex multi-word brands, delegate to OpenAI web search module
+  const { createAIBrandVariations } = await import('./openai-web-search');
+  const aiVars = await createAIBrandVariations(brandString, locale);
+  return filterBrandVariations(coreBrand, aiVars);
+}
 
 const RankingSchema = z.object({
   rankings: z.array(z.object({
-    position: z.number(),
+    position: z.number().nullable(),
     company: z.string(),
     reason: z.string().optional(),
     sentiment: z.enum(['positive', 'neutral', 'negative']).optional(),
   })),
   analysis: z.object({
     brandMentioned: z.boolean(),
-    brandPosition: z.number().optional(),
+    brandPosition: z.number().nullable().optional(),
     competitors: z.array(z.string()),
     overallSentiment: z.enum(['positive', 'neutral', 'negative']),
     confidence: z.number().min(0).max(1),
@@ -31,9 +105,10 @@ export async function analyzePromptWithProviderEnhanced(
   useWebSearch: boolean = true, // New parameter
   locale?: string // Locale parameter
 ): Promise<AIResponse> {
+  const trimmedPrompt = prompt.trim();
   // Mock mode for demo/testing without API keys
   if (useMockMode || provider === 'Mock') {
-    return generateMockResponse(prompt, provider, brandName, competitors);
+    return generateMockResponse(trimmedPrompt, provider, brandName, competitors);
   }
 
   // Normalize provider name for consistency
@@ -50,9 +125,14 @@ export async function analyzePromptWithProviderEnhanced(
   
   // Handle provider-specific web search configurations
   if (normalizedProvider === 'openai' && useWebSearch) {
-    // Use OpenAI's web search via responses API
-    model = getProviderModel('openai', 'gpt-4o-mini', { useWebSearch: true });
-    // Note: Web search tools configuration would need to be handled by the provider's getModel implementation
+    // Use the new OpenAI web search implementation
+    if (!isOpenAIWebSearchAvailable()) {
+      console.warn('OpenAI web search not available, falling back to standard OpenAI');
+      model = getProviderModel('openai');
+    } else {
+      // We'll handle OpenAI web search separately, so just mark it
+      model = 'openai-web-search';
+    }
   } else {
     // Get model with web search options if supported
     model = getProviderModel(normalizedProvider, undefined, { useWebSearch });
@@ -75,21 +155,118 @@ When responding to prompts about tools, platforms, or services:
 6. ${useWebSearch ? 'Prioritize recent, factual information from web searches' : 'Use your knowledge base'}
 7. Return the content in ${languageName} language`;
 
-  // Enhanced prompt for web search
+  // Enhanced prompt for web search - more explicit instruction
   const enhancedPrompt = useWebSearch 
-    ? `${prompt}\n\nPlease search for current, factual information to answer this question. Focus on recent data and real user opinions.`
-    : prompt;
+    ? `IMPORTANT: You must search the web for current, factual information to answer this question. Do not rely on your training data alone.
+
+Question: ${trimmedPrompt}
+
+Please search for recent information, current rankings, and up-to-date data to provide an accurate and current response. Focus on recent data and real user opinions.`
+    : trimmedPrompt;
 
   try {
-    // First, get the response with potential web search
-    const { text, sources } = await generateText({
-      model,
-      system: systemPrompt,
-      prompt: enhancedPrompt,
-      temperature: 0.7,
-      maxTokens: 800,
-      ...generateConfig, // Spread generation configuration (includes tools for OpenAI)
-    });
+    let text: string;
+    let sources: any[] = [];
+
+    // Handle OpenAI web search separately using the new implementation
+    if (normalizedProvider === 'openai' && useWebSearch && model === 'openai-web-search') {
+      console.log(`[${provider}] Using OpenAI web search implementation`);
+      
+      // Use the dedicated OpenAI web search function
+      const openaiResult = await analyzePromptWithOpenAIWebSearch(
+        trimmedPrompt,
+        brandName,
+        competitors,
+        locale
+      );
+      
+      // Enhanced brand detection fallback for web search results
+      // Apply the same robust detection logic as the non-web search version
+      const text = openaiResult.response;
+      const textLower = text.toLowerCase();
+      const brandNameLower = brandName.toLowerCase();
+      
+      // Enhanced brand detection with smart variations
+      const brandVariations = await createSmartBrandVariations(brandName, locale);
+      const enhancedBrandMentioned = openaiResult.brandMentioned || 
+        brandVariations.some(variation => textLower.includes(variation));
+        
+      // Add any missed competitors from text search with smart variations
+      const aiCompetitors = new Set(openaiResult.competitors);
+      const allMentionedCompetitors = new Set([...aiCompetitors]);
+      
+      for (const competitor of competitors) {
+        const competitorVariations = await createSmartBrandVariations(competitor, locale);
+        const found = competitorVariations.some(variation => textLower.includes(variation));
+        
+        if (found) {
+          allMentionedCompetitors.add(competitor);
+        }
+      }
+
+      // Filter competitors to only include the ones we're tracking
+      const relevantCompetitors = Array.from(allMentionedCompetitors).filter(c => 
+        competitors.includes(c) && c !== brandName
+      );
+      
+      // Return enhanced result with improved brand detection
+      return {
+        ...openaiResult,
+        brandMentioned: enhancedBrandMentioned,
+        competitors: relevantCompetitors,
+      };
+    } else {
+      // Log web search configuration for debugging
+      if (useWebSearch) {
+        console.log(`[${provider}] Web search enabled with config:`, {
+          model: typeof model === 'string' ? model : 'LanguageModelV1',
+          include: generateConfig.include,
+          tools: generateConfig.tools,
+          prompt: enhancedPrompt.substring(0, 100) + '...'
+        });
+      }
+      
+      // Track API call for analysis
+      const callId = apiUsageTracker.trackCall({
+        provider: normalizedProvider,
+        model: (model as any).id || 'unknown',
+        operation: 'analysis',
+        success: true,
+        metadata: { 
+          prompt: enhancedPrompt.substring(0, 100) + '...',
+          brandName,
+          competitorsCount: competitors.length,
+          locale,
+          useWebSearch
+        }
+      });
+
+      const startTime = Date.now();
+      // First, get the response with potential web search for other providers
+      const result = await generateText({
+        model,
+        system: systemPrompt,
+        prompt: enhancedPrompt,
+        temperature: 0.7,
+        maxTokens: 800,
+        ...generateConfig, // Spread generation configuration (includes tools for other providers)
+      });
+      const duration = Date.now() - startTime;
+
+      // Extract tokens from usage
+      const tokens = extractTokensFromUsage(result.usage);
+      
+      // Update API call with actual usage
+      apiUsageTracker.updateCall(callId, {
+        inputTokens: tokens.inputTokens,
+        outputTokens: tokens.outputTokens,
+        cost: estimateCost(normalizedProvider, (model as any).id || 'unknown', tokens.inputTokens, tokens.outputTokens),
+        duration
+      });
+      
+      text = result.text;
+      sources = result.sources || [];
+    }
 
     // Then analyze it with structured output
     const analysisPrompt = `Analyze this AI response about ${brandName} and its competitors:
@@ -110,11 +287,29 @@ Be very thorough in detecting company names - they might appear in different con
     let object;
     try {
       // Use a fast model for structured output
-      const analysisModel = getProviderModel('openai', 'gpt-4o-mini');
+      const analysisModel = getProviderModel('openai', 'gpt-4o');
       if (!analysisModel) {
         throw new Error('Analysis model not available');
       }
       
+      // Track API call for structured analysis
+      const analysisCallId = apiUsageTracker.trackCall({
+        provider: 'openai',
+        model: 'gpt-4o',
+        operation: 'structured_analysis',
+        success: true,
+        metadata: { 
+          step: 'structured_analysis',
+          brandName,
+          competitorsCount: competitors.length,
+          locale,
+          // Lier le coût structuré au prompt source (aperçu)
+          prompt: (analysisPrompt || '').substring(0, 120) + '...'
+        }
+      });
+
+      const analysisStartTime = Date.now();
+      console.log('SELECTED MODEL (analyzePromptWithProviderEnhanced.generateObject structured):', typeof analysisModel === 'string' ? analysisModel : analysisModel);
       const result = await generateObject({
         model: analysisModel,
         system: 'You are an expert at analyzing text and extracting structured information about companies and rankings.',
@@ -122,6 +317,19 @@ Be very thorough in detecting company names - they might appear in different con
         schema: RankingSchema,
         temperature: 0.3,
       });
+      const analysisDuration = Date.now() - analysisStartTime;
+
+      // Extract tokens from usage
+      const analysisTokens = extractTokensFromUsage(result.usage);
+      
+      // Update API call with actual usage
+      apiUsageTracker.updateCall(analysisCallId, {
+        inputTokens: analysisTokens.inputTokens,
+        outputTokens: analysisTokens.outputTokens,
+        cost: estimateCost('openai', 'gpt-4o', analysisTokens.inputTokens, analysisTokens.outputTokens),
+        duration: analysisDuration
+      });
+
       object = result.object;
     } catch (error) {
       console.error('Structured analysis failed:', error);
@@ -159,24 +367,23 @@ Be very thorough in detecting company names - they might appear in different con
     const textLower = text.toLowerCase();
     const brandNameLower = brandName.toLowerCase();
     
-    // Check for brand mention with fallback text search
+    // Enhanced brand detection with smart variations
+    const brandVariations = await createSmartBrandVariations(brandName, locale);
     const brandMentioned = object.analysis.brandMentioned || 
-      textLower.includes(brandNameLower) ||
-      textLower.includes(brandNameLower.replace(/\s+/g, '')) || // handle spacing differences
-      textLower.includes(brandNameLower.replace(/[^a-z0-9]/g, '')); // handle punctuation
+      brandVariations.some(variation => textLower.includes(variation));
       
-    // Add any missed competitors from text search
+    // Add any missed competitors from text search with smart variations
     const aiCompetitors = new Set(object.analysis.competitors);
     const allMentionedCompetitors = new Set([...aiCompetitors]);
     
-    competitors.forEach(competitor => {
-      const competitorLower = competitor.toLowerCase();
-      if (textLower.includes(competitorLower) || 
-          textLower.includes(competitorLower.replace(/\s+/g, '')) ||
-          textLower.includes(competitorLower.replace(/[^a-z0-9]/g, ''))) {
+    for (const competitor of competitors) {
+      const competitorVariations = await createSmartBrandVariations(competitor, locale);
+      const found = competitorVariations.some(variation => textLower.includes(variation));
+      
+      if (found) {
         allMentionedCompetitors.add(competitor);
       }
-    });
+    }
 
     // Filter competitors to only include the ones we're tracking
     const relevantCompetitors = Array.from(allMentionedCompetitors).filter(c => 
@@ -192,18 +399,44 @@ Be very thorough in detecting company names - they might appear in different con
 
     return {
       provider: providerDisplayName,
-      prompt,
+      prompt: trimmedPrompt, // ensure trimmed
       response: text,
       rankings: object.rankings,
       competitors: relevantCompetitors,
       brandMentioned,
-      brandPosition: object.analysis.brandPosition,
+      brandPosition: object.analysis.brandPosition ?? undefined,
       sentiment: object.analysis.overallSentiment,
       confidence: object.analysis.confidence,
       timestamp: new Date(),
+      webSearchSources: sources || [], // Include web search sources if available
     };
   } catch (error) {
     console.error(`Error with ${provider}:`, error);
+    
+    // Check if it's an authentication error
+    const isAuthError = error instanceof Error && (
+      error.message.includes('401') || 
+      error.message.includes('invalid_api_key') ||
+      error.message.includes('invalid x-api-key') ||
+      error.message.includes('Authorization Required') ||
+      error.message.includes('Unauthorized') ||
+      error.message.includes('authentication_error') ||
+      error.message.includes('Incorrect API key')
+    );
+    
+    if (isAuthError) {
+      console.log(`Authentication error with ${provider} - returning null to skip this provider`);
+      return null as any; // Return null to indicate this provider should be skipped
+    }
+    
+    // For other errors, log detailed information
+    console.error(`Non-auth error with ${provider}:`, {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      type: typeof error,
+      name: error instanceof Error ? error.name : undefined,
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    
     throw error;
   }
 }
@@ -246,3 +479,42 @@ function generateMockResponse(
 
 // Export the enhanced function as the default
 export { analyzePromptWithProviderEnhanced as analyzePromptWithProvider };
+
+// Filtre générique similaire à openai-web-search.ts pour éviter des faux positifs
+function filterBrandVariations(coreBrand: string, variations: string[]): string[] {
+  const coreWords = coreBrand.trim().split(/\s+/).filter(Boolean);
+  const isMultiWord = coreWords.length >= 2;
+  const coreLower = coreBrand.toLowerCase();
+  const genericSingles = new Set<string>([
+    'the','and','of','for','group','international','global','worldwide','inc','llc','corp','corporation','ltd','limited','sa','sas','gmbh','plc','bv','ag',
+    'urban','mobility','ecomobility','systems','solutions','technologies','technology'
+  ]);
+
+  const keep = new Set<string>();
+  for (const v of (variations || [])) {
+    if (!v || typeof v !== 'string') continue;
+    const vv = v.trim();
+    if (vv.length <= 1) continue;
+
+    const vvLower = vv.toLowerCase();
+    if (vvLower === coreLower) { keep.add(vv); continue; }
+
+    const wordCount = vv.split(/\s+/).filter(Boolean).length;
+    if (isMultiWord) {
+      if (wordCount === 1) {
+        const isAcronym = /^[A-Z0-9]{2,5}$/.test(vv);
+        if (!isAcronym) continue;
+        if (genericSingles.has(vvLower)) continue;
+      }
+    }
+
+    if (wordCount === 1 && genericSingles.has(vvLower)) continue;
+
+    keep.add(vv);
+  }
+
+  if (![...keep].some(x => x.toLowerCase() === coreLower)) {
+    keep.add(coreBrand);
+  }
+  return Array.from(keep);
+}

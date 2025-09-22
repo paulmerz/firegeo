@@ -22,6 +22,7 @@ function BrandMonitorContent({ session }: { session: any }) {
   const refreshCustomer = useRefreshCustomer();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedAnalysisId, setSelectedAnalysisId] = useState<string | null>(null);
+  const [resetCount, setResetCount] = useState(0);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [analysisToDelete, setAnalysisToDelete] = useState<string | null>(null);
   
@@ -62,7 +63,9 @@ function BrandMonitorContent({ session }: { session: any }) {
   };
   
   const handleNewAnalysis = () => {
+    console.log('🆕 [BrandMonitorPage] New Analysis button clicked');
     setSelectedAnalysisId(null);
+    setResetCount((c) => c + 1);
   };
 
   return (
@@ -165,6 +168,7 @@ function BrandMonitorContent({ session }: { session: any }) {
         <div className="flex-1 overflow-y-auto">
           <div className="px-6 sm:px-8 lg:px-12 py-8">
             <BrandMonitor 
+              key={`brand-monitor-${resetCount}`}
               creditsAvailable={credits} 
               onCreditsUpdate={handleCreditsUpdate}
               selectedAnalysis={selectedAnalysisId ? currentAnalysis : null}

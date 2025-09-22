@@ -3,6 +3,7 @@ import { generateText } from 'ai';
 import { getProviderModel } from '@/lib/provider-config';
 import { getLocaleFromRequest, getLanguageName } from '@/lib/locale-utils';
 import { z } from 'zod';
+import { apiUsageTracker, extractTokensFromUsage, estimateCost } from '@/lib/api-usage-tracker';
 
 const GeneratePromptsSchema = z.object({
   targetBrand: z.string(),
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
     const languageName = getLanguageName(locale);
 
     // Try multiple providers for prompt generation
-    let model = getProviderModel('openai', 'gpt-4o-mini');
+    let model = getProviderModel('openai', 'gpt-4o');
     let provider = 'openai';
     
     if (!model) {
@@ -50,6 +51,19 @@ export async function POST(request: NextRequest) {
 
     console.log(`Using ${provider} for prompt generation`);
 
+    // Track API call for prompt generation
+    const callId = apiUsageTracker.trackCall({
+      provider: provider,
+      model: provider === 'openai' ? 'gpt-4o' : provider === 'anthropic' ? 'claude-3-5-haiku-20241022' : 'gemini-1.5-flash',
+      operation: 'prompt_generation',
+      success: true,
+      metadata: { 
+        targetBrand,
+        competitorsCount: competitors.length,
+        language: languageName
+      }
+    });
+
     const brandsArray = [targetBrand, ...competitors];
     
     // Build context about the target company
@@ -69,39 +83,61 @@ Based on the company information provided below, analyze the business context an
 Company Context:
 ${companyContext}
 
-These queries should be phrased as if a user is asking an LLM for advice and recommendations.
+Current year: ${new Date().getFullYear()}
 
+## TASK
+1/ Research the company's specific segment and USP (determine this from the Company Context provided, be very specific)
+i.e ; Speedbike market in Europ VS electric bike, boutique hotels in Paris VS worldwide hotel chain, independant watch manufacturer VS watch retailer, etc.
+
+2/ Write queries
 The goal is to reveal how consumers might frame requests where LLMs are most likely to provide product/service recommendations, so ${targetBrand} can better understand its visibility and positioning relative to competitors.
-
-IMPORTANT: Return the content in ${languageName} language.
 
 Return ONLY the result as a valid JSON array in the following format:
 ["string1", "string2", "string3", "string4", "string5", "string6", "string7", "string8"]
 
 Make sure the queries are:
 - Natural and conversational
-- High-intent (looking for recommendations/comparisons)
-- Relevant to the company's actual industry/sector (determine this from the context provided)
-- Likely to surface brand recommendations
-- Varied in approach (some direct comparisons, some general requests, some specific needs)
+- They will naturally lead to an answer where brands are mentioned (avoid questions where brand names will not be mentioned in the answer)
+- High-intent (looking for recommendations)
+- Relevant to the company's specific segment and USP (determine this from the Company Context provided, be very specific)
+- Varied in approach (some general requests, some product/service requests, some specific needs)
+- Not referencing any company name or brand directly to avoid false positives
 - Written in ${languageName}
 
 Examples of good queries:
 - "I am a beginner in running, which shoes should I buy?"
 - "I am building a marketplace, what payment platform should I use?"
 - "What are the best tools I should use as a digital nomad?"
-- "What's the most reliable web scraping tool in 2025?"`;
+- "What's the most reliable web scraping tool in 2025?"
+
+IMPORTANT ! 
+1/ Make sure the queries lead to an answer where brands are mentioned
+2/ Return the content in ${languageName} language.`;
+
 
     // Log the complete prompt being sent to the AI
     console.log('=== PROMPT SENT TO AI ===');
     console.log(prompt);
     console.log('=== END PROMPT ===');
 
+    const startTime = Date.now();
     const response = await generateText({
       model,
       prompt,
       temperature: 0.7,
       maxTokens: 600,
+    });
+    const duration = Date.now() - startTime;
+
+    // Extract tokens from usage
+    const tokens = extractTokensFromUsage(response.usage);
+    
+    // Update API call with actual usage
+    apiUsageTracker.updateCall(callId, {
+      inputTokens: tokens.inputTokens,
+      outputTokens: tokens.outputTokens,
+      cost: estimateCost(provider, provider === 'openai' ? 'gpt-4o' : provider === 'anthropic' ? 'claude-3-5-haiku-20241022' : 'gemini-1.5-flash', tokens.inputTokens, tokens.outputTokens),
+      duration
     });
 
     // Parse the JSON response

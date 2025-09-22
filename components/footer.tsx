@@ -68,19 +68,9 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-zinc-900 transition-colors">
+                <Link href={`/docs`} className="hover:text-zinc-900 transition-colors">
                   {t('footer.documentation')}
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-zinc-900 transition-colors">
-                  {t('footer.apiReference')}
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-zinc-900 transition-colors">
-                  {t('footer.demo')}
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -92,16 +82,6 @@ export function Footer() {
               <li>
                 <a href="#" className="hover:text-zinc-900 transition-colors">
                   {t('footer.about')}
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-zinc-900 transition-colors">
-                  {t('footer.blog')}
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-zinc-900 transition-colors">
-                  {t('footer.careers')}
                 </a>
               </li>
               <li>
@@ -119,12 +99,12 @@ export function Footer() {
               © {new Date().getFullYear()} VOXUM. {t('footer.allRightsReserved')}.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <a href="#" className="text-sm hover:text-zinc-900 transition-colors">
+              <Link href={`/privacy`} className="text-sm hover:text-zinc-900 transition-colors">
                 {t('footer.privacyPolicy')}
-              </a>
-              <a href="#" className="text-sm hover:text-zinc-900 transition-colors">
+              </Link>
+              <Link href={`/terms`} className="text-sm hover:text-zinc-900 transition-colors">
                 {t('footer.termsOfService')}
-              </a>
+              </Link>
             </div>
           </div>
         </div>

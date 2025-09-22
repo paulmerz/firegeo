@@ -4,6 +4,8 @@ import { Link } from "@/i18n/routing";
 import { useState } from "react";
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
+import PricingSection from '@/components/pricing-section';
+import InteractiveDemo from '@/components/interactive-demo';
 
 export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -53,161 +55,69 @@ export default function Home() {
 
           {/* Stats */}
           <div className="mt-20 bg-zinc-900 rounded-[20px] p-12 animate-fade-in-scale animation-delay-800">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               <div className="text-center animate-fade-in-up animation-delay-1000">
                 <div className="text-4xl font-bold text-white">{t('home.stats.aiModels.title')}</div>
                 <div className="text-sm text-zinc-400 mt-1">{t('home.stats.aiModels.description')}</div>
-              </div>
-              <div className="text-center animate-fade-in-up animation-delay-1000" style={{animationDelay: '1100ms'}}>
-                <div className="text-4xl font-bold text-white">{t('home.stats.realtime.title')}</div>
-                <div className="text-sm text-zinc-400 mt-1">{t('home.stats.realtime.description')}</div>
               </div>
               <div className="text-center animate-fade-in-up animation-delay-1000" style={{animationDelay: '1200ms'}}>
                 <div className="text-4xl font-bold text-white">{t('home.stats.competitor.title')}</div>
                 <div className="text-sm text-zinc-400 mt-1">{t('home.stats.competitor.description')}</div>
               </div>
-              <div className="text-center animate-fade-in-up animation-delay-1000" style={{animationDelay: '1300ms'}}>
-                <div className="text-4xl font-bold text-white">{t('home.stats.insights.title')}</div>
-                <div className="text-sm text-zinc-400 mt-1">{t('home.stats.insights.description')}</div>
+              <div className="text-center animate-fade-in-up animation-delay-1000" style={{animationDelay: '1100ms'}}>
+                <div className="text-4xl font-bold text-white">{t('home.stats.realtime.title')}</div>
+                <div className="text-sm text-zinc-400 mt-1">{t('home.stats.realtime.description')}</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gray-50 rounded-[30px] p-16">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold text-zinc-900 mb-4">
-                {t('home.pricing.title')}
-              </h2>
-              <p className="text-xl text-zinc-600">
-                {t('home.pricing.description')}
-              </p>
-            </div>
+      <InteractiveDemo />
 
-            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {/* Starter */}
-            <div className="bg-white p-8 rounded-[20px] border border-zinc-200 animate-fade-in-up animation-delay-400 hover:scale-105 transition-all duration-200">
-              <h3 className="text-2xl font-bold mb-2">{t('home.pricing.starter.title')}</h3>
-              <p className="text-zinc-600 mb-6">{t('home.pricing.starter.description')}</p>
-              <div className="mb-6">
-                <span className="text-4xl font-bold">$0</span>
-                <span className="text-zinc-600">{t('home.pricing.perMonth')}</span>
-              </div>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center">
-                  <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {t('home.pricing.starter.features.analyses')}
-                </li>
-                <li className="flex items-center">
-                  <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {t('home.pricing.starter.features.providers')}
-                </li>
-                <li className="flex items-center">
-                  <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {t('home.pricing.starter.features.reports')}
-                </li>
-              </ul>
-              <Link
-                href={`/${locale}/register`}
-                className="btn-firecrawl-outline w-full inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 h-10 px-4"
-              >
-                {t('home.pricing.starter.cta')}
-              </Link>
-            </div>
-
-            {/* Pro - Featured */}
-            <div className="bg-white p-8 rounded-[20px] border-2 border-orange-500 relative animate-fade-in-up animation-delay-600 hover:scale-105 transition-all duration-200">
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white px-4 py-1 rounded-full text-sm font-medium">
-                {t('home.pricing.mostPopular')}
-              </div>
-              <h3 className="text-2xl font-bold mb-2">{t('home.pricing.pro.title')}</h3>
-              <p className="text-zinc-600 mb-6">{t('home.pricing.pro.description')}</p>
-              <div className="mb-6">
-                <span className="text-4xl font-bold">$49</span>
-                <span className="text-zinc-600">{t('home.pricing.perMonth')}</span>
-              </div>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center">
-                  <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {t('home.pricing.pro.features.analyses')}
-                </li>
-                <li className="flex items-center">
-                  <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {t('home.pricing.pro.features.providers')}
-                </li>
-                <li className="flex items-center">
-                  <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {t('home.pricing.pro.features.alerts')}
-                </li>
-              </ul>
-              <Link
-                href={`/${locale}/register`}
-                className="btn-firecrawl-orange w-full inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 h-10 px-4"
-              >
-                {t('home.pricing.pro.cta')}
-              </Link>
-            </div>
-
-            {/* Enterprise */}
-            <div className="bg-white p-8 rounded-[20px] border border-zinc-200 animate-fade-in-up animation-delay-800 hover:scale-105 transition-all duration-200">
-              <h3 className="text-2xl font-bold mb-2">{t('home.pricing.enterprise.title')}</h3>
-              <p className="text-zinc-600 mb-6">{t('home.pricing.enterprise.description')}</p>
-              <div className="mb-6">
-                <span className="text-4xl font-bold">{t('home.pricing.enterprise.price')}</span>
-              </div>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center">
-                  <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {t('home.pricing.enterprise.features.brands')}
-                </li>
-                <li className="flex items-center">
-                  <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {t('home.pricing.enterprise.features.api')}
-                </li>
-                <li className="flex items-center">
-                  <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {t('home.pricing.enterprise.features.whiteLabel')}
-                </li>
-              </ul>
-              <Link
-                href={`/${locale}/contact`}
-                className="btn-firecrawl-outline w-full inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 h-10 px-4"
-              >
-                {t('home.pricing.enterprise.cta')}
-              </Link>
-            </div>
-            </div>
-
-            <div className="text-center mt-12">
-              <Link href={`/plans`} className="text-orange-600 hover:text-orange-700 font-medium">
-                {t('home.pricing.viewDetailed')}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PricingSection
+        products={[
+          {
+            id: 'start',
+            name: t('pricing.voxum.start.name'),
+            price: { primaryText: t('pricing.voxum.start.price'), secondaryText: t('pricing.voxum.start.priceDesc') },
+            items: [
+              { primaryText: t('pricing.voxum.start.feature1') },
+              { primaryText: t('pricing.voxum.start.feature2') },
+            ],
+          },
+          {
+            id: 'watch',
+            name: t('pricing.voxum.watch.name'),
+            recommendText: t('home.pricing.mostPopular'),
+            price: { primaryText: t('pricing.voxum.watch.price'), secondaryText: t('pricing.voxum.watch.priceDesc') },
+            items: [
+              { primaryText: t('pricing.voxum.watch.feature1') },
+              { primaryText: t('pricing.voxum.watch.feature2') },
+            ],
+          },
+          {
+            id: 'pro',
+            name: t('pricing.voxum.pro.name'),
+            price: { primaryText: t('pricing.voxum.pro.price'), secondaryText: t('pricing.voxum.pro.priceDesc') },
+            items: [
+              { primaryText: t('pricing.voxum.pro.feature1') },
+              { primaryText: t('pricing.voxum.pro.feature2') },
+              { primaryText: t('pricing.voxum.pro.feature3') },
+            ],
+          },
+          {
+            id: 'enterprise',
+            name: t('pricing.voxum.enterprise.name'),
+            price: { primaryText: t('pricing.voxum.enterprise.price') },
+            items: [
+              { primaryText: t('pricing.voxum.enterprise.feature1') },
+              { primaryText: t('pricing.voxum.enterprise.feature2') },
+              { primaryText: t('pricing.voxum.enterprise.feature3') },
+            ],
+          },
+        ]}
+      />
 
 
       {/* CTA Section 1 */}
@@ -220,12 +130,12 @@ export default function Home() {
             <p className="text-xl text-orange-100 mb-8">
               {t('home.cta1.description')}
             </p>
-            <Link
-              href={`/${locale}/brand-monitor`}
-              className="btn-firecrawl-orange inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-base font-medium transition-all duration-200 h-12 px-8"
-            >
-              {t('home.cta1.button')}
-            </Link>
+             <Link
+               href={`/register?plan=free`}
+               className="btn-firecrawl-orange inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-base font-medium transition-all duration-200 h-12 px-8"
+             >
+               {t('home.cta1.button')}
+             </Link>
           </div>
         </div>
       </section>

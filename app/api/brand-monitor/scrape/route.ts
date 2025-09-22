@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { Autumn } from 'autumn-js';
-import { scrapeCompanyInfo } from '@/lib/scrape-utils';
+import { scrapeCompanyInfo, crawlCompanyInfo } from '@/lib/scrape-utils';
 import { getLocaleFromRequest } from '@/lib/locale-utils';
 import { 
   handleApiError, 
@@ -11,9 +11,10 @@ import {
   ExternalServiceError 
 } from '@/lib/api-errors';
 import { FEATURE_ID_MESSAGES } from '@/config/constants';
+import { apiUsageTracker } from '@/lib/api-usage-tracker';
 
 const autumn = new Autumn({
-  apiKey: process.env.AUTUMN_SECRET_KEY!,
+  secretKey: process.env.AUTUMN_SECRET_KEY!,
 });
 
 export async function POST(request: NextRequest) {
@@ -32,36 +33,10 @@ export async function POST(request: NextRequest) {
     
     console.log(`🔍 [Scrape API] Authenticated user: ${sessionResponse.user.id}`);
 
-    // Check if user has enough credits (1 credit for URL scraping)
-    try {
-      console.log('🔍 [Scrape API] Checking credits...');
-      const access = await autumn.check({
-        customer_id: sessionResponse.user.id,
-        feature_id: FEATURE_ID_MESSAGES,
-      });
-      
-      console.log(`🔍 [Scrape API] Credit check result:`, {
-        allowed: access.data?.allowed,
-        balance: access.data?.balance
-      });
-      
-      if (!access.data?.allowed || (access.data?.balance && access.data.balance < 1)) {
-        console.error(`❌ [Scrape API] Insufficient credits: ${access.data?.balance || 0} available, 1 required`);
-        throw new InsufficientCreditsError(
-          'Insufficient credits. You need at least 1 credit to analyze a URL.',
-          { required: 1, available: access.data?.balance || 0 }
-        );
-      }
-    } catch (error) {
-      if (error instanceof InsufficientCreditsError) {
-        throw error;
-      }
-      console.error('❌ [Scrape API] Credit check error:', error);
-      throw new ExternalServiceError('Unable to verify credits. Please try again', 'autumn');
-    }
+    // No longer checking/deducting credits here. Debit now happens when the URL input is rendered.
 
-    const { url, maxAge } = await request.json();
-    console.log(`🔍 [Scrape API] Request data:`, { url, maxAge });
+    const { url, maxAge, useDeepCrawl, compareBoth } = await request.json();
+    console.log(`🔍 [Scrape API] Request data:`, { url, maxAge, useDeepCrawl, compareBoth });
 
     if (!url) {
       console.error('❌ [Scrape API] No URL provided');
@@ -78,32 +53,104 @@ export async function POST(request: NextRequest) {
     
     console.log(`🔍 [Scrape API] Normalized URL: ${normalizedUrl}`);
 
-    // Track usage (1 credit for scraping)
-    try {
-      await autumn.track({
-        customer_id: sessionResponse.user.id,
-        feature_id: FEATURE_ID_MESSAGES,
-        count: 1,
-      });
-    } catch (err) {
-      console.error('[Brand Monitor Scrape] Error tracking usage:', err);
-      // Continue even if tracking fails - we don't want to block the user
-    }
+    // No debit here anymore; handled earlier to avoid charging on network errors
 
     // Extract locale from request
     const locale = getLocaleFromRequest(request);
     console.log(`🔍 [Scrape API] Locale: ${locale}`);
     
-    console.log(`🔍 [Scrape API] Starting company info scraping...`);
-    const company = await scrapeCompanyInfo(normalizedUrl, maxAge, locale);
-    console.log(`✅ [Scrape API] Company info scraped successfully:`, {
-      name: company.name,
-      url: company.url,
-      industry: company.industry
-    });
-
-    return NextResponse.json({ company });
+    if (compareBoth) {
+      console.log('🧪 [Scrape API] Comparing single-page vs deep crawl...');
+      
+      // Track both scraping operations
+      const singleCallId = apiUsageTracker.trackCall({
+        provider: 'firecrawl',
+        model: 'scrape',
+        operation: 'scrape',
+        success: true,
+        metadata: { type: 'single-page', url: normalizedUrl }
+      });
+      
+      const deepCallId = apiUsageTracker.trackCall({
+        provider: 'firecrawl',
+        model: 'crawl',
+        operation: 'scrape',
+        success: true,
+        metadata: { type: 'deep-crawl', url: normalizedUrl }
+      });
+      
+      const startTime = Date.now();
+      const [single, deep] = await Promise.all([
+        scrapeCompanyInfo(normalizedUrl, maxAge, locale),
+        crawlCompanyInfo(normalizedUrl, maxAge, locale)
+      ]);
+      const duration = Date.now() - startTime;
+      
+      // Update tracking with duration
+      apiUsageTracker.updateCall(singleCallId, { duration: duration / 2 });
+      apiUsageTracker.updateCall(deepCallId, { duration: duration / 2 });
+      
+      const diff = buildComparison(single, deep);
+      console.log('🧪 [Scrape API] Comparison diff:', diff);
+      return NextResponse.json({ single, deep, diff });
+    } else {
+      console.log(`🔍 [Scrape API] Starting company ${useDeepCrawl ? 'deep crawl' : 'single-page scrape'}...`);
+      
+      // Track scraping operation
+      const callId = apiUsageTracker.trackCall({
+        provider: 'firecrawl',
+        model: useDeepCrawl ? 'crawl' : 'scrape',
+        operation: 'scrape',
+        success: true,
+        metadata: { 
+          type: useDeepCrawl ? 'deep-crawl' : 'single-page', 
+          url: normalizedUrl 
+        }
+      });
+      
+      const startTime = Date.now();
+      const company = useDeepCrawl
+        ? await crawlCompanyInfo(normalizedUrl, maxAge, locale)
+        : await scrapeCompanyInfo(normalizedUrl, maxAge, locale);
+      const duration = Date.now() - startTime;
+      
+      // Update tracking with duration
+      apiUsageTracker.updateCall(callId, { duration });
+      
+      console.log(`✅ [Scrape API] Company info scraped successfully:`, {
+        name: company.name,
+        url: company.url,
+        industry: company.industry
+      });
+      return NextResponse.json({ company });
+    }
   } catch (error) {
     return handleApiError(error);
   }
+}
+
+function buildComparison(single: any, deep: any) {
+  const field = (obj: any, path: string[]) => path.reduce((acc, k) => (acc && acc[k] !== undefined ? acc[k] : undefined), obj);
+  const pick = (obj: any) => ({
+    name: obj?.name,
+    url: obj?.url,
+    industry: obj?.industry,
+    description: obj?.description,
+    keywords: field(obj, ['scrapedData','keywords']),
+    mainProducts: field(obj, ['scrapedData','mainProducts']),
+    businessType: field(obj, ['businessProfile','businessType']),
+    marketSegment: field(obj, ['businessProfile','marketSegment']),
+    primaryMarkets: field(obj, ['businessProfile','primaryMarkets']),
+    technologies: field(obj, ['businessProfile','technologies']),
+    businessModel: field(obj, ['businessProfile','businessModel']),
+  });
+  const s = pick(single || {});
+  const d = pick(deep || {});
+  const diff: Record<string, { single: any; deep: any; improved?: boolean }> = {};
+  for (const key of Object.keys(s)) {
+    if (JSON.stringify((s as any)[key]) !== JSON.stringify((d as any)[key])) {
+      diff[key] = { single: (s as any)[key], deep: (d as any)[key], improved: !!(d as any)[key] && !(s as any)[key] };
+    }
+  }
+  return diff;
 }

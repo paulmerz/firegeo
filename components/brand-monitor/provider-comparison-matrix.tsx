@@ -4,7 +4,7 @@ import React, { useState, Fragment } from 'react';
 import { ProviderComparisonData } from '@/lib/types';
 import { ArrowUpDownIcon, ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
 import { CompetitorCell } from './competitor-cell';
-import { getConfiguredProviders } from '@/lib/provider-config';
+import { getConfiguredProviders, normalizeProviderName } from '@/lib/provider-config';
 import { useTranslations } from 'next-intl';
 
 interface ProviderComparisonMatrixProps {
@@ -151,6 +151,19 @@ export function ProviderComparisonMatrix({ data, brandName, competitors }: Provi
     }
   };
 
+  // Helper to safely fetch provider data regardless of key casing/variant
+  const getProviderData = (competitor: ProviderComparisonData, providerDisplayName: string) => {
+    const providersMap: any = (competitor as any).providers || {};
+    const normalized = normalizeProviderName(providerDisplayName);
+    return (
+      providersMap[providerDisplayName] ||
+      providersMap[normalized] ||
+      providersMap[providerDisplayName.toLowerCase()] ||
+      providersMap[providerDisplayName.toUpperCase()] ||
+      undefined
+    );
+  };
+
   // Get sorted data
   const getSortedData = () => {
     return [...data].sort((a, b) => {
@@ -162,8 +175,10 @@ export function ProviderComparisonMatrix({ data, brandName, competitors }: Provi
           : b.competitor.localeCompare(a.competitor);
       }
       
-      const aValue = a.providers[sortColumn]?.visibilityScore || 0;
-      const bValue = b.providers[sortColumn]?.visibilityScore || 0;
+      const aProv = getProviderData(a, sortColumn);
+      const bProv = getProviderData(b, sortColumn);
+      const aValue = aProv?.visibilityScore || 0;
+      const bValue = bProv?.visibilityScore || 0;
       return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
     });
   };
@@ -234,7 +249,7 @@ export function ProviderComparisonMatrix({ data, brandName, competitors }: Provi
                   />
                 </td>
                 {providers.map((provider, index) => {
-                  const providerData = competitor.providers[provider];
+                  const providerData = getProviderData(competitor, provider);
                   const score = providerData?.visibilityScore || 0;
                   
                   return (

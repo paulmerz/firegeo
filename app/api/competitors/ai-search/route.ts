@@ -6,12 +6,14 @@ export async function POST(request: NextRequest) {
   try {
     const { 
       company, 
-      maxResults = 10,
-      useWebSearch = true
+      maxResults = 9,
+      useWebSearch = true,
+      useSonarReasoning = false
     }: { 
       company: Company;
       maxResults?: number;
       useWebSearch?: boolean;
+      useSonarReasoning?: boolean;
     } = await request.json();
     
     if (!company || !company.name) {
@@ -21,13 +23,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🚀 [API-AISearch] Starting AI web search for:', company.name);
-    console.log(`⚙️ [API-AISearch] Options: ${maxResults} results, webSearch: ${useWebSearch}`);
+    console.log('🚀 [API-AISearch] Starting Perplexity competitor search for:', company.name);
+    console.log(`⚙️ [API-AISearch] Options: ${maxResults} results, webSearch: ${useWebSearch}, sonarReasoning: ${useSonarReasoning}`);
     
-    // Run only AI web search
-    const competitors = await findCompetitorsWithAIWebSearch(company as any, maxResults, useWebSearch, company.name);
+    // Run Perplexity competitor search
+    const competitors = await findCompetitorsWithAIWebSearch(
+      company as any, 
+      maxResults, 
+      useWebSearch, 
+      company.name, 
+      useSonarReasoning
+    );
     
-    console.log('✅ [API-AISearch] AI web search completed');
+    console.log('✅ [API-AISearch] Perplexity competitor search completed');
     console.log(`📊 [API-AISearch] Found: ${competitors.length} competitors`);
     
     return NextResponse.json({ 
@@ -37,7 +45,8 @@ export async function POST(request: NextRequest) {
         url: comp.url
       })),
       rawResults: competitors,
-      method: 'ai-web-search',
+      method: 'perplexity-ai-search',
+      model: useSonarReasoning ? 'sonar-reasoning' : 'sonar-pro',
       stats: {
         candidatesFound: competitors.length,
         finalCompetitors: competitors.length,
@@ -46,11 +55,11 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('❌ [API-AISearch] Error in AI web search:', error);
+    console.error('❌ [API-AISearch] Error in Perplexity competitor search:', error);
     
     return NextResponse.json(
       { 
-        error: 'Failed to run AI web search',
+        error: 'Failed to run Perplexity competitor search',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }

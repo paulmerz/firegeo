@@ -6,6 +6,7 @@ export interface SearchMethodConfig {
   method: 'ai-web-search';
   useWebSearch?: boolean;
   maxResults?: number;
+  useSonarReasoning?: boolean;
 }
 
 // Easy configuration presets for testing
@@ -14,13 +15,13 @@ export const SEARCH_CONFIGS = {
   aiWebSearch: {
     method: 'ai-web-search' as const,
     useWebSearch: true,
-    maxResults: 10
+    maxResults: 9
   },
   // AI search without web capabilities (knowledge-based only)
   aiKnowledge: {
     method: 'ai-web-search' as const,
     useWebSearch: false,
-    maxResults: 10
+    maxResults: 9
   }
 } as const;
 
@@ -42,17 +43,24 @@ export function getApiEndpoint(method: SearchMethodConfig['method']): string {
 export function buildRequestBody(
   config: SearchMethodConfig,
   company: any,
-  locale?: string
+  locale?: string,
+  useIntelliSearch?: boolean
 ): Record<string, any> {
   switch (config.method) {
     case 'ai-web-search':
       return {
         company,
-        maxResults: config.maxResults || 10,
-        useWebSearch: config.useWebSearch ?? true
+        maxResults: config.maxResults || 9,
+        useWebSearch: config.useWebSearch ?? true,
+        useSonarReasoning: useIntelliSearch ?? config.useSonarReasoning ?? false
       };
     default:
-      return { company, maxResults: config.maxResults || 10, useWebSearch: true };
+      return { 
+        company, 
+        maxResults: config.maxResults || 9, 
+        useWebSearch: true,
+        useSonarReasoning: useIntelliSearch ?? false
+      };
   }
 }
 
