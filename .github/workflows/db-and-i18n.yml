@@ -12,8 +12,9 @@ jobs:
   preview:
     if: github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
+    environment: preview
     env:
-      DATABASE_URL: ${{ secrets.PREVIEW_DATABASE_URL }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup pnpm
@@ -35,8 +36,9 @@ jobs:
   production:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: production
     env:
-      DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup pnpm
