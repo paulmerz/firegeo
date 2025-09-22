@@ -64,3 +64,6 @@ cookies.txt
 # Generated files
 repomix-output.txt
 i18n.cache
+
+# lockfiles from other package managers
+package-lock.json
