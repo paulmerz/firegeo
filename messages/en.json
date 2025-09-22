@@ -380,6 +380,152 @@
       "vercel": { "name": "Vercel", "role": "Subprocessor", "purpose": "Hosting & deployment", "loc": "Global (incl. US/EU)", "data": "Server logs, IP, request metadata" }
     }
   },
+  "terms": {
+    "title": "Terms of Service – VOXUM",
+    "meta": { "version": "Version: {date} — Effective as of this date" },
+    "nav": {
+      "aria": "Terms of Service table of contents",
+      "general": "1) General",
+      "personal": "2) Personal use conditions",
+      "access": "3) Access conditions, Internet",
+      "features": "4) Main features and Services",
+      "ip": "5) Intellectual property",
+      "restrictions": "6) Usage restrictions",
+      "privacy": "7) Data protection",
+      "changes": "8) Changes & suspension",
+      "warranty": "9) Warranty disclaimer",
+      "liability": "10) Liability",
+      "indemnification": "11) Indemnification",
+      "misc": "12) Miscellaneous",
+      "law": "13) Governing law and venue",
+      "contact": "14) Contact us"
+    },
+    "content": {
+      "general": {
+        "p1": "These Terms of Service (the 'Terms') apply to any use of the VOXUM website and services available at https://voxum.maj.digital (the 'Service'), provided by MAJ Holding Sàrl (CHE-391.786.123), Ch. Bois-Gentil 7, 1203 Geneva ('we', 'us' or 'VOXUM').",
+        "p2": "Any use of the Service by a user ('you' or 'User') constitutes acceptance of these Terms. If you use the Service on behalf of a legal entity, you confirm you are authorized to bind it and you accept these Terms on its behalf.",
+        "p3": "We may modify these Terms at any time; you will be informed appropriately. Any subsequent use constitutes acceptance of the updated Terms.",
+        "p4": "Some services (payments, API, integrations) may be subject to specific terms in addition to these Terms."
+      },
+      "personal": { "p1": "By using the Service, you confirm you are at least 18 years old and, where applicable, authorized to act for the legal entity on whose behalf you use the Service." },
+      "access": {
+        "p1": "Equipment and telecommunication fees required to access the Service are at your expense.",
+        "p2": "Internet use involves risks (interception, loss, viruses). You accept these risks; we disclaim any resulting liability to the extent permitted by law."
+      },
+      "features": {
+        "p1": "VOXUM enables professional users to analyze their brand visibility across AI models and third-party search engines (OpenAI, Anthropic/Claude, Perplexity, Google, etc.) and obtain aggregated reports.",
+        "p2": "Some services are paid according to the displayed plans. Orders and payments are handled via our payment provider; additional commercial terms are set out in the applicable documents (e.g., billing).",
+        "p3": "Prices are shown in EUR/CHF depending on context; they may change. Taxes and additional fees may apply depending on the country."
+      },
+      "ip": {
+        "p1": "Subject to user content (sec. 5.3) and third-party elements (models, APIs), VOXUM and its licensors own all intellectual property rights to the Service and its content.",
+        "p2": "License: a personal, revocable, non-exclusive and non-transferable license is granted to you to use the Service strictly under these Terms.",
+        "p3": "User content: you retain your rights over content you submit. You grant us a worldwide, non-exclusive, free and transferable license to host, process, display and reproduce such content to operate the Service. We may remove any unlawful content or content contrary to the Terms."
+      },
+      "restrictions": { "p1": "Prohibited notably: (i) massive extraction or reuse of content (scraping/crawling), (ii) attempting to access source code, (iii) using the Service for unlawful activities, (iv) circumventing our usage limits, (v) using the Service to train models or evaluate individuals, unless agreed in writing." },
+      "privacy": { "p1": "Our Privacy Policy forms an integral part of these Terms and describes personal data processing: /privacy." },
+      "changes": { "p1": "We may modify, suspend or stop all or part of the Service, with or without notice, without liability, within legal limits." },
+      "warranty": { "p1": "The Service is provided 'as is' and 'as available'. No warranty of accuracy, availability or fitness for a particular purpose is given. AI model outputs may contain errors; you remain responsible for their use." },
+      "liability": { "p1": "To the extent permitted by law, we disclaim liability for indirect or consequential damages (loss of profit, data, opportunity). Total liability, if any, is capped at amounts paid for the Service over the last 12 months." },
+      "indemnification": { "p1": "You will indemnify VOXUM against any claim arising from your breach of the Terms, law, or third-party rights." },
+      "misc": { "p1": "Severability: invalidity of a clause does not affect the rest. Assignment: you may not assign your rights without our consent; we may assign the Service. Force majeure: we are not liable for force majeure events." },
+      "law": { "p1": "Swiss law applies; exclusive venue in Geneva, subject to mandatory venue." },
+      "contact": { "p1": "Contact: info@maj.digital — MAJ Holding Sàrl, Ch. Bois-Gentil 7, 1203 Geneva, Switzerland." },
+
+      "objectif": {
+        "title": "Tool Objective",
+        "p1": "Accelerate brand/product discovery, comparison and recommendations by combining real-time web search and AI analysis, while keeping outputs structured and actionable for the team (Marketing, Growth, Product, Procurement).",
+        "results": {
+          "title": "Expected results",
+          "li1": "Up-to-date relevant brand lists (OpenAI/Perplexity web search).",
+          "li2": "Alternative comparisons with criteria, sentiment and confidence level.",
+          "li3": "Structured responses via AIResponse (rankings, mentions, sources)."
+        },
+        "map": {
+          "title": "Mapping to modules",
+          "orchestrator": "Analysis orchestration:",
+          "openai": { "label": "OpenAI Web Search (Responses + web_search):", "link": "documentation", "impl": "implementation" },
+          "perplexity": "Competitor pipeline Perplexity → OpenAI structured conversion:",
+          "model": "Output model:",
+          "in": "in"
+        },
+        "more": { "title": "Go further", "p1": "See <prompts>Writing effective prompts</prompts> and <lecture>Read and interpret results</lecture> to maximize relevance and interpretation." }
+      },
+      "prompts": {
+        "title": "Writing effective prompts",
+        "p1": "Prompts should be specific, separated by intent and aligned with expected output structures (AIResponse). Use measurable criteria and market context to guide web search.",
+        "types": {
+          "title": "Request types (aligned with PROMPT_TEMPLATES)",
+          "ranking": "<strong>Ranking</strong> — “top {industry} in {year}”; aims for comparable lists suitable for <link>rankings</link>.",
+          "comparison": "<strong>Comparison</strong> — compare {brand} vs {competitors}; emphasize criteria.",
+          "alternatives": "<strong>Alternatives</strong> — “alternatives to {brand}”; keep 3–5 options max.",
+          "recommendations": "<strong>Recommendations</strong> — by use/need, constraints and budget."
+        },
+        "examples": { "title": "Guided examples", "ex1": "1) Brand recommendations (trends 2025)", "ex2": "2) Comparison: leader alternative", "ex3": "3) Recommendation by product/use" },
+        "tech": {
+          "title": "Technical options",
+          "li1": "<strong>Web search</strong>: enable useWebSearch for OpenAI — see <link>OpenAI Web Search</link>.",
+          "li2": "<strong>Models</strong>: favor gpt-4o-mini (cost/latency) and switch to gpt-4o if needed.",
+          "li3": "<strong>Scope</strong>: specify country/region, segment and company size to guide search."
+        },
+        "best": {
+          "title": "Best practices",
+          "li1": "Define 3–5 measurable criteria and context (market, country, target).",
+          "li2": "Separate discovery, comparison and recommendation into distinct prompts.",
+          "li3": "Limit to 5 options to ease decision making.",
+          "li4": "State constraints (budget, distribution, materials, size)."
+        }
+      },
+      "lecture": {
+        "title": "Read and interpret results",
+        "p1": "Results are structured around AIResponse and derivatives (CompanyRanking, etc.). Here’s how to interpret the key sections.",
+        "structure": {
+          "title": "AIResponse structure (extracts)",
+          "li1": "response: generated text.",
+          "li2": "rankings: list of CompanyRanking (position, company, sentiment).",
+          "li3": "competitors: mentioned/detected competitors.",
+          "li4": "brandMentioned, brandPosition: target brand detection.",
+          "li5": "sentiment, confidence: mood summary and confidence.",
+          "li6": "webSearchSources: sources from web search (if enabled)."
+        },
+        "rankings": { "title": "Interpreting rankings", "p1": "Positions come from structured analysis of the generated text. Detection uses intelligent brand variations to reduce false negatives." },
+        "sources": { "title": "Web search sources", "p1": "If web search is enabled, URLs may be extracted from several OpenAI response fields (alternate paths, annotations) and directly from text (“Sources consulted”). Use these sources to audit freshness and reliability." },
+        "scores": { "title": "Scores and matrices", "li1": "<strong>Visibility</strong>: aggregation of signals (SERP, mentions). Cross-check with business relevance.", "li2": "<strong>Comparison matrix</strong>: homogeneous comparison (price, performance, distribution, differentiation) to identify trade-offs." }
+      },
+      "credits": {
+        "title": "Credit consumption",
+        "p1": "Credits are consumed during the following operations: scraping, web search, AI calls (generation, structured conversion). Cost depends on models, context lengths, and search depth.",
+        "factors": { "title": "Influencing factors", "li1": "<strong>OpenAI web search</strong>: adds token cost (responses + source extraction).", "li2": "<strong>Perplexity competitor pipeline</strong>: Perplexity cost + OpenAI structured conversion.", "li3": "<strong>Model</strong>: gpt-4o-mini recommended to optimize cost/latency." },
+        "orders": { "title": "Orders of magnitude", "li1": "Quick discovery: low cost.", "li2": "Detailed comparison (3–5 alternatives): medium cost.", "li3": "Extended web search + structuring: higher cost." },
+        "tracking": { "title": "Tracking", "p1": "The credit counter is visible in the dashboard with threshold alerts." }
+      },
+      "recharge": {
+        "title": "Recharge credits",
+        "p1": "You can top up credits at any time from the plans page. Purchases are immediate and credits become available instantly after secure payment.",
+        "p2": "Go to <plans>Plans & Pricing</plans> to choose the offer suited to your usage.",
+        "best": { "title": "Management best practices", "li1": "Schedule heavy analyses (web search + structuring) during off-peak periods.", "li2": "Separate discovery, comparison and recommendation into distinct runs.", "li3": "Monitor threshold alerts to anticipate top-ups." }
+      },
+      "openai": {
+        "title": "OpenAI Web Search",
+        "intro": "This section documents the OpenAI web search integration via the Responses API and the web_search tool. It covers the technical flow, code integration, configuration, error handling, and test examples.",
+        "tabs": { "overview": "Overview", "flow": "Technical flow", "code": "Code integration", "errors": "Errors & Fallbacks", "tests": "Tests" },
+        "overview": { "featuresTitle": "Features", "li1": "OpenAI Responses integration with the web_search tool.", "li2": "Robust source extraction (multiple response paths supported).", "li3": "Structured analysis of output text (brand/competitor detection, ranking, sentiment).", "li4": "Controlled fallbacks (model, missing API key, auth errors).", "webEnabled": "Web search enabled", "demo": "UI demo" },
+        "flow": {
+          "title": "Technical flow (summary)",
+          "li1": "UI enables useWebSearch for the OpenAI provider.",
+          "li2": "analyzePromptWithOpenAIWebSearch builds a reinforced prompt (\"Sources consulted\" section).",
+          "li3": "Call client.responses.create with tools: [{ type: \"web_search\" }] and max_output_tokens.",
+          "li4": "Check output_text then extract sources via known fields, annotations and URLs in text.",
+          "li5": "Call structured analysis via chat.completions.create to produce rankings/sentiment/mentions.",
+          "li6": "Enhanced brand detection via intelligent variations (normalization and AI if multi-word).",
+          "li7": "Return an AIResponse object including webSearchSources."
+        },
+        "code": { "title": "Integration examples", "call1": "Direct call to OpenAI Web Search implementation:", "call2": "Automatic activation via orchestration (if available):", "env": "Required configuration:" },
+        "errors": { "title": "Error handling and fallbacks", "li1": "Missing key: if OPENAI_API_KEY is absent → exception during client initialization.", "li2": "Unsupported model: switch to gpt-4o-mini. Supported: gpt-4o, gpt-4o-mini.", "li3": "Auth errors (401, invalid_api_key): function returns null to ignore this provider.", "li4": "Empty response: throws explicit \"empty response\" error.", "li5": "Structured analysis failed: fallback to textual analysis with variation-based detection." },
+        "tests": { "title": "Tests & validation", "cli": "CLI script (if present):", "checks": "Expected checks:", "li1": "Non-empty output_text.", "li2": "Extraction of at least 1–3 webSearchSources when relevant.", "li3": "Structured fields (rankings, sentiment, mentions) consistent with the response." }
+      }
+    }
+  },
   "auth": {
     "loginTitle": "Sign in to your account",
     "registerTitle": "Create your account",
@@ -414,6 +560,7 @@
     "passwordPlaceholder": "Enter your password",
     "fullNamePlaceholder": "Enter your full name",
     "newPasswordPlaceholder": "Choose a strong password",
+    "support247": "24h support",
     "passwordRequirement": "Must be at least 8 characters long",
     "rememberMe": "Remember me",
     "or": "Or",
@@ -571,7 +718,9 @@
       "analysisPreparationFailed": "Failed to prepare analysis. Please try again."
     },
     "analysis": {
-      "startingAnalysis": "Starting analysis...",
+        "startingAnalysis": "Starting analysis...",
+        "extractingBrands": "Extracting brand mentions...",
+        "brandExtractionComplete": "Brand extraction complete",
       "comparisonMatrix": {
         "title": "Comparison Matrix",
         "description": "Compare the proportion of brand mentions detected per response provided by AI providers based on the total number of responses provided",
@@ -585,6 +734,29 @@
         "totalPrompts": "Total Prompts"
       },
       "yourBrand": "Your Brand"
+    },
+    "providerRankings": {
+      "title": "Brand Rankings",
+      "description": "Your brand performance by AI provider",
+      "averageRank": "Average Rank",
+      "company": "Company",
+      "visibility": "Visibility",
+      "shareOfVoice": "Share of Voice",
+      "sentiment": "Sentiment",
+      "positive": "Positive",
+      "negative": "Negative",
+      "neutral": "Neutral",
+      "competitors": "Competitors",
+      "rank": "Rank",
+      "averagePosition": "Average Position",
+      "sentimentScore": "Sentiment Score"
+    },
+    "visibilityScore": {
+      "title": "Visibility Score",
+      "description": "Your brand visibility across AI providers",
+      "overallScore": "Overall Score",
+      "rank": "Rank",
+      "visibilityTooltip": "visibility"
     }
   },
   "pricing": {

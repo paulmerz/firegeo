@@ -86,6 +86,171 @@
       "step2": "Suivre les conseils de <prompts>Prompts</prompts> pour des résultats ciblés.",
       "step3": "Activer la <openai>recherche web OpenAI</openai> si besoin d’informations à jour.",
       "step4": "Consulter <lecture>Lire les résultats</lecture> pour interpréter les champs de sortie."
+    },
+    "objectif": {
+      "title": "Objectif de l’outil",
+      "p1": "Accélérer la découverte, la comparaison et la recommandation de marques/produits en combinant recherche web temps réel et analyse IA, tout en gardant des sorties structurées exploitables par l’équipe (Marketing, Growth, Produit, Achats).",
+      "results": {
+        "title": "Résultats attendus",
+        "li1": "Listes de marques pertinentes et à jour (recherche web OpenAI/Perplexity).",
+        "li2": "Comparaisons d’alternatives avec critères, sentiment et niveau de confiance.",
+        "li3": "Réponses structurées via AIResponse (rankings, mentions, sources)."
+      },
+      "map": {
+        "title": "Cartographie aux modules",
+        "orchestrator": "Orchestration analyses:",
+        "openai": {
+          "label": "OpenAI Web Search (Responses + web_search):",
+          "link": "documentation",
+          "impl": "implémentation"
+        },
+        "perplexity": "Pipeline concurrents Perplexity → conversion OpenAI:",
+        "model": "Modèle de sortie:",
+        "in": "dans"
+      },
+      "more": {
+        "title": "Aller plus loin",
+        "p1": "Consultez <prompts>Bien écrire ses prompts</prompts> et <lecture>Lire et interpréter les résultats</lecture> pour maximiser la pertinence et l’interprétation des analyses."
+      }
+    },
+    "prompts": {
+      "title": "Bien écrire ses prompts",
+      "p1": "Les prompts doivent être spécifiques, séparés par intention et alignés sur les structures de sortie attendues (AIResponse). Utilisez des critères mesurables et le contexte marché pour guider la recherche web.",
+      "types": {
+        "title": "Types de demandes (alignés avec PROMPT_TEMPLATES)",
+        "ranking": "<strong>Ranking</strong> — « top {industry} en {year} »; vise des listes comparables et exploitables pour <link>rankings</link>.",
+        "comparison": "<strong>Comparison</strong> — comparer {brand} vs {competitors}; insistez sur les critères.",
+        "alternatives": "<strong>Alternatives</strong> — « alternatives à {brand} »; garder 3–5 options max.",
+        "recommendations": "<strong>Recommendations</strong> — par usage/besoin, contraintes et budget."
+      },
+      "examples": {
+        "title": "Exemples guidés",
+        "ex1": "1) Recommandations de marque (tendances 2025)",
+        "ex2": "2) Comparaison: alternative au leader",
+        "ex3": "3) Recommandation par produit/usage"
+      },
+      "tech": {
+        "title": "Options techniques",
+        "li1": "<strong>Recherche web</strong>: activez useWebSearch pour OpenAI — voir <link>OpenAI Web Search</link>.",
+        "li2": "<strong>Modèles</strong>: privilégier gpt-4o-mini (coût/latence) et bascule vers gpt-4o si besoin.",
+        "li3": "<strong>Périmètre</strong>: précisez pays/région, segment et taille d’entreprise pour guider la recherche."
+      },
+      "best": {
+        "title": "Bonnes pratiques",
+        "li1": "Définir 3–5 critères mesurables et un contexte (marché, pays, cible).",
+        "li2": "Séparer découverte, comparaison et recommandation en prompts distincts.",
+        "li3": "Limiter à 5 options pour faciliter la décision.",
+        "li4": "Énoncer contraintes (budget, distribution, matériaux, taille)."
+      }
+    },
+    "lecture": {
+      "title": "Lire et interpréter les résultats",
+      "p1": "Les résultats sont structurés autour du type AIResponse et de dérivés (CompanyRanking, etc.). Voici comment interpréter les sections clés.",
+      "structure": {
+        "title": "Structure AIResponse (extraits)",
+        "li1": "response: texte généré.",
+        "li2": "rankings: liste de CompanyRanking (position, company, sentiment).",
+        "li3": "competitors: concurrents mentionnés/détectés.",
+        "li4": "brandMentioned, brandPosition: détection de la marque cible.",
+        "li5": "sentiment, confidence: synthèse d’humeur et confiance.",
+        "li6": "webSearchSources: sources issues de la recherche web (si activée)."
+      },
+      "rankings": {
+        "title": "Interpréter les classements",
+        "p1": "Les positions proviennent de l’analyse structurée du texte généré. La détection s’appuie sur des variations intelligentes de marque pour réduire les faux négatifs."
+      },
+      "sources": {
+        "title": "Sources de recherche web",
+        "p1": "Si la recherche web est activée, les URLs peuvent être extraites depuis plusieurs champs de la réponse OpenAI (chemins alternatifs, annotations) et directement du texte (« Sources consultées »). Utilisez ces sources pour auditer la fraîcheur et la fiabilité."
+      },
+      "scores": {
+        "title": "Scores et matrices",
+        "li1": "<strong>Visibilité</strong>: agrégation de signaux (SERP, mentions). À croiser avec la pertinence business.",
+        "li2": "<strong>Matrix de comparaison</strong>: comparaison homogène (prix, perf, distribution, différenciation) pour identifier les trade-offs."
+      }
+    },
+    "credits": {
+      "title": "Consommation de crédits",
+      "p1": "Les crédits sont consommés lors des opérations suivantes: scraping, recherche web, appels IA (génération, conversion structurée). Le coût dépend des modèles, des longueurs de contexte et de la profondeur de recherche.",
+      "factors": {
+        "title": "Facteurs influents",
+        "li1": "<strong>Recherche web OpenAI</strong>: ajoute un coût en tokens (réponses + extraction des sources).",
+        "li2": "<strong>Pipeline concurrents Perplexity</strong>: coût Perplexity + conversion structurée OpenAI.",
+        "li3": "<strong>Modèle</strong>: gpt-4o-mini recommandé pour optimiser coûts/latence."
+      },
+      "orders": {
+        "title": "Ordres de grandeur",
+        "li1": "Découverte rapide: faible coût.",
+        "li2": "Comparaison détaillée (3–5 alternatives): coût moyen.",
+        "li3": "Recherche web étendue + structuration: coût plus élevé."
+      },
+      "tracking": {
+        "title": "Suivi",
+        "p1": "Le compteur de crédits est visible dans le tableau de bord avec alertes seuils."
+      }
+    },
+    "recharge": {
+      "title": "Recharger ses crédits",
+      "p1": "Vous pouvez recharger vos crédits à tout moment depuis la page des plans. Les achats sont immédiats et les crédits disponibles instantanément après paiement sécurisé.",
+      "p2": "Accédez à la page <plans>Plans & Tarifs</plans> pour choisir l’offre adaptée à votre usage.",
+      "best": {
+        "title": "Bonnes pratiques de gestion",
+        "li1": "Planifier les analyses lourdes (web search + structuration) en période creuse.",
+        "li2": "Séparer découverte, comparaison et recommandation en runs distincts.",
+        "li3": "Surveiller les alertes de seuils pour anticiper les recharges."
+      }
+    },
+    "openai": {
+      "title": "OpenAI Web Search",
+      "intro": "Cette section documente l’intégration de la recherche web OpenAI via l’API Responses et l’outil web_search. Elle couvre le flux technique, l’intégration dans le code, la configuration, la gestion des erreurs et des exemples de tests.",
+      "tabs": {
+        "overview": "Vue d’ensemble",
+        "flow": "Flux technique",
+        "code": "Intégration code",
+        "errors": "Erreurs & Fallbacks",
+        "tests": "Tests"
+      },
+      "overview": {
+        "featuresTitle": "Fonctionnalités",
+        "li1": "Intégration OpenAI Responses avec l’outil web_search.",
+        "li2": "Extraction robuste des sources (plusieurs chemins de réponse pris en charge).",
+        "li3": "Analyse structurée du texte de sortie (détection marques/compétiteurs, classement, sentiment).",
+        "li4": "Fallbacks contrôlés (modèle, absence d’API key, erreurs auth).",
+        "webEnabled": "Recherche web activée",
+        "demo": "Démonstration UI"
+      },
+      "flow": {
+        "title": "Flux technique (résumé)",
+        "li1": "L’UI active useWebSearch pour le provider OpenAI.",
+        "li2": "analyzePromptWithOpenAIWebSearch construit un prompt renforcé (section « Sources consultées »).",
+        "li3": "Appel client.responses.create avec tools: [{ type: \"web_search\" }] et max_output_tokens.",
+        "li4": "Vérification de output_text puis extraction des sources via champs connus, annotations et URLs dans le texte.",
+        "li5": "Appel d’une analyse structurée via chat.completions.create pour produire rankings/sentiment/mentions.",
+        "li6": "Détection renforcée des marques via variations intelligentes (normalisation et IA si multi-mots).",
+        "li7": "Retour d’un objet AIResponse incluant webSearchSources."
+      },
+      "code": {
+        "title": "Exemples d’intégration",
+        "call1": "Appel direct de l’implémentation OpenAI Web Search :",
+        "call2": "Activation automatique via orchestration (si disponible) :",
+        "env": "Configuration requise :"
+      },
+      "errors": {
+        "title": "Gestion des erreurs et fallbacks",
+        "li1": "Clé manquante : si OPENAI_API_KEY absent → exception lors de l’initialisation client.",
+        "li2": "Modèle non supporté : bascule vers gpt-4o-mini. Modèles supportés: gpt-4o, gpt-4o-mini.",
+        "li3": "Erreurs d’auth (401, invalid_api_key) : la fonction retourne null pour ignorer ce provider.",
+        "li4": "Réponse vide : lève une erreur explicite « empty response ».",
+        "li5": "Analyse structurée échouée : fallback sur analyse textuelle avec détection par variations."
+      },
+      "tests": {
+        "title": "Tests & validation",
+        "cli": "Script CLI (si présent) :",
+        "checks": "Vérifications attendues :",
+        "li1": "Présence de output_text non vide.",
+        "li2": "Extraction d’au moins 1–3 webSearchSources lorsque pertinent.",
+        "li3": "Champs structurés (rankings, sentiment, mentions) cohérents avec la réponse."
+      }
     }
   },
   "privacy": {
@@ -921,7 +1086,20 @@
       "mainProductsNote": "Pour mainProducts, lister les PRODUITS RÉELS (ex : \"glacières\", \"gobelets\", \"articles de boisson\") pas les catégories de produits",
       "competitorsNote": "Pour competitors, extraire les NOMS COMPLETS D'ENTREPRISES (ex : \"RTIC\", \"IGLOO\", \"Coleman\") pas seulement les initiales",
       "focusNote": "Se concentrer sur ce que l'entreprise FABRIQUE/VEND, pas ce qui va DANS leurs produits (ex : Yeti fabrique des glacières, pas des boissons)",
-      "languageNote": "Retourner le contenu en {locale_name}"
+      "languageNote": "Retourner le contenu en {locale_name}",
+      "nameExtractionTitle": "INSTRUCTIONS CRITIQUES POUR L’EXTRACTION DU NOM D’ENTREPRISE :",
+      "nameExtraction1": "Extraire le nom de l’entreprise COMPLET et EXACT tel qu’il apparaît officiellement sur le site web",
+      "nameExtraction2": "PRÉSERVER TOUS les caractères y compris : chiffres, lettres, caractères spéciaux, espaces, ponctuation",
+      "nameExtraction3": "NE PAS abréger, tronquer ou modifier une partie du nom",
+      "nameExtraction4": "NE PAS retirer des lettres ou chiffres qui paraissent redondants",
+      "nameExtraction5": "Chercher le nom à plusieurs endroits : titre de page, en-tête, pied de page, coordonnées, section à propos",
+      "nameExtraction6": "S’il existe plusieurs variantes, choisir la version la plus complète et officielle",
+      "nameExtractionExamples": "Exemples d’extraction CORRECTE du nom :",
+      "nameExample1": "\"5QB Avocats\" → \"5QB Avocats\" (PAS \"5Q Avocats\")",
+      "nameExample2": "\"ABC123 Solutions\" → \"ABC123 Solutions\" (PAS \"ABC Solutions\")",
+      "nameExample3": "\"Smith & Associates LLC\" → \"Smith & Associates LLC\" (PAS \"Smith Associates\")",
+      "nameExample4": "\"Tech-Pro Industries\" → \"Tech-Pro Industries\" (PAS \"TechPro Industries\")",
+      "namePrecisionNote": "Le nom de l’entreprise DOIT être extrait avec une précision absolue — chaque caractère compte"
     },
     "analysisPrompt": {
       "analyzeResponse": "Analyser cette réponse IA concernant {brandName} et les concurrents {competitors} :",
