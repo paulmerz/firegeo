@@ -1,0 +1,75 @@
+name: Database Migrations & i18n Check
+
+on:
+  push:
+    branches: [ dev, main ]
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    if: github.ref == 'refs/heads/dev'
+    name: Preview (dev)
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.PREVIEW_DATABASE_URL }}
+      BETTER_AUTH_SECRET: ${{ secrets.PREVIEW_BETTER_AUTH_SECRET }}
+      NEXT_PUBLIC_APP_URL: ${{ secrets.PREVIEW_APP_URL }}
+      AUTUMN_SECRET_KEY: ${{ secrets.PREVIEW_AUTUMN_SECRET_KEY }}
+      NODE_ENV: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install deps
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Run database setup (migrations)
+        run: node setup.js
+
+      - name: i18n check
+        run: pnpm run i18n:check
+
+  production:
+    if: github.ref == 'refs/heads/main'
+    name: Production (main)
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+      BETTER_AUTH_SECRET: ${{ secrets.PRODUCTION_BETTER_AUTH_SECRET }}
+      NEXT_PUBLIC_APP_URL: ${{ secrets.PRODUCTION_APP_URL }}
+      AUTUMN_SECRET_KEY: ${{ secrets.PRODUCTION_AUTUMN_SECRET_KEY }}
+      NODE_ENV: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install deps
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Run database setup (migrations)
+        run: node setup.js
+
+      - name: i18n check
+        run: pnpm run i18n:check
+
+
