@@ -31,6 +31,9 @@ const log = {
   header: (title) => console.log(`\n${title}\n${'─'.repeat(title.length)}`)
 };
 
+// Detect CI environment
+const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+
 // Execute command and return promise (robuste Windows/macOS/Linux)
 const exec = (command, args = [], options = {}) => {
   return new Promise((resolve, reject) => {
@@ -65,7 +68,12 @@ const execWithInput = (command, args = [], input = 'y\n') => {
 
 // Check prerequisites
 async function checkPrerequisites() {
-  // Check .env.local
+  // If DATABASE_URL is provided via environment (e.g., GitHub Actions), accept it
+  if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('PASTE_YOUR')) {
+    return;
+  }
+
+  // Local dev fallback: ensure .env.local exists and contains DATABASE_URL
   if (!fs.existsSync('.env.local')) {
     if (fs.existsSync('.env.example')) {
       fs.copyFileSync('.env.example', '.env.local');
@@ -75,7 +83,6 @@ async function checkPrerequisites() {
     throw new Error('.env.example not found');
   }
 
-  // Check DATABASE_URL
   if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes('PASTE_YOUR')) {
     log.error('DATABASE_URL not configured in .env.local');
     process.exit(1);
@@ -171,7 +178,7 @@ async function applyMigrations(dir, description) {
 
 // Main setup
 async function main() {
-  console.log('\n🔥 Fire SaaS Geo Setup\n');
+  console.log('\n🔥 Voxum Setup\n');
   
   try {
     // Prerequisites
@@ -179,10 +186,12 @@ async function main() {
     await testDatabase();
     await ensureExtensions();
     
-    // Install dependencies
-    process.stdout.write('Installing dependencies... ');
-    await exec('npm', ['install', '--quiet']);
-    console.log('✓');
+    // Install dependencies (skip in CI: already installed in workflow)
+    if (!isCI) {
+      process.stdout.write('Installing dependencies... ');
+      await exec('npm', ['install', '--quiet']);
+      console.log('✓');
+    }
     
     // Database setup
     log.header('Database');
