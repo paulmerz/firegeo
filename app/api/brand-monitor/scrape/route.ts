@@ -13,9 +13,13 @@ import {
 import { FEATURE_ID_MESSAGES } from '@/config/constants';
 import { apiUsageTracker } from '@/lib/api-usage-tracker';
 
-const autumn = new Autumn({
-  secretKey: process.env.AUTUMN_SECRET_KEY!,
-});
+function getAutumn() {
+  const secret = process.env.AUTUMN_SECRET_KEY;
+  if (!secret) {
+    throw new Error('Autumn secret key or publishable key is required');
+  }
+  return new Autumn({ secretKey: secret });
+}
 
 export async function POST(request: NextRequest) {
   try {

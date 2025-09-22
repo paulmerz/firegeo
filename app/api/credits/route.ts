@@ -4,9 +4,13 @@ import { Autumn } from 'autumn-js';
 import { AuthenticationError, ExternalServiceError, handleApiError } from '@/lib/api-errors';
 import { FEATURE_ID_MESSAGES } from '@/config/constants';
 
-const autumn = new Autumn({
-  secretKey: process.env.AUTUMN_SECRET_KEY!,
-});
+function getAutumn() {
+  const secret = process.env.AUTUMN_SECRET_KEY;
+  if (!secret) {
+    throw new Error('Autumn secret key or publishable key is required');
+  }
+  return new Autumn({ secretKey: secret });
+}
 
 // Simple in-memory dedupe to avoid accidental multiple debits on fast re-renders
 // Key: `${userId}:${reason}` → timestamp
@@ -27,7 +31,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check feature access for messages
-    const access = await autumn.check({
+    const access = await getAutumn().check({
       customer_id: sessionResponse.user.id,
       feature_id: FEATURE_ID_MESSAGES,
     });
@@ -65,7 +69,7 @@ export async function POST(request: NextRequest) {
         const last = lastDebitByReason.get(key) || 0;
         if (now - last < windowMs) {
           // Treat as success with no additional debit
-          const access = await autumn.check({
+          const access = await getAutumn().check({
             customer_id: sessionResponse.user.id,
             feature_id: FEATURE_ID_MESSAGES,
           });
@@ -76,7 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check balance before debit
-    const access = await autumn.check({
+    const access = await getAutumn().check({
       customer_id: sessionResponse.user.id,
       feature_id: FEATURE_ID_MESSAGES,
     });
@@ -86,7 +90,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Track usage
-    await autumn.track({
+    await getAutumn().track({
       customer_id: sessionResponse.user.id,
       feature_id: FEATURE_ID_MESSAGES,
       value,
@@ -94,7 +98,7 @@ export async function POST(request: NextRequest) {
     } as any);
 
     // Return new balance
-    const updated = await autumn.check({
+    const updated = await getAutumn().check({
       customer_id: sessionResponse.user.id,
       feature_id: FEATURE_ID_MESSAGES,
     });

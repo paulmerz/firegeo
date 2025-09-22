@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from '@/i18n/routing';
+import { useRouter } from '@/i18n/routing';
 import { Link } from '@/i18n/routing';
+import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { authClient } from '@/lib/auth-client';
 import { ArrowLeft, CheckCircle } from 'lucide-react';

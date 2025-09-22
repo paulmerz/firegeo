@@ -19,9 +19,13 @@ import {
 } from '@/config/constants';
 import { apiUsageTracker } from '@/lib/api-usage-tracker';
 
-const autumn = new Autumn({
-  secretKey: process.env.AUTUMN_SECRET_KEY!,
-});
+function getAutumn() {
+  const secret = process.env.AUTUMN_SECRET_KEY;
+  if (!secret) {
+    throw new Error('Autumn secret key or publishable key is required');
+  }
+  return new Autumn({ secretKey: secret });
+}
 
 export const runtime = 'nodejs'; // Use Node.js runtime for streaming
 export const maxDuration = 300; // 5 minutes
@@ -57,7 +61,7 @@ export async function POST(request: NextRequest) {
     // Get remaining credits after deduction
     let remainingCredits = 0;
     try {
-      const usage = await autumn.check({
+      const usage = await getAutumn().check({
         customer_id: sessionResponse.user.id,
         feature_id: FEATURE_ID_MESSAGES,
       });
