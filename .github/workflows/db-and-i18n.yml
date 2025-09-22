@@ -20,6 +20,10 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
       - run: corepack enable
       - run: pnpm install --no-frozen-lockfile
       - name: Ensure pgcrypto
@@ -42,6 +46,10 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
       - run: corepack enable
       - run: pnpm install --no-frozen-lockfile
       - name: Ensure pgcrypto
