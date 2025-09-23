@@ -12,12 +12,12 @@ import {
   handleApiError 
 } from '@/lib/api-errors';
 import { 
-  FEATURE_ID_MESSAGES, 
-  CREDITS_PER_BRAND_ANALYSIS,
+  FEATURE_ID_CREDITS, 
   ERROR_MESSAGES,
   SSE_MAX_DURATION
 } from '@/config/constants';
 import { apiUsageTracker } from '@/lib/api-usage-tracker';
+import { logger } from '@/lib/logger';
 
 function getAutumn() {
   const secret = process.env.AUTUMN_SECRET_KEY;
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     // Start tracking for this analysis
     const analysisId = `analysis-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     apiUsageTracker.startAnalysis(analysisId);
-    console.log(`🔍 [ApiUsageTracker] Début du tracking pour l'analyse: ${analysisId}`);
+    logger.info(`[ApiUsageTracker] Début du tracking pour l'analyse: ${analysisId}`);
 
 
 
@@ -63,11 +63,11 @@ export async function POST(request: NextRequest) {
     try {
       const usage = await getAutumn().check({
         customer_id: sessionResponse.user.id,
-        feature_id: FEATURE_ID_MESSAGES,
+        feature_id: FEATURE_ID_CREDITS,
       });
       remainingCredits = usage.data?.balance || 0;
     } catch (err) {
-      console.error('Failed to get remaining credits:', err);
+      logger.error('Failed to get remaining credits:', err);
     }
 
     // Create a TransformStream for SSE
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
           stage: 'initializing',
           data: {
             remainingCredits,
-            creditsUsed: CREDITS_PER_BRAND_ANALYSIS
+            creditsUsed: (Array.isArray(customPrompts) ? customPrompts.length : 0) * 2
           },
           timestamp: new Date()
         });
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
           timestamp: new Date()
         });
       } catch (error) {
-        console.error('Analysis error:', error);
+        logger.error('Analysis error:', error);
         await sendEvent({
           type: 'error',
           stage: 'finalizing',
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     // For SSE endpoints, we need to return a proper error response
     // instead of using handleApiError which returns NextResponse
-    console.error('Brand monitor analyze API error:', error);
+    logger.error('Brand monitor analyze API error:', error);
     
     if (error instanceof AuthenticationError ||
         error instanceof InsufficientCreditsError ||

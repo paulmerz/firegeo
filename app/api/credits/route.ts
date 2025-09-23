@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { Autumn } from 'autumn-js';
 import { AuthenticationError, ExternalServiceError, handleApiError } from '@/lib/api-errors';
-import { FEATURE_ID_MESSAGES } from '@/config/constants';
+import { FEATURE_ID_CREDITS } from '@/config/constants';
 
 function getAutumn() {
   const secret = process.env.AUTUMN_SECRET_KEY;
@@ -30,10 +30,10 @@ export async function GET(request: NextRequest) {
       throw new AuthenticationError('Please log in to view your credits');
     }
 
-    // Check feature access for messages
+    // Check feature access for credits
     const access = await getAutumn().check({
       customer_id: sessionResponse.user.id,
-      feature_id: FEATURE_ID_MESSAGES,
+      feature_id: FEATURE_ID_CREDITS,
     });
 
     return NextResponse.json({
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
           // Treat as success with no additional debit
           const access = await getAutumn().check({
             customer_id: sessionResponse.user.id,
-            feature_id: FEATURE_ID_MESSAGES,
+            feature_id: FEATURE_ID_CREDITS,
           });
           return NextResponse.json({ success: true, balance: access.data?.balance || 0, deduped: true });
         }
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     // Check balance before debit
     const access = await getAutumn().check({
       customer_id: sessionResponse.user.id,
-      feature_id: FEATURE_ID_MESSAGES,
+      feature_id: FEATURE_ID_CREDITS,
     });
 
     if (!access.data?.allowed || (access.data?.balance ?? 0) < value) {
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     // Track usage
     await getAutumn().track({
       customer_id: sessionResponse.user.id,
-      feature_id: FEATURE_ID_MESSAGES,
+      feature_id: FEATURE_ID_CREDITS,
       value,
       // metadata optional; SDK may ignore unknown fields
     } as any);
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     // Return new balance
     const updated = await getAutumn().check({
       customer_id: sessionResponse.user.id,
-      feature_id: FEATURE_ID_MESSAGES,
+      feature_id: FEATURE_ID_CREDITS,
     });
 
     return NextResponse.json({ success: true, balance: updated.data?.balance || 0 });

@@ -1,0 +1,3 @@
+- Soyez spécifique et séparez les intentions
+- Définissez des critères mesurables
+- Donnez le contexte marché

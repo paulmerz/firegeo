@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { findCompetitorsWithAIWebSearch } from '@/lib/competitor-pipeline/ai-web-search';
 import { Company } from '@/lib/types';
 
@@ -23,8 +24,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🚀 [API-AISearch] Starting Perplexity competitor search for:', company.name);
-    console.log(`⚙️ [API-AISearch] Options: ${maxResults} results, webSearch: ${useWebSearch}, sonarReasoning: ${useSonarReasoning}`);
+    logger.info('🚀 [API-AISearch] Starting Perplexity competitor search for:', company.name);
+    logger.debug(`⚙️ [API-AISearch] Options: ${maxResults} results, webSearch: ${useWebSearch}, sonarReasoning: ${useSonarReasoning}`);
     
     // Run Perplexity competitor search
     const competitors = await findCompetitorsWithAIWebSearch(
@@ -35,8 +36,8 @@ export async function POST(request: NextRequest) {
       useSonarReasoning
     );
     
-    console.log('✅ [API-AISearch] Perplexity competitor search completed');
-    console.log(`📊 [API-AISearch] Found: ${competitors.length} competitors`);
+    logger.info('✅ [API-AISearch] Perplexity competitor search completed');
+    logger.info(`📊 [API-AISearch] Found: ${competitors.length} competitors`);
     
     return NextResponse.json({ 
       success: true, 
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('❌ [API-AISearch] Error in Perplexity competitor search:', error);
+    logger.error('❌ [API-AISearch] Error in Perplexity competitor search:', error);
     
     return NextResponse.json(
       { 

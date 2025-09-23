@@ -4,6 +4,7 @@ import { analyzePromptWithProvider as analyzePromptWithProviderEnhanced } from '
 import { canonicalizeBrandsWithOpenAI } from './openai-web-search';
 import { getConfiguredProviders } from './provider-config';
 import { apiUsageTracker } from './api-usage-tracker';
+import { logger } from './logger';
 
 export interface AnalysisConfig {
   company: Company;
@@ -65,7 +66,7 @@ export async function performAnalysis({
   let competitors: string[];
   if (userSelectedCompetitors && userSelectedCompetitors.length > 0) {
     competitors = userSelectedCompetitors.map(c => c.name);
-    console.log('Using user-selected competitors:', competitors);
+    logger.info('Using user-selected competitors:', competitors);
     
     // Send competitor events for UI
     for (let i = 0; i < competitors.length; i++) {
@@ -87,11 +88,11 @@ export async function performAnalysis({
   // Canonicalize competitors once (single OpenAI call) and propagate
   try {
     const { canonicalNames, mapping } = await canonicalizeBrandsWithOpenAI(competitors, locale);
-    console.log('[Canonicalizer] Raw -> Canonical mapping:', mapping);
-    console.log('[Canonicalizer] Canonical competitors:', canonicalNames);
+    logger.debug('[Canonicalizer] Raw -> Canonical mapping:', mapping);
+    logger.debug('[Canonicalizer] Canonical competitors:', canonicalNames);
     competitors = canonicalNames;
   } catch (e) {
-    console.warn('[Canonicalizer] Failed to canonicalize competitors, using raw list:', (e as Error)?.message);
+    logger.warn('[Canonicalizer] Failed to canonicalize competitors, using raw list:', (e as Error)?.message);
   }
 
   // Stage 2: Generate prompts
@@ -155,23 +156,23 @@ export async function performAnalysis({
   // Filter providers based on available API keys
   const availableProviders = getAvailableProviders();
   
-  console.log('=== PROVIDER DIAGNOSIS ===');
-  console.log('Available providers for analysis:', availableProviders.map(p => p.name));
-  console.log('Available provider details:', availableProviders.map(p => ({ name: p.name, model: p.model })));
-  console.log('Environment variables:', {
+  logger.debug('=== PROVIDER DIAGNOSIS ===');
+  logger.debug('Available providers for analysis:', availableProviders.map(p => p.name));
+  logger.debug('Available provider details:', availableProviders.map(p => ({ name: p.name, model: p.model })));
+  logger.debug('Environment variables:', {
     hasOpenAI: !!process.env.OPENAI_API_KEY,
     hasAnthropic: !!process.env.ANTHROPIC_API_KEY,
     hasGoogle: !!process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     hasPerplexity: !!process.env.PERPLEXITY_API_KEY
   });
-  console.log('Raw configured providers:', getConfiguredProviders().map(p => ({ 
+  logger.debug('Raw configured providers:', getConfiguredProviders().map(p => ({ 
     name: p.name, 
     enabled: p.enabled, 
     configured: p.isConfigured() 
   })));
-  console.log('Web search enabled:', useWebSearch);
-  console.log('Number of prompts:', analysisPrompts.length);
-  console.log('Number of available providers:', availableProviders.length);
+  logger.info('Web search enabled:', useWebSearch);
+  logger.info('Number of prompts:', analysisPrompts.length);
+  logger.info('Number of available providers:', availableProviders.length);
   
   let completedAnalyses = 0;
 
@@ -181,7 +182,7 @@ export async function performAnalysis({
   // If no providers are available and we're not in mock mode, add mock providers
   let workingProviders = availableProviders;
   if (availableProviders.length === 0) {
-    console.log('No providers configured, using mock providers for demonstration');
+    logger.warn('No providers configured, using mock providers for demonstration');
     workingProviders = [
       { name: 'OpenAI', model: 'gpt-4', icon: '🤖' },
       { name: 'Anthropic', model: 'claude-3', icon: '🔮' },
@@ -191,7 +192,7 @@ export async function performAnalysis({
 
   // If still no providers available, return early with error
   if (workingProviders.length === 0) {
-    console.error('No providers available for analysis');
+    logger.error('No providers available for analysis');
     await sendEvent({
       type: 'error',
       stage: 'analyzing-prompts',
@@ -222,7 +223,7 @@ export async function performAnalysis({
 
   // Recalculate total analyses with working providers
   const totalAnalyses = analysisPrompts.length * workingProviders.length;
-  console.log('Updated total analyses to perform:', totalAnalyses);
+  logger.info('Updated total analyses to perform:', totalAnalyses);
 
   // Process prompts in parallel batches of 3
   const BATCH_SIZE = 3;
@@ -254,13 +255,13 @@ export async function performAnalysis({
 
         try {
           // Debug log for each provider attempt
-          console.log(`\n=== STARTING ANALYSIS ===`);
-          console.log(`Provider: ${provider.name}`);
-          console.log(`Prompt: "${prompt.prompt.substring(0, 50)}..."`);
-          console.log(`Use mock mode: ${useMockMode}`);
-          console.log(`Use web search: ${useWebSearch}`);
-          console.log(`Brand: ${company.name}`);
-          console.log(`Competitors: ${competitors.slice(0, 3).join(', ')}${competitors.length > 3 ? '...' : ''}`);
+          logger.debug(`\n=== STARTING ANALYSIS ===`);
+          logger.debug(`Provider: ${provider.name}`);
+          logger.debug(`Prompt: "${prompt.prompt.substring(0, 50)}..."`); 
+          logger.debug(`Use mock mode: ${useMockMode}`);
+          logger.debug(`Use web search: ${useWebSearch}`);
+          logger.debug(`Brand: ${company.name}`);
+          logger.debug(`Competitors: ${competitors.slice(0, 3).join(', ')}${competitors.length > 3 ? '...' : ''}`);
           
           // Call the appropriate analysis function based on useWebSearch
           const response = useWebSearch 
@@ -282,22 +283,22 @@ export async function performAnalysis({
                 locale
               );
           
-          console.log(`\n=== ANALYSIS COMPLETED ===`);
-          console.log(`Provider: ${provider.name}`);
-          console.log(`Has response: ${!!response}`);
+          logger.debug(`\n=== ANALYSIS COMPLETED ===`);
+          logger.debug(`Provider: ${provider.name}`);
+          logger.debug(`Has response: ${!!response}`);
           if (response) {
-            console.log(`Response provider: ${response.provider}`);
-            console.log(`Brand mentioned: ${response.brandMentioned}`);
-            console.log(`Response length: ${response.response?.length || 0}`);
-            console.log(`Response preview: "${response.response?.substring(0, 100) || 'NO RESPONSE'}"`);
-            console.log(`Competitors found: ${response.competitors?.length || 0}`);
+            logger.debug(`Response provider: ${response.provider}`);
+            logger.debug(`Brand mentioned: ${response.brandMentioned}`);
+            logger.debug(`Response length: ${response.response?.length || 0}`);
+            logger.debug(`Response preview: "${response.response?.substring(0, 100) || 'NO RESPONSE'}"`); 
+            logger.debug(`Competitors found: ${response.competitors?.length || 0}`);
           } else {
-            console.log(`Response is null - provider likely not configured`);
+            logger.debug(`Response is null - provider likely not configured`);
           }
           
           // Skip if provider returned null (not configured)
           if (response === null) {
-            console.log(`Skipping ${provider.name} - not configured`);
+            logger.debug(`Skipping ${provider.name} - not configured`);
             
             // Send analysis complete event with skipped status
             await sendEvent({
@@ -339,8 +340,8 @@ export async function performAnalysis({
           }
           
           responses.push(response);
-          console.log(`[AnalyzeCommon] ✅ Response added to collection. Total responses: ${responses.length}`);
-          console.log(`[AnalyzeCommon] Response details:`, {
+          logger.debug(`[AnalyzeCommon] ✅ Response added to collection. Total responses: ${responses.length}`);
+          logger.debug(`[AnalyzeCommon] Response details:`, {
             provider: response.provider,
             promptPreview: response.prompt.substring(0, 50) + '...',
             responseLength: response.response.length,
@@ -381,7 +382,7 @@ export async function performAnalysis({
           });
 
         } catch (error) {
-          console.error(`Error with ${provider.name} for prompt "${prompt.prompt}":`, error);
+          logger.error(`Error with ${provider.name} for prompt "${prompt.prompt}":`, error);
           
           // Check if it's an authentication error
           const isAuthError = error instanceof Error && (
@@ -392,7 +393,7 @@ export async function performAnalysis({
           );
           
           if (isAuthError) {
-            console.log(`Skipping ${provider.name} - authentication error (API key issue)`);
+            logger.warn(`Skipping ${provider.name} - authentication error (API key issue)`);
             errors.push(`${provider.name}: API key not configured or invalid`);
           } else {
             errors.push(`${provider.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -501,7 +502,7 @@ export async function performAnalysis({
       );
     }
   } catch (e) {
-    console.warn('[AnalyzeCommon] Failed to harmonize zero-mention brands:', (e as Error)?.message);
+    logger.warn('[AnalyzeCommon] Failed to harmonize zero-mention brands:', (e as Error)?.message);
   }
 
   // Recompute global visibility as average of provider scores for consistency
@@ -541,7 +542,7 @@ export async function performAnalysis({
     // Sort after adjustments
     competitorRankings.sort((a, b) => b.visibilityScore - a.visibilityScore);
   } catch (e) {
-    console.warn('[AnalyzeCommon] Failed to recompute global visibility from providerComparison:', (e as Error)?.message);
+    logger.warn('[AnalyzeCommon] Failed to recompute global visibility from providerComparison:', (e as Error)?.message);
   }
 
   // Send scoring progress for each competitor
@@ -585,7 +586,7 @@ export async function performAnalysis({
     timestamp: new Date()
   });
 
-  console.log(`[AnalyzeCommon] 🎯 Final analysis result:`, {
+  logger.info(`[AnalyzeCommon] 🎯 Final analysis result:`, {
     totalResponses: responses.length,
     totalPrompts: analysisPrompts.length,
     responsesPerPrompt: responses.length / Math.max(analysisPrompts.length, 1),
@@ -594,7 +595,7 @@ export async function performAnalysis({
   });
   
   if (responses.length > 0) {
-    console.log(`[AnalyzeCommon] ✅ Responses summary:`, 
+    logger.debug(`[AnalyzeCommon] ✅ Responses summary:`, 
       responses.map(r => ({
         provider: r.provider,
         promptPreview: r.prompt.substring(0, 30) + '...',
@@ -602,7 +603,7 @@ export async function performAnalysis({
       }))
     );
   } else {
-    console.error(`[AnalyzeCommon] ❌ No responses collected!`);
+    logger.error(`[AnalyzeCommon] ❌ No responses collected!`);
   }
 
   return {

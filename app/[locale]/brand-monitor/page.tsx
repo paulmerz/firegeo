@@ -2,12 +2,14 @@
 
 import { BrandMonitor } from '@/components/brand-monitor/brand-monitor';
 import { useEffect, useState } from 'react';
+import type { ReactElement } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Sparkles, Menu, X, Plus, Trash2, Loader2 } from 'lucide-react';
 import { useCustomer, useRefreshCustomer } from '@/hooks/useAutumnCustomer';
 import { useBrandAnalyses, useBrandAnalysis, useDeleteBrandAnalysis } from '@/hooks/useBrandAnalyses';
 import { Button } from '@/components/ui/button';
+import type { BrandAnalysis } from '@/lib/db/schema';
 import { format } from 'date-fns';
 import { useSession } from '@/lib/auth-client';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -20,7 +22,7 @@ function BrandMonitorContent({ session }: { session: any }) {
   const t = useTranslations();
   const { customer, isLoading, error } = useCustomer();
   const refreshCustomer = useRefreshCustomer();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedAnalysisId, setSelectedAnalysisId] = useState<string | null>(null);
   const [resetCount, setResetCount] = useState(0);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -30,9 +32,49 @@ function BrandMonitorContent({ session }: { session: any }) {
   const { data: analyses, isLoading: analysesLoading } = useBrandAnalyses();
   const { data: currentAnalysis } = useBrandAnalysis(selectedAnalysisId);
   const deleteAnalysis = useDeleteBrandAnalysis();
+  const analysesList: BrandAnalysis[] = analyses ?? [];
+  const renderAnalysisItem = (
+    item: BrandAnalysis,
+    _index?: number,
+    _array?: BrandAnalysis[]
+  ): ReactElement => {
+    return (
+      <div
+        key={item.id}
+        className={`p-3 rounded-lg cursor-pointer hover:bg-gray-100 ${
+          selectedAnalysisId === item.id ? 'bg-gray-100' : ''
+        }`}
+        onClick={() => setSelectedAnalysisId(item.id)}
+      >
+        <div className="flex justify-between items-start">
+          <div className="flex-1 min-w-0">
+            <p className="font-medium truncate">
+              {item.companyName || t('brandMonitor.untitledAnalysis')}
+            </p>
+            <p className="text-sm text-gray-500 truncate">
+              {item.url}
+            </p>
+            <p className="text-xs text-gray-400">
+              {item.createdAt && format(new Date(item.createdAt), 'MMM d, yyyy')}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteAnalysis(item.id);
+            }}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
   
   // Get credits from customer data
-  const messageUsage = customer?.features?.messages;
+  const messageUsage = customer?.features?.credits;
   const credits = messageUsage ? (messageUsage.balance || 0) : 0;
 
   useEffect(() => {
@@ -63,35 +105,14 @@ function BrandMonitorContent({ session }: { session: any }) {
   };
   
   const handleNewAnalysis = () => {
-    console.log('🆕 [BrandMonitorPage] New Analysis button clicked');
+    logger.info('🆕 [BrandMonitorPage] New Analysis button clicked');
     setSelectedAnalysisId(null);
     setResetCount((c) => c + 1);
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden bg-white border-b">
-        <div className="px-4 sm:px-6 lg:px-8 py-12">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between">
-              <div className="text-center flex-1">
-                <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-2 animate-fade-in-up">
-                  <span className="block text-zinc-900">{t('brandMonitor.fireGeoMonitor')}</span>
-                  <span className="block bg-gradient-to-r from-red-600 to-yellow-500 bg-clip-text text-transparent">
-                    {t('brandMonitor.aiBrandVisibilityPlatform')}
-                  </span>
-                </h1>
-                <p className="text-lg text-zinc-600 animate-fade-in-up animation-delay-200">
-                  {t('brandMonitor.trackHowAi')}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex h-[calc(100vh-12rem)] relative">
+      <div className="flex h-[calc(100vh-4rem)] relative">
         {/* Sidebar Toggle Button - Always visible */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -122,43 +143,11 @@ function BrandMonitorContent({ session }: { session: any }) {
           <div className="overflow-y-auto flex-1">
             {analysesLoading ? (
               <div className="p-4 text-center text-gray-500">{t('brandMonitor.loadingAnalyses')}</div>
-            ) : analyses?.length === 0 ? (
+            ) : analysesList.length === 0 ? (
               <div className="p-4 text-center text-gray-500">{t('brandMonitor.noAnalysesYet')}</div>
             ) : (
               <div className="space-y-1 p-2">
-                {analyses?.map((analysis) => (
-                  <div
-                    key={analysis.id}
-                    className={`p-3 rounded-lg cursor-pointer hover:bg-gray-100 ${
-                      selectedAnalysisId === analysis.id ? 'bg-gray-100' : ''
-                    }`}
-                    onClick={() => setSelectedAnalysisId(analysis.id)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">
-                          {analysis.companyName || t('brandMonitor.untitledAnalysis')}
-                        </p>
-                        <p className="text-sm text-gray-500 truncate">
-                          {analysis.url}
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {analysis.createdAt && format(new Date(analysis.createdAt), 'MMM d, yyyy')}
-                        </p>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteAnalysis(analysis.id);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                {analysesList.map(renderAnalysisItem)}
               </div>
             )}
           </div>
@@ -172,7 +161,7 @@ function BrandMonitorContent({ session }: { session: any }) {
               creditsAvailable={credits} 
               onCreditsUpdate={handleCreditsUpdate}
               selectedAnalysis={selectedAnalysisId ? currentAnalysis : null}
-              onSaveAnalysis={(analysis) => {
+              onSaveAnalysis={() => {
                 // This will be called when analysis completes
                 // We'll implement this in the next step
               }}
@@ -194,6 +183,8 @@ function BrandMonitorContent({ session }: { session: any }) {
     </div>
   );
 }
+
+import { logger } from '@/lib/logger';
 
 export default function BrandMonitorPage() {
   const { data: session, isPending } = useSession();

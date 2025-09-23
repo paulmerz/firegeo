@@ -2,6 +2,7 @@ import { Company, BrandPrompt } from './types';
 import { generatePromptsForCompany } from './ai-utils';
 import { generateText } from 'ai';
 import { getProviderModel } from './provider-config';
+import { logger } from './logger';
 
 /**
  * Service type detection based on company data
@@ -72,9 +73,9 @@ export async function generateAdaptivePrompts(
   const competitorNames = competitors.slice(0, 4).map(c => c.name);
   
   try {
-    console.log('Generating AI prompts via API for:', targetBrand, 'vs', competitorNames);
-    console.log('Company industry:', company.industry);
-    console.log('Company description:', company.description);
+    logger.debug('Generating AI prompts via API for:', targetBrand, 'vs', competitorNames);
+    logger.debug('Company industry:', company.industry);
+    logger.debug('Company description:', company.description);
     
     const response = await fetch('/api/generate-prompts', {
       method: 'POST',
@@ -102,7 +103,7 @@ export async function generateAdaptivePrompts(
     const data = await response.json();
     
     if (data.success && Array.isArray(data.prompts) && data.prompts.length > 0) {
-      console.log('Received AI-generated prompts:', data.prompts.length, 'prompts from', data.provider);
+      logger.info('Received AI-generated prompts:', data.prompts.length, 'prompts from', data.provider);
       return data.prompts;
     }
     
@@ -113,7 +114,7 @@ export async function generateAdaptivePrompts(
     
     // Fallback to mock prompts in development, static prompts in production
     if (process.env.NODE_ENV === 'development') {
-      console.log('Falling back to mock adaptive prompts for development');
+      logger.warn('Falling back to mock adaptive prompts for development');
       const serviceType = detectServiceType(company); // Only used for fallback
       return getMockAdaptivePrompts(serviceType, targetBrand, competitorNames);
     }

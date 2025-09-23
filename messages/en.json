@@ -47,212 +47,7 @@
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service"
   },
-  "docs": {
-    "nav": {
-      "intro": "Introduction",
-      "objectif": "Tool Objective",
-      "prompts": "Writing effective prompts",
-      "lecture": "Read and interpret results",
-      "credits": "Credit consumption",
-      "recharge": "Recharge credits",
-      "openaiWebSearch": "OpenAI Web Search"
-    },
-    "intro": {
-      "title": "Introduction",
-      "p1": "VOXUM is an AI-powered brand analysis and product recommendation tool with web search. It combines market signals (SERP, scraping, reviews) and orchestrated AI models to identify relevant brands, compare alternatives, and recommend products by use case.",
-      "features": {
-        "title": "Key features",
-        "li1": "Discover trending brands by category/market.",
-        "li2": "Compare alternatives to the market leader.",
-        "li3": "Recommendations by need/use with criteria.",
-        "li4": "Brand visibility and consistency analysis."
-      }
-    },
-    "architecture": {
-      "title": "Architecture (quick view)",
-      "orchestrator": "Analysis orchestration:",
-      "openai": {
-        "label": "OpenAI Web Search (Responses + web_search tool):",
-        "link": "OpenAI Web Search",
-        "impl": "implementation in"
-      },
-      "perplexity": "Competitive search via Perplexity + structured conversion with OpenAI:",
-      "outputModel": "Output data model:",
-      "in": "in"
-    },
-    "gettingStarted": {
-      "title": "Getting started",
-      "step1": "Read the <objectif>Tool Objective</objectif>.",
-      "step2": "Follow the <prompts>Prompts</prompts> guidelines for targeted results.",
-      "step3": "Enable <openai>OpenAI web search</openai> if you need up-to-date information.",
-      "step4": "See <lecture>Read results</lecture> to interpret output fields."
-    },
-    "objectif": {
-      "title": "Tool Objective",
-      "p1": "Accelerate brand/product discovery, comparison and recommendations by combining real-time web search and AI analysis, while keeping outputs structured and actionable for the team (Marketing, Growth, Product, Procurement).",
-      "results": {
-        "title": "Expected results",
-        "li1": "Up-to-date relevant brand lists (OpenAI/Perplexity web search).",
-        "li2": "Alternative comparisons with criteria, sentiment and confidence level.",
-        "li3": "Structured responses via AIResponse (rankings, mentions, sources)."
-      },
-      "map": {
-        "title": "Mapping to modules",
-        "orchestrator": "Analysis orchestration:",
-        "openai": {
-          "label": "OpenAI Web Search (Responses + web_search):",
-          "link": "documentation",
-          "impl": "implementation"
-        },
-        "perplexity": "Competitor pipeline Perplexity → OpenAI structured conversion:",
-        "model": "Output model:",
-        "in": "in"
-      },
-      "more": {
-        "title": "Go further",
-        "p1": "See <prompts>Writing effective prompts</prompts> and <lecture>Read and interpret results</lecture> to maximize relevance and interpretation."
-      }
-    },
-    "prompts": {
-      "title": "Writing effective prompts",
-      "p1": "Prompts should be specific, separated by intent and aligned with expected output structures (AIResponse). Use measurable criteria and market context to guide web search.",
-      "types": {
-        "title": "Request types (aligned with PROMPT_TEMPLATES)",
-        "ranking": "<strong>Ranking</strong> — “top {industry} in {year}”; aims for comparable lists suitable for <link>rankings</link>.",
-        "comparison": "<strong>Comparison</strong> — compare {brand} vs {competitors}; emphasize criteria.",
-        "alternatives": "<strong>Alternatives</strong> — “alternatives to {brand}”; keep 3–5 options max.",
-        "recommendations": "<strong>Recommendations</strong> — by use/need, constraints and budget."
-      },
-      "examples": {
-        "title": "Guided examples",
-        "ex1": "1) Brand recommendations (trends 2025)",
-        "ex2": "2) Comparison: leader alternative",
-        "ex3": "3) Recommendation by product/use"
-      },
-      "tech": {
-        "title": "Technical options",
-        "li1": "<strong>Web search</strong>: enable useWebSearch for OpenAI — see <link>OpenAI Web Search</link>.",
-        "li2": "<strong>Models</strong>: favor gpt-4o-mini (cost/latency) and switch to gpt-4o if needed.",
-        "li3": "<strong>Scope</strong>: specify country/region, segment and company size to guide search."
-      },
-      "best": {
-        "title": "Best practices",
-        "li1": "Define 3–5 measurable criteria and context (market, country, target).",
-        "li2": "Separate discovery, comparison and recommendation into distinct prompts.",
-        "li3": "Limit to 5 options to ease decision making.",
-        "li4": "State constraints (budget, distribution, materials, size)."
-      }
-    },
-    "lecture": {
-      "title": "Read and interpret results",
-      "p1": "Results are structured around AIResponse and derivatives (CompanyRanking, etc.). Here’s how to interpret the key sections.",
-      "structure": {
-        "title": "AIResponse structure (extracts)",
-        "li1": "response: generated text.",
-        "li2": "rankings: list of CompanyRanking (position, company, sentiment).",
-        "li3": "competitors: mentioned/detected competitors.",
-        "li4": "brandMentioned, brandPosition: target brand detection.",
-        "li5": "sentiment, confidence: mood summary and confidence.",
-        "li6": "webSearchSources: sources from web search (if enabled)."
-      },
-      "rankings": {
-        "title": "Interpreting rankings",
-        "p1": "Positions come from structured analysis of the generated text. Detection uses intelligent brand variations to reduce false negatives."
-      },
-      "sources": {
-        "title": "Web search sources",
-        "p1": "If web search is enabled, URLs may be extracted from several OpenAI response fields (alternate paths, annotations) and directly from text (“Sources consulted”). Use these sources to audit freshness and reliability."
-      },
-      "scores": {
-        "title": "Scores and matrices",
-        "li1": "<strong>Visibility</strong>: aggregation of signals (SERP, mentions). Cross-check with business relevance.",
-        "li2": "<strong>Comparison matrix</strong>: homogeneous comparison (price, performance, distribution, differentiation) to identify trade-offs."
-      }
-    },
-    "credits": {
-      "title": "Credit consumption",
-      "p1": "Credits are consumed during the following operations: scraping, web search, AI calls (generation, structured conversion). Cost depends on models, context lengths, and search depth.",
-      "factors": {
-        "title": "Influencing factors",
-        "li1": "<strong>OpenAI web search</strong>: adds token cost (responses + source extraction).",
-        "li2": "<strong>Perplexity competitor pipeline</strong>: Perplexity cost + OpenAI structured conversion.",
-        "li3": "<strong>Model</strong>: gpt-4o-mini recommended to optimize cost/latency."
-      },
-      "orders": {
-        "title": "Orders of magnitude",
-        "li1": "Quick discovery: low cost.",
-        "li2": "Detailed comparison (3–5 alternatives): medium cost.",
-        "li3": "Extended web search + structuring: higher cost."
-      },
-      "tracking": {
-        "title": "Tracking",
-        "p1": "The credit counter is visible in the dashboard with threshold alerts."
-      }
-    },
-    "recharge": {
-      "title": "Recharge credits",
-      "p1": "You can top up credits at any time from the plans page. Purchases are immediate and credits become available instantly after secure payment.",
-      "p2": "Go to <plans>Plans & Pricing</plans> to choose the offer suited to your usage.",
-      "best": {
-        "title": "Management best practices",
-        "li1": "Schedule heavy analyses (web search + structuring) during off-peak periods.",
-        "li2": "Separate discovery, comparison and recommendation into distinct runs.",
-        "li3": "Monitor threshold alerts to anticipate top-ups."
-      }
-    },
-    "openai": {
-      "title": "OpenAI Web Search",
-      "intro": "This section documents the OpenAI web search integration via the Responses API and the web_search tool. It covers the technical flow, code integration, configuration, error handling, and test examples.",
-      "tabs": {
-        "overview": "Overview",
-        "flow": "Technical flow",
-        "code": "Code integration",
-        "errors": "Errors & Fallbacks",
-        "tests": "Tests"
-      },
-      "overview": {
-        "featuresTitle": "Features",
-        "li1": "OpenAI Responses integration with the web_search tool.",
-        "li2": "Robust source extraction (multiple response paths supported).",
-        "li3": "Structured analysis of output text (brand/competitor detection, ranking, sentiment).",
-        "li4": "Controlled fallbacks (model, missing API key, auth errors).",
-        "webEnabled": "Web search enabled",
-        "demo": "UI demo"
-      },
-      "flow": {
-        "title": "Technical flow (summary)",
-        "li1": "UI enables useWebSearch for the OpenAI provider.",
-        "li2": "analyzePromptWithOpenAIWebSearch builds a reinforced prompt (\"Sources consulted\" section).",
-        "li3": "Call client.responses.create with tools: [{ type: \"web_search\" }] and max_output_tokens.",
-        "li4": "Check output_text then extract sources via known fields, annotations and URLs in text.",
-        "li5": "Call structured analysis via chat.completions.create to produce rankings/sentiment/mentions.",
-        "li6": "Enhanced brand detection via intelligent variations (normalization and AI if multi-word).",
-        "li7": "Return an AIResponse object including webSearchSources."
-      },
-      "code": {
-        "title": "Integration examples",
-        "call1": "Direct call to OpenAI Web Search implementation:",
-        "call2": "Automatic activation via orchestration (if available):",
-        "env": "Required configuration:"
-      },
-      "errors": {
-        "title": "Error handling and fallbacks",
-        "li1": "Missing key: if OPENAI_API_KEY is absent → exception during client initialization.",
-        "li2": "Unsupported model: switch to gpt-4o-mini. Supported: gpt-4o, gpt-4o-mini.",
-        "li3": "Auth errors (401, invalid_api_key): function returns null to ignore this provider.",
-        "li4": "Empty response: throws explicit \"empty response\" error.",
-        "li5": "Structured analysis failed: fallback to textual analysis with variation-based detection."
-      },
-      "tests": {
-        "title": "Tests & validation",
-        "cli": "CLI script (if present):",
-        "checks": "Expected checks:",
-        "li1": "Non-empty output_text.",
-        "li2": "Extraction of at least 1–3 webSearchSources when relevant.",
-        "li3": "Structured fields (rankings, sentiment, mentions) consistent with the response."
-      }
-    }
-  },
+  "docs": {},
   "privacy": {
     "title": "Privacy Policy – VOXUM",
     "meta": { "version": "Version: {date} — Effective as of this date" },
@@ -456,10 +251,10 @@
         "p1": "Prompts should be specific, separated by intent and aligned with expected output structures (AIResponse). Use measurable criteria and market context to guide web search.",
         "types": {
           "title": "Request types (aligned with PROMPT_TEMPLATES)",
-          "ranking": "<strong>Ranking</strong> — “top {industry} in {year}”; aims for comparable lists suitable for <link>rankings</link>.",
-          "comparison": "<strong>Comparison</strong> — compare {brand} vs {competitors}; emphasize criteria.",
-          "alternatives": "<strong>Alternatives</strong> — “alternatives to {brand}”; keep 3–5 options max.",
-          "recommendations": "<strong>Recommendations</strong> — by use/need, constraints and budget."
+          "ranking": "<0>Ranking</0> — “top {industry} in {year}”; aims for comparable lists suitable for <1>rankings</1>.",
+          "comparison": "<0>Comparison</0> — compare {brand} vs {competitors}; emphasize criteria.",
+          "alternatives": "<0>Alternatives</0> — “alternatives to {brand}”; keep 3–5 options max.",
+          "recommendations": "<0>Recommendations</0> — by use/need, constraints and budget."
         },
         "examples": { "title": "Guided examples", "ex1": "1) Brand recommendations (trends 2025)", "ex2": "2) Comparison: leader alternative", "ex3": "3) Recommendation by product/use" },
         "tech": {
@@ -495,9 +290,24 @@
       "credits": {
         "title": "Credit consumption",
         "p1": "Credits are consumed during the following operations: scraping, web search, AI calls (generation, structured conversion). Cost depends on models, context lengths, and search depth.",
+      "rules": {
+        "title": "Rules per action (Brand Monitor)",
+        "li1": "URL analysis: {url} credit",
+        "li2": "Identify competitors: {competitors} credits",
+        "li3": "Prompt generation: {promptGen} credits (one-shot)",
+        "li4": "Prompt analysis (WebSearch ON): {perPromptWeb} credits per prompt",
+        "li5": "Prompt analysis (WebSearch OFF): {perPromptNoWeb} credit per prompt"
+      },
         "factors": { "title": "Influencing factors", "li1": "<strong>OpenAI web search</strong>: adds token cost (responses + source extraction).", "li2": "<strong>Perplexity competitor pipeline</strong>: Perplexity cost + OpenAI structured conversion.", "li3": "<strong>Model</strong>: gpt-4o-mini recommended to optimize cost/latency." },
         "orders": { "title": "Orders of magnitude", "li1": "Quick discovery: low cost.", "li2": "Detailed comparison (3–5 alternatives): medium cost.", "li3": "Extended web search + structuring: higher cost." },
-        "tracking": { "title": "Tracking", "p1": "The credit counter is visible in the dashboard with threshold alerts." }
+      "tracking": { "title": "Tracking", "p1": "The credit counter is visible in the dashboard with threshold alerts." },
+      "ui": {
+        "title": "UI behaviors",
+        "li1": "Buttons remain clickable: an error appears if credits are insufficient.",
+        "li2": "Web Search button tooltip: {perPromptWeb} or {perPromptNoWeb} credit(s) per prompt depending on state.",
+        "li3": "Add Prompt is always allowed (no credit check upfront).",
+        "li4": "Start Analysis checks dynamically: prompts × (1 or 2 depending on WebSearch)."
+      }
       },
       "recharge": {
         "title": "Recharge credits",
@@ -709,8 +519,11 @@
     "errors": {
       "pleaseEnterUrl": "Please enter a URL",
       "pleaseEnterValidUrl": "Please enter a valid URL (e.g., example.com or https://example.com)",
-      "insufficientCreditsUrl": "Insufficient credits. You need at least 1 credit to analyze a URL.",
-      "insufficientCreditsAnalysis": "Insufficient credits. You need at least {credits} credits to run an analysis.",
+      "insufficientCreditsUrl": "Insufficient credits. You need at least {credits} credits to analyze a URL.",
+      "insufficientCreditsCompetitors": "Insufficient credits. You need at least {credits} credits to identify competitors.",
+      "insufficientCreditsPromptGen": "Insufficient credits. You need at least {credits} credits to generate prompts.",
+      "insufficientCreditsAddPrompt": "Insufficient credits. You need at least {credits} credits to add a prompt.",
+      "insufficientCreditsAnalysis": "Insufficient credits. You need {credits} credits ({perPrompt} per prompt) to run this analysis.",
       "failedToScrape": "Failed to scrape",
       "noCompanyData": "No company data received",
       "failedToExtractCompany": "Failed to extract company information",
@@ -955,7 +768,7 @@
         },
         "credits": {
           "question": "How many credits do I need?",
-          "answer": "Each brand analysis uses 10 credits (1 credit for initial URL analysis, 9 credits for the full AI provider scan). The free tier includes 100 credits monthly, enough for 10 complete analyses. Pro plans include unlimited analyses for comprehensive monitoring."
+          "answer": "Credits are consumed dynamically per action. Count 1 credit for the initial URL analysis and 2 credits per analyzed prompt (with potential additional costs depending on your actions). For example, 8 prompts will cost 16 credits (excluding URL)."
         }
       }
     },

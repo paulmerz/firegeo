@@ -1,0 +1,2 @@
+- Analyse d'URL, concurrents, prompts
+- Coût variable selon modèle et profondeur

@@ -62,7 +62,10 @@ export function getEnvironmentDebugInfo(): Partial<DebugInfo> {
 }
 
 export function logDebugInfo(context: string, info: Partial<DebugInfo>) {
-  console.log(`🔍 [${context}] Debug Info:`, JSON.stringify(info, null, 2));
+  // Ne loguer qu'en développement ou si explicitement demandé
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`🔍 [${context}] Debug Info:`, JSON.stringify(info, null, 2));
+  }
 }
 
 export function getErrorMessage(error: unknown): string {

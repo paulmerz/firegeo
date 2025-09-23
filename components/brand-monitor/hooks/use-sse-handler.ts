@@ -18,6 +18,8 @@ interface UseSSEHandlerProps {
   onApiUsageSummary?: (summary: any) => void;
 }
 
+import { logger } from '@/lib/logger';
+
 export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComplete, onApiUsageSummary }: UseSSEHandlerProps) {
   // Use ref to track current prompt status to avoid closure issues in SSE handler
   const promptCompletionStatusRef = useRef(state.promptCompletionStatus);
@@ -71,7 +73,7 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
   };
 
   const handleSSEEvent = (eventData: any) => {
-    console.log('[SSE] Received event:', eventData.type, eventData.data);
+    logger.debug('[SSE] Received event:', eventData.type, eventData.data);
     
     try {
       switch (eventData.type) {
@@ -243,7 +245,7 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
         const analysisCompleteData = eventData.data as AnalysisProgressData;
         
         if (!analysisCompleteData.prompt || !analysisCompleteData.provider) {
-          console.error('[ERROR] Missing prompt or provider in analysis-complete event');
+          logger.error('[ERROR] Missing prompt or provider in analysis-complete event');
           break;
         }
         
@@ -396,15 +398,15 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
           type: 'SET_ERROR',
           payload: errorMessage
         });
-        console.error('Analysis error:', errorData);
+        logger.error('Analysis error:', errorData);
         break;
         
       default:
-        console.warn('[SSE] Unknown event type:', eventData.type);
+        logger.warn('[SSE] Unknown event type:', eventData.type);
         break;
     }
     } catch (error) {
-      console.error('[SSE] Error handling event:', error, 'Event data:', eventData);
+      logger.error('[SSE] Error handling event:', error, 'Event data:', eventData);
       dispatch({
         type: 'SET_ERROR',
         payload: 'Error processing analysis event'
@@ -423,7 +425,7 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
 
       // Notify when connection is established successfully (HTTP 200)
       if (onConnected) {
-        try { onConnected(); } catch (e) { console.warn('[SSE] onConnected callback error:', e); }
+        try { onConnected(); } catch (e) { logger.warn('[SSE] onConnected callback error:', e); }
       }
 
       const reader = response.body?.getReader();
@@ -447,7 +449,7 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
               const eventData = JSON.parse(event.data);
               handleSSEEvent(eventData);
             } catch (e) {
-              console.error('Failed to parse SSE event:', e);
+              logger.error('Failed to parse SSE event:', e);
             }
           }
         }
@@ -465,7 +467,7 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
           payload: 'Failed to analyze brand visibility'
         });
       }
-      console.error(error);
+      logger.error(error);
       
       // Reset progress
       dispatch({

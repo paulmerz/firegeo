@@ -1,0 +1,2 @@
+- URL analysis, competitors, prompts
+- Cost varies by model and depth

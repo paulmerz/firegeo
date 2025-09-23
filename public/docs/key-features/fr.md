@@ -1,0 +1,4 @@
+- Découverte de marques tendancess
+- Comparaison d'alternatives
+- Recommandations par usage
+- Analyse de visibilitécc

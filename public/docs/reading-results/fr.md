@@ -1,0 +1,4 @@
+- Prompts & réponses: aperçu des réponses IA
+- Matrice de comparaison: répartition des mentions
+- Classements: position par marque
+- Score de visibilité: mentions + sentiment

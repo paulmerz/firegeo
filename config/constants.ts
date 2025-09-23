@@ -5,6 +5,7 @@
 // Feature IDs and Identifiers
 // ============================================
 export const FEATURE_ID_MESSAGES = 'messages';
+export const FEATURE_ID_CREDITS = 'credits';
 
 // ============================================
 // User Roles
@@ -17,7 +18,12 @@ export const ROLE_SYSTEM = 'system';
 // Credit/Usage Constants
 // ============================================
 export const CREDITS_PER_MESSAGE = 1;
-export const CREDITS_PER_BRAND_ANALYSIS = 10;
+// Brand Monitor credit costs
+export const CREDIT_COST_URL_ANALYSIS = 1;
+export const CREDIT_COST_COMPETITOR_ANALYSIS = 2;
+export const CREDIT_COST_PROMPT_GENERATION = 2;
+export const CREDIT_COST_PER_PROMPT_ANALYSIS_WEB = 2; // useWebSearch = true
+export const CREDIT_COST_PER_PROMPT_ANALYSIS_NO_WEB = 1; // useWebSearch = false
 export const FREE_TIER_MESSAGES = 100;
 export const STARTER_TIER_MESSAGES = 1000;
 export const PRO_TIER_MESSAGES = 10000;
@@ -239,7 +245,7 @@ export const ERROR_MESSAGES = {
   FAILED_TO_CHECK_ACCESS: 'Failed to check access',
   FAILED_TO_TRACK_USAGE: 'Failed to track usage',
   NO_CREDITS_REMAINING: 'No credits remaining. Please upgrade your plan',
-  INSUFFICIENT_CREDITS_BRAND_ANALYSIS: 'You need at least 10 credits for a brand analysis',
+  
 } as const;
 
 // ============================================

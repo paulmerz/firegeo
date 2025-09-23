@@ -10,7 +10,8 @@ import {
   InsufficientCreditsError,
   ExternalServiceError 
 } from '@/lib/api-errors';
-import { FEATURE_ID_MESSAGES } from '@/config/constants';
+import { FEATURE_ID_CREDITS } from '@/config/constants';
+import { logger } from '@/lib/logger';
 import { apiUsageTracker } from '@/lib/api-usage-tracker';
 
 function getAutumn() {
@@ -23,7 +24,7 @@ function getAutumn() {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔍 [Scrape API] Starting scrape request');
+    logger.info('🔍 [Scrape API] Starting scrape request');
     
     // Get the session
     const sessionResponse = await auth.api.getSession({
@@ -31,19 +32,19 @@ export async function POST(request: NextRequest) {
     });
 
     if (!sessionResponse?.user) {
-      console.error('❌ [Scrape API] No authenticated user');
+      logger.error('❌ [Scrape API] No authenticated user');
       throw new AuthenticationError('Please log in to use this feature');
     }
     
-    console.log(`🔍 [Scrape API] Authenticated user: ${sessionResponse.user.id}`);
+    logger.debug(`🔍 [Scrape API] Authenticated user: ${sessionResponse.user.id}`);
 
     // No longer checking/deducting credits here. Debit now happens when the URL input is rendered.
 
     const { url, maxAge, useDeepCrawl, compareBoth } = await request.json();
-    console.log(`🔍 [Scrape API] Request data:`, { url, maxAge, useDeepCrawl, compareBoth });
+    logger.debug(`🔍 [Scrape API] Request data:`, { url, maxAge, useDeepCrawl, compareBoth });
 
     if (!url) {
-      console.error('❌ [Scrape API] No URL provided');
+      logger.error('❌ [Scrape API] No URL provided');
       throw new ValidationError('Invalid request', {
         url: 'URL is required'
       });
@@ -55,16 +56,16 @@ export async function POST(request: NextRequest) {
       normalizedUrl = `https://${normalizedUrl}`;
     }
     
-    console.log(`🔍 [Scrape API] Normalized URL: ${normalizedUrl}`);
+    logger.debug(`🔍 [Scrape API] Normalized URL: ${normalizedUrl}`);
 
     // No debit here anymore; handled earlier to avoid charging on network errors
 
     // Extract locale from request
     const locale = getLocaleFromRequest(request);
-    console.log(`🔍 [Scrape API] Locale: ${locale}`);
+    logger.debug(`🔍 [Scrape API] Locale: ${locale}`);
     
     if (compareBoth) {
-      console.log('🧪 [Scrape API] Comparing single-page vs deep crawl...');
+      logger.info('🧪 [Scrape API] Comparing single-page vs deep crawl...');
       
       // Track both scraping operations
       const singleCallId = apiUsageTracker.trackCall({
@@ -95,10 +96,10 @@ export async function POST(request: NextRequest) {
       apiUsageTracker.updateCall(deepCallId, { duration: duration / 2 });
       
       const diff = buildComparison(single, deep);
-      console.log('🧪 [Scrape API] Comparison diff:', diff);
+      logger.debug('🧪 [Scrape API] Comparison diff:', diff);
       return NextResponse.json({ single, deep, diff });
     } else {
-      console.log(`🔍 [Scrape API] Starting company ${useDeepCrawl ? 'deep crawl' : 'single-page scrape'}...`);
+      logger.info(`🔍 [Scrape API] Starting company ${useDeepCrawl ? 'deep crawl' : 'single-page scrape'}...`);
       
       // Track scraping operation
       const callId = apiUsageTracker.trackCall({
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
       // Update tracking with duration
       apiUsageTracker.updateCall(callId, { duration });
       
-      console.log(`✅ [Scrape API] Company info scraped successfully:`, {
+      logger.info(`✅ [Scrape API] Company info scraped successfully:`, {
         name: company.name,
         url: company.url,
         industry: company.industry

@@ -21,13 +21,13 @@ function ChatContent({ session }: { session: any }) {
   const { allowed, customer, refetch } = useCustomer();
   const [input, setInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | undefined>(undefined);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
+  const [conversationToDelete, setConversationToDelete] = useState<string | undefined>(undefined);
   
   // Queries and mutations
   const { data: conversations, isLoading: conversationsLoading } = useConversations();
-  const { data: currentConversation } = useConversation(selectedConversationId);
+  const { data: currentConversation } = useConversation(selectedConversationId ?? null);
   const sendMessage = useSendMessage();
   const deleteConversation = useDeleteConversation();
   
@@ -68,7 +68,7 @@ function ChatContent({ session }: { session: any }) {
   };
   
   const handleNewConversation = () => {
-    setSelectedConversationId(null);
+    setSelectedConversationId(undefined);
   };
   
   const handleDeleteConversation = async (conversationId: string) => {
@@ -80,9 +80,9 @@ function ChatContent({ session }: { session: any }) {
     if (conversationToDelete) {
       await deleteConversation.mutateAsync(conversationToDelete);
       if (selectedConversationId === conversationToDelete) {
-        setSelectedConversationId(null);
+        setSelectedConversationId(undefined);
       }
-      setConversationToDelete(null);
+      setConversationToDelete(undefined);
     }
   };
 
@@ -121,7 +121,7 @@ function ChatContent({ session }: { session: any }) {
                                                   {conversation.title || t('chat.untitledConversation')}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {conversation.lastMessageAt && format(new Date(conversation.lastMessageAt), 'MMM d, h:mm a')}
+                        {conversation.lastMessageAt ? format(new Date(conversation.lastMessageAt as unknown as string | number), 'MMM d, h:mm a') : ''}
                       </p>
                     </div>
                     <Button
@@ -215,7 +215,7 @@ function ChatContent({ session }: { session: any }) {
                     <p className={`text-xs mt-1 ${
                       message.role === 'user' ? 'text-orange-100' : 'text-gray-500'
                     }`}>
-                      {format(new Date(message.createdAt), 'h:mm a')}
+                      {message.createdAt ? format(new Date(message.createdAt as unknown as string | number), 'h:mm a') : ''}
                     </p>
                   </div>
                 </div>

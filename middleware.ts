@@ -14,6 +14,13 @@ export default async function middleware(request: NextRequest) {
   
   // Si c'est la route racine, laisser next-intl gérer la redirection
   if (pathname === '/') {
+    // Si l'utilisateur est connecté, rediriger directement vers /fr/brand-monitor
+    const sessionCookie = await getSessionCookie(request);
+    if (sessionCookie) {
+      const url = new URL(`/brand-monitor`, request.url);
+      return NextResponse.redirect(url);
+    }
+    // Sinon, laisser next-intl faire la détection de locale
     return intlMiddleware(request);
   }
   
@@ -35,6 +42,15 @@ export default async function middleware(request: NextRequest) {
   }
   
   const pathnameWithoutLocale = pathname.replace(`/${locale}`, '') || '/';
+
+  // Si on est sur la racine localisée (ex: /fr) et que l'utilisateur est connecté, rediriger vers /{locale}/brand-monitor
+  if (pathnameWithoutLocale === '/' ) {
+    const sessionCookie = await getSessionCookie(request);
+    if (sessionCookie) {
+      const url = new URL(`/${locale}/brand-monitor`, request.url);
+      return NextResponse.redirect(url);
+    }
+  }
   
   // Vérifier si la route est protégée
   const isProtectedRoute = protectedRoutes.some(route => 

@@ -2,6 +2,7 @@ import { autumnHandler } from "autumn-js/next";
 import { auth } from "@/lib/auth";
 import { isNetworkError, createNetworkError } from "@/lib/network-utils";
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 // Wrap the autumn handler to catch and handle network errors
 const originalHandler = autumnHandler({
@@ -12,12 +13,12 @@ const originalHandler = autumnHandler({
       });
 
       if (!session?.user) {
-        console.log('[Autumn] No session - anonymous user');
+        logger.info('[Autumn] No session - anonymous user');
         return null;
       }
 
       // Return the customer information for Autumn
-      console.log('[Autumn] Identified user:', session.user.id);
+      logger.debug('[Autumn] Identified user:', session.user.id);
       return {
         customerId: session.user.id,
         customerData: {
@@ -26,7 +27,7 @@ const originalHandler = autumnHandler({
         },
       };
     } catch (error) {
-      console.error('[Autumn] Error in identify:', error);
+      logger.error('[Autumn] Error in identify:', error);
       return null;
     }
   },
@@ -42,7 +43,7 @@ async function handleAutumnRequest(handler: Function, request: Request) {
   try {
     return await handler(request);
   } catch (error) {
-    console.error('[Autumn] Request failed:', error);
+    logger.error('[Autumn] Request failed:', error);
     
     // Check if this is a network error
     if (isNetworkError(error)) {

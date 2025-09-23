@@ -47,8 +47,8 @@ function LoginForm() {
       }
       
       // Navigation après connexion (respecte la locale)
-      const returnUrl = searchParams.get('from') || '/dashboard';
-      router.push(returnUrl || '/dashboard');
+      const returnUrl = searchParams.get('from') || '/brand-monitor';
+      router.push(returnUrl || '/brand-monitor');
     } catch (err: any) {
       setError(err.message || t('auth.failedToLogin'));
       setLoading(false);

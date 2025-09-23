@@ -14,6 +14,8 @@ interface CompanyCardProps {
   onAnalyze: () => void;
   analyzing: boolean;
   showCompetitors?: boolean;
+  canIdentifyCompetitors?: boolean;
+  canContinueToAnalysis?: boolean;
   identifiedCompetitors?: Array<{ 
     name: string; 
     url?: string;
@@ -36,6 +38,8 @@ export function CompanyCard({
   company, 
   onAnalyze, 
   analyzing,
+  canIdentifyCompetitors = true,
+  canContinueToAnalysis = true,
   showCompetitors = false,
   identifiedCompetitors = [],
   onRemoveCompetitor,
@@ -150,6 +154,7 @@ export function CompanyCard({
               <button 
                 onClick={onAnalyze} 
                 disabled={analyzing}
+                title={canIdentifyCompetitors ? undefined : undefined}
                 className="h-9 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#36322F] text-[#fff] hover:bg-[#4a4542] disabled:bg-[#8c8885] disabled:hover:bg-[#8c8885] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100 px-4 py-1"
               >
                 {analyzing ? (
@@ -280,7 +285,7 @@ export function CompanyCard({
                 
                 {onContinueToAnalysis && (
                   <button
-                    onClick={onContinueToAnalysis}
+                    onClick={() => { if (onContinueToAnalysis) onContinueToAnalysis(); }}
                     className="h-10 px-6 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#36322F] text-[#fff] hover:bg-[#4a4542] disabled:bg-[#8c8885] disabled:hover:bg-[#8c8885] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
                   >
                     {t('continueToAnalysis')}

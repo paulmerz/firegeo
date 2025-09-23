@@ -1,0 +1,3 @@
+- Be specific and separate intents
+- Define measurable criteria
+- Provide market context

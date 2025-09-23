@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import { BrandPrompt, AIResponse } from '@/lib/types';
 import { HighlightedResponse } from './highlighted-response';
 import { useTranslations } from 'next-intl';
+import { logger } from '@/lib/logger';
 
 interface PromptsResponsesTabProps {
   prompts: BrandPrompt[];
@@ -190,17 +191,17 @@ export function PromptsResponsesTab({
         ) || [];
         
         // Debug logging to identify prompt matching issues
-        console.log(`[PromptsResponsesTab] Prompt ${idx} - Expected: "${promptData.prompt?.substring(0, 50)}..."`);
-        console.log(`[PromptsResponsesTab] Total responses available: ${responses?.length || 0}`);
-        console.log(`[PromptsResponsesTab] Matched responses: ${promptResponses.length}`);
+        logger.debug(`[PromptsResponsesTab] Prompt ${idx} - Expected: "${promptData.prompt?.substring(0, 50)}..."`);
+        logger.debug(`[PromptsResponsesTab] Total responses available: ${responses?.length || 0}`);
+        logger.debug(`[PromptsResponsesTab] Matched responses: ${promptResponses.length}`);
         
         if (responses && responses.length > 0) {
-          console.log(`[PromptsResponsesTab] Available response prompts:`, 
+          logger.debug(`[PromptsResponsesTab] Available response prompts:`, 
             responses.map((r, i) => `${i}: "${r.prompt?.substring(0, 50)}..."`));
         }
         
         if (responses && responses.length > 0 && promptResponses.length === 0) {
-          console.warn(`[PromptsResponsesTab] ❌ No responses matched for prompt ${idx}`);
+          logger.warn(`[PromptsResponsesTab] ❌ No responses matched for prompt ${idx}`);
         }
         
         // Check if any provider mentioned the brand

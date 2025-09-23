@@ -1,0 +1,3 @@
+- Summary of the flow
+- Source extraction
+- Structured fields (rankings, mentions, sentiment)

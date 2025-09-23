@@ -40,8 +40,8 @@ function UserCredits() {
 
   // 2) Quand Autumn répond, on met à jour l'état et le cache
   useEffect(() => {
-    const messageUsage = customer?.features?.messages;
-    const balance = messageUsage?.balance;
+    const creditsUsage = customer?.features?.credits;
+    const balance = creditsUsage?.balance;
     if (typeof balance === 'number' && balance >= 0) {
       setDisplayCredits(balance);
       if (storageKey) {
@@ -76,11 +76,9 @@ export function Navbar() {
     setIsLoggingOut(true);
     try {
       await signOut();
-      // Small delay to ensure the session is cleared
-      setTimeout(() => {
-        router.refresh();
-        setIsLoggingOut(false);
-      }, 100);
+      // Rediriger vers la page de connexion après déconnexion
+      router.replace('/login');
+      setIsLoggingOut(false);
     } catch (error) {
       console.error('Logout error:', error);
       setIsLoggingOut(false);
@@ -88,11 +86,11 @@ export function Navbar() {
   };
 
   return (
-    <nav className="bg-white shadow-sm border-b">
+    <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href={`/`} locale={locale} className="flex items-center">
+            <Link href={session ? `/brand-monitor` : `/`} locale={locale} className="flex items-center">
               <Image
                 src="/logo_voxum.svg"
                 alt="VOXUM"

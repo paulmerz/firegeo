@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Globe, X } from 'lucide-react';
+import { CREDIT_COST_PER_PROMPT_ANALYSIS_WEB, CREDIT_COST_PER_PROMPT_ANALYSIS_NO_WEB } from '@/config/constants';
 
 interface WebSearchToggleProps {
   enabled: boolean;
@@ -22,7 +23,7 @@ export function WebSearchToggle({ enabled, onChange, disabled }: WebSearchToggle
         }
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
       `}
-      title={enabled ? 'Web search enabled - Click to disable' : 'Web search disabled - Click to enable'}
+      title={`${enabled ? CREDIT_COST_PER_PROMPT_ANALYSIS_WEB : CREDIT_COST_PER_PROMPT_ANALYSIS_NO_WEB} ${ (enabled ? CREDIT_COST_PER_PROMPT_ANALYSIS_WEB : CREDIT_COST_PER_PROMPT_ANALYSIS_NO_WEB) > 1 ? 'crédits' : 'crédit' } / prompt analysé`}
     >
       {enabled ? (
         <>

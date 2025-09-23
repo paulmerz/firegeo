@@ -1,0 +1,4 @@
+- Prompts & responses: AI answers overview
+- Comparison matrix: share of mentions
+- Rankings: brand positions
+- Visibility score: mentions + sentiment

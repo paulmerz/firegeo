@@ -3,10 +3,10 @@
 import React, { useReducer, useCallback, useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Company } from '@/lib/types';
+import type { BrandAnalysis } from '@/lib/db/schema';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Sparkles, RefreshCw } from 'lucide-react';
-import { CREDITS_PER_BRAND_ANALYSIS } from '@/config/constants';
 import { ClientApiError } from '@/lib/client-errors';
 import { 
   brandMonitorReducer, 
@@ -39,11 +39,22 @@ import { AddCompetitorModal } from './modals/add-competitor-modal';
 import { ProviderComparisonMatrix } from './provider-comparison-matrix';
 import { ProviderRankingsTabs } from './provider-rankings-tabs';
 import { WebSearchToggle } from './web-search-toggle';
+import { logger } from '@/lib/logger';
 import { Switch } from '@/components/ui/switch';
 import { ApiUsageSummary } from './api-usage-summary';
+import {
+  CREDIT_COST_URL_ANALYSIS,
+  CREDIT_COST_COMPETITOR_ANALYSIS,
+  CREDIT_COST_PER_PROMPT_ANALYSIS_WEB,
+  CREDIT_COST_PER_PROMPT_ANALYSIS_NO_WEB,
+  CREDIT_COST_PROMPT_GENERATION
+} from '@/config/constants';
 
 // Hooks
 import { useSSEHandler } from './hooks/use-sse-handler';
+
+// Dev flag to restrict certain UI elements to local/dev only
+const isDev = process.env.NODE_ENV === 'development';
 
 interface BrandMonitorProps {
   creditsAvailable?: number;
@@ -86,18 +97,18 @@ export function BrandMonitor({
           analysisData: completedAnalysis,
           competitors: identifiedCompetitors,
           prompts: analyzingPrompts,
-          creditsUsed: CREDITS_PER_BRAND_ANALYSIS
+          creditsUsed: (completedAnalysis?.prompts?.length || 0) * (useWebSearch ? CREDIT_COST_PER_PROMPT_ANALYSIS_WEB : CREDIT_COST_PER_PROMPT_ANALYSIS_NO_WEB)
         };
         
         saveAnalysis.mutate(analysisData, {
-          onSuccess: (savedAnalysis) => {
-            console.log('Analysis saved successfully:', savedAnalysis);
+          onSuccess: (savedAnalysis: BrandAnalysis) => {
+            logger.info('Analysis saved successfully:', savedAnalysis);
             if (onSaveAnalysis) {
               onSaveAnalysis(savedAnalysis);
             }
           },
-          onError: (error) => {
-            console.error('Failed to save analysis:', error);
+          onError: (error: unknown) => {
+            logger.error('Failed to save analysis:', error);
             hasSavedRef.current = false;
           }
         });
@@ -145,9 +156,9 @@ export function BrandMonitor({
   
   // Load selected analysis if provided or reset when null
   useEffect(() => {
-    console.log('🔄 [BrandMonitor] selectedAnalysis changed:', selectedAnalysis);
+    logger.debug('🔄 [BrandMonitor] selectedAnalysis changed:', selectedAnalysis);
     if (selectedAnalysis && selectedAnalysis.analysisData) {
-      console.log('📊 [BrandMonitor] Loading existing analysis');
+      logger.info('📊 [BrandMonitor] Loading existing analysis');
       setIsLoadingExistingAnalysis(true);
       // Restore the analysis state from saved data
       dispatch({ type: 'SET_ANALYSIS', payload: selectedAnalysis.analysisData });
@@ -162,7 +173,7 @@ export function BrandMonitor({
       setTimeout(() => setIsLoadingExistingAnalysis(false), 100);
     } else if (selectedAnalysis === null) {
       // Reset state when explicitly set to null (New Analysis clicked)
-      console.log('🔄 [BrandMonitor] Resetting state for new analysis');
+      logger.info('🔄 [BrandMonitor] Resetting state for new analysis');
       dispatch({ type: 'RESET_STATE' });
       hasSavedRef.current = false;
       setIsLoadingExistingAnalysis(false);
@@ -200,13 +211,13 @@ export function BrandMonitor({
       return;
     }
 
-    // Check if user has enough credits for initial scrape (1 credit)
-    if (creditsAvailable < 1) {
-      dispatch({ type: 'SET_ERROR', payload: tErrors('insufficientCreditsUrl') });
+    // Check if user has enough credits for initial scrape
+    if (creditsAvailable < CREDIT_COST_URL_ANALYSIS) {
+      dispatch({ type: 'SET_ERROR', payload: tErrors('insufficientCreditsUrl', { credits: CREDIT_COST_URL_ANALYSIS }) });
       return;
     }
 
-    console.log('Starting scrape for URL:', url);
+    logger.info('Starting scrape for URL:', url);
     dispatch({ type: 'SET_LOADING', payload: true });
     dispatch({ type: 'SET_ERROR', payload: null });
     dispatch({ type: 'SET_URL_VALID', payload: true });
@@ -222,12 +233,12 @@ export function BrandMonitor({
         }),
       });
 
-      console.log('Scrape response status:', response.status);
+      logger.debug('Scrape response status:', response.status);
 
       if (!response.ok) {
         try {
           const errorData = await response.json();
-          console.error('Scrape API error:', errorData);
+          logger.error('Scrape API error:', errorData);
           if (errorData.error?.message) {
             throw new ClientApiError(errorData);
           }
@@ -239,26 +250,26 @@ export function BrandMonitor({
       }
 
       const data = await response.json();
-      console.log('Scrape data received:', data);
+      logger.debug('Scrape data received:', data);
       
       if (!data.company) {
         throw new Error(tErrors('noCompanyData'));
       }
-      // Debit 1 credit on successful scrape result
+      // Debit for URL analysis on successful scrape result
       try {
         const debitRes = await fetch('/api/credits', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ value: 1, reason: 'scrape_success' })
+          body: JSON.stringify({ value: CREDIT_COST_URL_ANALYSIS, reason: 'scrape_success' })
         });
         if (!debitRes.ok) {
           const err = await debitRes.json().catch(() => ({} as any));
-          console.warn('[Credits] Debit on scrape_success failed:', err?.error || debitRes.statusText);
+          logger.warn('[Credits] Debit on scrape_success failed:', err?.error || debitRes.statusText);
         } else if (onCreditsUpdate) {
           onCreditsUpdate();
         }
       } catch (e) {
-        console.warn('[Credits] Debit on scrape_success error:', e);
+        logger.warn('[Credits] Debit on scrape_success error:', e);
       }
       
       // Scrape was successful - credits have been deducted, refresh the navbar
@@ -275,18 +286,18 @@ export function BrandMonitor({
         // Small delay to ensure DOM updates before fade in
         setTimeout(() => {
           dispatch({ type: 'SET_SHOW_COMPANY_CARD', payload: true });
-          console.log('Showing company card');
+          logger.info('Showing company card');
         }, 50);
       }, 500);
     } catch (error: any) {
-      console.error('❌ [BrandMonitor] Scrape error:', error);
+      logger.error('❌ [BrandMonitor] Scrape error:', error);
       
       let errorMessage = tErrors('failedToExtractCompany');
       if (error instanceof ClientApiError) {
         errorMessage = error.getUserMessage();
       } else if (error.message) {
         // Log detailed error information for debugging
-        console.error('❌ [BrandMonitor] Error details:', {
+        logger.error('❌ [BrandMonitor] Error details:', {
           message: error.message,
           name: error.name,
           stack: error.stack,
@@ -316,6 +327,12 @@ export function BrandMonitor({
   const handlePrepareAnalysis = useCallback(async () => {
     if (!company) return;
 
+    // Validate credits and show error but allow click to give feedback like URL stage
+    if (creditsAvailable < CREDIT_COST_COMPETITOR_ANALYSIS) {
+      dispatch({ type: 'SET_ERROR', payload: tErrors('insufficientCreditsCompetitors', { credits: CREDIT_COST_COMPETITOR_ANALYSIS }) });
+      return;
+    }
+
     dispatch({ type: 'SET_PREPARING_ANALYSIS', payload: true });
     
     // Check which providers are available
@@ -337,8 +354,8 @@ export function BrandMonitor({
     
     try {
       const detectedLocale = navigator.language.split('-')[0] || 'en';
-      console.log('🚀 Starting competitor search...');
-      console.log('🌐 Detected browser locale:', navigator.language, '→', detectedLocale);
+      logger.info('🚀 Starting competitor search...');
+      logger.debug('🌐 Detected browser locale:', navigator.language, '→', detectedLocale);
       
       // Import search method configuration
       const { ACTIVE_SEARCH_CONFIG, getApiEndpoint, buildRequestBody } = await import('@/lib/competitor-pipeline/search-method-config');
@@ -346,8 +363,8 @@ export function BrandMonitor({
       const apiEndpoint = getApiEndpoint(ACTIVE_SEARCH_CONFIG.method);
       const requestBody = buildRequestBody(ACTIVE_SEARCH_CONFIG, company, detectedLocale, useIntelliSearch);
       
-      console.log(`🔬 [SearchMethod] Active method: ${ACTIVE_SEARCH_CONFIG.method}`);
-      console.log(`🔧 [SearchMethod] Config:`, ACTIVE_SEARCH_CONFIG);
+      logger.debug(`🔬 [SearchMethod] Active method: ${ACTIVE_SEARCH_CONFIG.method}`);
+      logger.debug(`🔧 [SearchMethod] Config:`, ACTIVE_SEARCH_CONFIG);
       
       const response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -367,21 +384,21 @@ export function BrandMonitor({
         throw new Error(data.error || 'Unknown API error');
       }
 
-      // Debit 2 credits only after successful competitor generation
+      // Debit credits for competitor analysis only after successful generation
       try {
         const debitRes = await fetch('/api/credits', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ value: 2, reason: 'identify_competitors_success' })
+          body: JSON.stringify({ value: CREDIT_COST_COMPETITOR_ANALYSIS, reason: 'identify_competitors_success' })
         });
         if (!debitRes.ok) {
           const err = await debitRes.json().catch(() => ({} as any));
-          console.warn('[Credits] Debit on identify_competitors_success failed:', err?.error || debitRes.statusText);
+          logger.warn('[Credits] Debit on identify_competitors_success failed:', err?.error || debitRes.statusText);
         } else if (onCreditsUpdate) {
           onCreditsUpdate();
         }
       } catch (e) {
-        console.warn('[Credits] Debit on identify_competitors_success error:', e);
+        logger.warn('[Credits] Debit on identify_competitors_success error:', e);
       }
       
       // Handle AI web search results
@@ -390,17 +407,17 @@ export function BrandMonitor({
         url: comp.url
       }));
       
-      console.log('🏆 Found competitors:', foundCompetitors);
-      console.log('📊 Stats:', data.stats);
+      logger.info('🏆 Found competitors:', foundCompetitors);
+      logger.debug('📊 Stats:', data.stats);
       
       if (data.warning) {
-        console.warn('⚠️ Warning:', data.warning);
+        logger.warn('⚠️ Warning:', data.warning);
       }
       
       dispatch({ type: 'SET_IDENTIFIED_COMPETITORS', payload: foundCompetitors });
-      console.log('Final identified competitors:', foundCompetitors);
+      logger.info('Final identified competitors:', foundCompetitors);
     } catch (error) {
-      console.error('❌ Error in competitor search:', error);
+      logger.error('❌ Error in competitor search:', error);
       dispatch({ type: 'SET_ERROR', payload: tErrors('failedToFindCompetitors') });
     }
     
@@ -417,10 +434,16 @@ export function BrandMonitor({
     }
     
     setTimeout(() => {
+      // Require credits for prompt generation; show specific error if missing and do not proceed
+      if (creditsAvailable < CREDIT_COST_PROMPT_GENERATION) {
+        dispatch({ type: 'SET_ERROR', payload: tErrors('insufficientCreditsPromptGen', { credits: CREDIT_COST_PROMPT_GENERATION }) });
+        return;
+      }
+
       dispatch({ type: 'SET_SHOW_COMPETITORS', payload: false });
       dispatch({ type: 'SET_SHOW_PROMPTS_LIST', payload: true });
     }, 300);
-  }, []);
+  }, [creditsAvailable, tErrors]);
   
   const handleAnalyze = useCallback(async (displayPrompts: string[]) => {
     if (!company) return;
@@ -428,9 +451,12 @@ export function BrandMonitor({
     // Reset saved flag for new analysis
     hasSavedRef.current = false;
 
-    // Check if user has enough credits
-    if (creditsAvailable < CREDITS_PER_BRAND_ANALYSIS) {
-      dispatch({ type: 'SET_ERROR', payload: tErrors('insufficientCreditsAnalysis', { credits: CREDITS_PER_BRAND_ANALYSIS }) });
+    // Check if user has enough credits dynamically: per-prompt cost depends on webSearch
+    const normalizedPrompts = displayPrompts.map(p => p.trim());
+    const perPromptCost = useWebSearch ? CREDIT_COST_PER_PROMPT_ANALYSIS_WEB : CREDIT_COST_PER_PROMPT_ANALYSIS_NO_WEB;
+    const requiredCredits = normalizedPrompts.length * perPromptCost;
+    if (creditsAvailable < requiredCredits) {
+      dispatch({ type: 'SET_ERROR', payload: tErrors('insufficientCreditsAnalysis', { credits: requiredCredits, perPrompt: perPromptCost }) });
       return;
     }
 
@@ -442,10 +468,10 @@ export function BrandMonitor({
     try {
       // Use the prompts that are already displayed in the UI instead of regenerating
       // This ensures consistency and avoids unnecessary API calls
-      const normalizedPrompts = displayPrompts.map(p => p.trim());
+      // normalizedPrompts already computed above
       dispatch({ type: 'SET_ANALYZING_PROMPTS', payload: normalizedPrompts });
 
-      console.log('Starting analysis with existing prompts:', normalizedPrompts.length);
+      logger.info('Starting analysis with existing prompts:', normalizedPrompts.length);
       
       dispatch({ type: 'SET_ANALYZING', payload: true });
       dispatch({ type: 'SET_ANALYSIS_PROGRESS', payload: {
@@ -484,25 +510,27 @@ export function BrandMonitor({
         },
         async () => {
           // Debit credits for prompts only after SSE connection (HTTP 200)
+          const perPrompt = useWebSearch ? CREDIT_COST_PER_PROMPT_ANALYSIS_WEB : CREDIT_COST_PER_PROMPT_ANALYSIS_NO_WEB;
+          const debitValue = normalizedPrompts.length * perPrompt;
           try {
             const debitRes = await fetch('/api/credits', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ value: normalizedPrompts.length, reason: 'prompts_analysis' })
+              body: JSON.stringify({ value: debitValue, reason: 'prompts_analysis' })
             });
             if (!debitRes.ok) {
               const err = await debitRes.json().catch(() => ({} as any));
-              console.warn('[Credits] Debit for prompts failed:', err?.error || debitRes.statusText);
+              logger.warn('[Credits] Debit for prompts failed:', err?.error || debitRes.statusText);
             } else if (onCreditsUpdate) {
               onCreditsUpdate();
             }
           } catch (e) {
-            console.warn('[Credits] Debit for prompts error:', e);
+            logger.warn('[Credits] Debit for prompts error:', e);
           }
         }
       );
     } catch (error) {
-      console.error('Error preparing prompts or starting analysis:', error);
+      logger.error('Error preparing prompts or starting analysis:', error);
       dispatch({ type: 'SET_ERROR', payload: tErrors('analysisPreparationFailed') });
     } finally {
       dispatch({ type: 'SET_ANALYZING', payload: false });
@@ -525,14 +553,14 @@ export function BrandMonitor({
   
   const handleRefreshMatrix = useCallback(async () => {
     if (!company || !analysis?.responses || !identifiedCompetitors) {
-      console.error('Données manquantes pour le refresh de la matrice');
+      logger.error('Données manquantes pour le refresh de la matrice');
       return;
     }
 
     setIsRefreshingMatrix(true);
     
     try {
-      console.log('[RefreshMatrix] 🔄 Début du recalcul de la matrice...');
+      logger.info('[RefreshMatrix] 🔄 Début du recalcul de la matrice...');
       
       // Préparer les données pour l'API
       const knownCompetitors = identifiedCompetitors.map(c => c.name);
@@ -553,7 +581,7 @@ export function BrandMonitor({
       }
 
       const data = await response.json();
-      console.log('[RefreshMatrix] ✅ Matrice recalculée avec succès');
+      logger.info('[RefreshMatrix] ✅ Matrice recalculée avec succès');
       
       // Mettre à jour l'analyse avec les nouvelles données
       const updatedAnalysis = {
@@ -566,7 +594,7 @@ export function BrandMonitor({
       dispatch({ type: 'SET_ANALYSIS', payload: updatedAnalysis });
       
     } catch (error) {
-      console.error('[RefreshMatrix] ❌ Erreur:', error);
+      logger.error('[RefreshMatrix] ❌ Erreur:', error);
       dispatch({ 
         type: 'SET_ERROR', 
         payload: `Erreur lors du rafraîchissement: ${error instanceof Error ? error.message : 'Erreur inconnue'}` 
@@ -586,7 +614,7 @@ export function BrandMonitor({
     
     // Implementation for batch scraping - you can move the full implementation here
     // For now, just logging
-    console.log('Batch scraping validated competitors:', validatedCompetitors);
+    logger.info('Batch scraping validated competitors:', validatedCompetitors);
   }, []);
   
   
@@ -636,6 +664,8 @@ export function BrandMonitor({
                 company={company}
                 onAnalyze={handlePrepareAnalysis}
                 analyzing={preparingAnalysis}
+                canIdentifyCompetitors={creditsAvailable >= CREDIT_COST_COMPETITOR_ANALYSIS}
+                canContinueToAnalysis={creditsAvailable >= CREDIT_COST_PROMPT_GENERATION}
                 showCompetitors={showCompetitors}
                 identifiedCompetitors={identifiedCompetitors}
                 onRemoveCompetitor={(idx) => dispatch({ type: 'REMOVE_COMPETITOR', payload: idx })}
@@ -701,6 +731,8 @@ export function BrandMonitor({
           }}
           onStartAnalysis={handleAnalyze}
           onCreditsUpdate={onCreditsUpdate}
+          creditsAvailable={creditsAvailable}
+          onError={(msg: string) => dispatch({ type: 'SET_ERROR', payload: msg })}
         />
         </div>
       )}
@@ -710,7 +742,7 @@ export function BrandMonitor({
         <div className="flex-1 flex justify-center animate-panel-in pt-8">
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
             {/* API Usage Summary */}
-            {apiUsageSummary && (
+            {isDev && apiUsageSummary && (
               <div className="mb-6">
                 <ApiUsageSummary 
                   summary={apiUsageSummary} 
@@ -753,20 +785,18 @@ export function BrandMonitor({
                           </CardDescription>
                         </div>
                         <div className="flex items-center gap-4">
-                          {/* DEV ONLY: Bouton pour recalculer la matrice de comparaison sans refaire l'analyse complète
-                              Décommentez cette section si vous voulez tester les améliorations de détection de marques */}
-                          {/* 
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleRefreshMatrix}
-                            disabled={isRefreshingMatrix}
-                            className="flex items-center gap-2"
-                          >
-                            <RefreshCw className={`w-4 h-4 ${isRefreshingMatrix ? 'animate-spin' : ''}`} />
-                            {isRefreshingMatrix ? 'Recalcul...' : 'Rafraîchir'}
-                          </Button>
-                          */}
+                          {isDev && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleRefreshMatrix}
+                              disabled={isRefreshingMatrix}
+                              className="flex items-center gap-2"
+                            >
+                              <RefreshCw className={`w-4 h-4 ${isRefreshingMatrix ? 'animate-spin' : ''}`} />
+                              {isRefreshingMatrix ? 'Recalcul...' : 'Rafraîchir'}
+                            </Button>
+                          )}
                           <div className="text-right">
                             <p className="text-2xl font-bold text-orange-600">{brandData.visibilityScore}%</p>
                             <p className="text-xs text-gray-500 mt-1">{tAnalysis('comparisonMatrix.averageScore')}</p>
@@ -867,24 +897,9 @@ export function BrandMonitor({
         onAdd={async () => {
           const trimmed = newPromptText.trim();
           if (!trimmed) return;
-          try {
-            const debitRes = await fetch('/api/credits', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ value: 1, reason: 'add_prompt' })
-            });
-            if (!debitRes.ok) {
-              const data = await debitRes.json().catch(() => ({} as any));
-              dispatch({ type: 'SET_ERROR', payload: tErrors('insufficientCreditsAnalysis', { credits: 1 }) });
-              return;
-            }
-            if (onCreditsUpdate) onCreditsUpdate();
-            dispatch({ type: 'ADD_CUSTOM_PROMPT', payload: trimmed });
-            dispatch({ type: 'TOGGLE_MODAL', payload: { modal: 'addPrompt', show: false } });
-            dispatch({ type: 'SET_NEW_PROMPT_TEXT', payload: '' });
-          } catch (e) {
-            dispatch({ type: 'SET_ERROR', payload: tErrors('analysisPreparationFailed') });
-          }
+          dispatch({ type: 'ADD_CUSTOM_PROMPT', payload: trimmed });
+          dispatch({ type: 'TOGGLE_MODAL', payload: { modal: 'addPrompt', show: false } });
+          dispatch({ type: 'SET_NEW_PROMPT_TEXT', payload: '' });
         }}
         onClose={() => {
           dispatch({ type: 'TOGGLE_MODAL', payload: { modal: 'addPrompt', show: false } });

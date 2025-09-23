@@ -1,0 +1,4 @@
+- Discover trending brands
+- Compare alternatives
+- Recommendations by use
+- Visibility analysis

@@ -3,6 +3,8 @@
  * Permet de calculer les coûts et d'afficher un résumé détaillé
  */
 
+import { logger } from './logger';
+
 export interface ApiCall {
   id: string;
   provider: string;
@@ -80,7 +82,7 @@ class ApiUsageTracker {
    */
   startAnalysis(analysisId: string) {
     this.currentAnalysisId = analysisId;
-    console.log(`🔍 [ApiUsageTracker] Début du tracking pour l'analyse: ${analysisId}`);
+    logger.info(`[ApiUsageTracker] Début du tracking pour l'analyse: ${analysisId}`);
   }
 
   /**
@@ -97,7 +99,7 @@ class ApiUsageTracker {
     
     this.calls.push(apiCall);
     
-    console.log(`📊 [ApiUsageTracker] Appel enregistré:`, {
+    logger.debug(`[ApiUsageTracker] Appel enregistré:`, {
       id,
       provider: call.provider,
       model: call.model,
@@ -116,7 +118,7 @@ class ApiUsageTracker {
     const callIndex = this.calls.findIndex(call => call.id === id);
     if (callIndex !== -1) {
       this.calls[callIndex] = { ...this.calls[callIndex], ...updates };
-      console.log(`📊 [ApiUsageTracker] Appel mis à jour: ${id}`, updates);
+      logger.debug(`[ApiUsageTracker] Appel mis à jour: ${id}`, updates);
     }
   }
 
@@ -258,17 +260,17 @@ class ApiUsageTracker {
   logSummary() {
     const summary = this.getSummary();
     
-    console.log('\n' + '='.repeat(80));
-    console.log('📊 RÉSUMÉ DES COÛTS API - ANALYSE TERMINÉE');
-    console.log('='.repeat(80));
+    logger.info('\n' + '='.repeat(80));
+    logger.info('📊 RÉSUMÉ DES COÛTS API - ANALYSE TERMINÉE');
+    logger.info('='.repeat(80));
     
-    console.log(`\n🔢 STATISTIQUES GÉNÉRALES:`);
-    console.log(`   • Total d'appels: ${summary.totalCalls}`);
-    console.log(`   • Coût total: $${summary.totalCost.toFixed(4)}`);
-    console.log(`   • Durée totale: ${(summary.totalDuration / 1000).toFixed(2)}s`);
-    console.log(`   • Erreurs: ${summary.errors}`);
+    logger.info(`\n🔢 STATISTIQUES GÉNÉRALES:`);
+    logger.info(`   • Total d'appels: ${summary.totalCalls}`);
+    logger.info(`   • Coût total: $${summary.totalCost.toFixed(4)}`);
+    logger.info(`   • Durée totale: ${(summary.totalDuration / 1000).toFixed(2)}s`);
+    logger.info(`   • Erreurs: ${summary.errors}`);
     
-    console.log(`\n🏢 PAR OPÉRATION:`);
+    logger.info(`\n🏢 PAR OPÉRATION:`);
     Object.entries(summary.byOperation).forEach(([operation, data]) => {
       const operationName = {
         'scrape': 'Scraping initial',
@@ -277,21 +279,21 @@ class ApiUsageTracker {
         'analysis': 'Analyse des résultats'
       }[operation] || operation;
       
-      console.log(`   📋 ${operationName}:`);
-      console.log(`      • Appels: ${data.calls}`);
-      console.log(`      • Coût: $${data.cost.toFixed(4)}`);
-      console.log(`      • Providers: ${data.providers.join(', ')}`);
+      logger.info(`   📋 ${operationName}:`);
+      logger.info(`      • Appels: ${data.calls}`);
+      logger.info(`      • Coût: $${data.cost.toFixed(4)}`);
+      logger.info(`      • Providers: ${data.providers.join(', ')}`);
     });
     
-    console.log(`\n🤖 PAR PROVIDER:`);
+    logger.info(`\n🤖 PAR PROVIDER:`);
     Object.entries(summary.byProvider).forEach(([provider, data]) => {
-      console.log(`   🔧 ${provider.toUpperCase()}:`);
-      console.log(`      • Appels: ${data.calls}`);
-      console.log(`      • Coût: $${data.cost.toFixed(4)}`);
-      console.log(`      • Tokens: ${data.tokens.input} entrée, ${data.tokens.output} sortie`);
+      logger.info(`   🔧 ${provider.toUpperCase()}:`);
+      logger.info(`      • Appels: ${data.calls}`);
+      logger.info(`      • Coût: $${data.cost.toFixed(4)}`);
+      logger.info(`      • Tokens: ${data.tokens.input} entrée, ${data.tokens.output} sortie`);
     });
     
-    console.log(`\n📋 DÉTAIL DES APPELS:`);
+    logger.debug(`\n📋 DÉTAIL DES APPELS:`);
     this.calls.forEach((call, index) => {
       const status = call.success ? '✅' : '❌';
       const tokens = call.inputTokens && call.outputTokens 
@@ -300,13 +302,13 @@ class ApiUsageTracker {
       const cost = call.cost ? ` - $${call.cost.toFixed(4)}` : '';
       const duration = call.duration ? ` - ${(call.duration / 1000).toFixed(2)}s` : '';
       
-      console.log(`   ${index + 1}. ${status} ${call.provider}/${call.model} - ${call.operation}${tokens}${cost}${duration}`);
+      logger.debug(`   ${index + 1}. ${status} ${call.provider}/${call.model} - ${call.operation}${tokens}${cost}${duration}`);
       if (call.error) {
-        console.log(`      ❌ Erreur: ${call.error}`);
+        logger.error(`      ❌ Erreur: ${call.error}`);
       }
     });
     
-    console.log('='.repeat(80) + '\n');
+    logger.info('='.repeat(80) + '\n');
   }
 
   /**

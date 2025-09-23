@@ -1,0 +1,3 @@
+- Flux technique résumé
+- Extraction des sources
+- Champs structurés (rankings, mentions, sentiment)

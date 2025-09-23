@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Trash2, CheckIcon, Info } from 'lucide-react';
@@ -7,6 +7,8 @@ import { IdentifiedCompetitor, PromptCompletionStatus } from '@/lib/brand-monito
 import { getEnabledProviders } from '@/lib/provider-config';
 import { useTranslations } from 'next-intl';
 import { getDisplayPrompts, isCustomPrompt, getDefaultPromptIndex } from '@/lib/prompt-utils';
+import { CREDIT_COST_PROMPT_GENERATION } from '@/config/constants';
+import { logger } from '@/lib/logger';
 
 interface AnalysisProgressSectionProps {
   company: Company;
@@ -27,6 +29,8 @@ interface AnalysisProgressSectionProps {
   onAddPromptClick: () => void;
   onStartAnalysis: (displayPrompts: string[]) => void;
   onCreditsUpdate?: () => void;
+  creditsAvailable?: number;
+  onError?: (message: string) => void;
 }
 
 // Provider icon mapping
@@ -86,12 +90,15 @@ export function AnalysisProgressSection({
   onRemoveCustomPrompt,
   onAddPromptClick,
   onStartAnalysis,
-  onCreditsUpdate
+  onCreditsUpdate,
+  creditsAvailable = 0,
+  onError
 }: AnalysisProgressSectionProps) {
   const t = useTranslations('brandMonitor.analysisProgress');
   const [displayPrompts, setDisplayPrompts] = useState<string[]>([]);
   const [loadingPrompts, setLoadingPrompts] = useState(false);
   const [promptsGenerated, setPromptsGenerated] = useState(false);
+  const isGeneratingPromptsRef = useRef(false);
   
   // Load prompts asynchronously - only on initial load
   useEffect(() => {
@@ -102,13 +109,14 @@ export function AnalysisProgressSection({
         return;
       }
       
-      // Only generate prompts if we haven't generated them yet
-      if (promptsGenerated) {
+      // Only generate prompts if we haven't generated them yet AND not currently generating
+      if (promptsGenerated || isGeneratingPromptsRef.current) {
         return;
       }
       
-      // Set flag before starting async work to avoid double calls in React StrictMode
+      // Set flags IMMEDIATELY before starting async work to avoid double calls in React StrictMode
       setPromptsGenerated(true);
+      isGeneratingPromptsRef.current = true;
       setLoadingPrompts(true);
       try {
         const adaptivePrompts = await getDisplayPrompts(
@@ -119,24 +127,24 @@ export function AnalysisProgressSection({
           identifiedCompetitors
         );
         setDisplayPrompts(adaptivePrompts);
-        // Debit 2 credits once when prompts are successfully displayed
+        // Debit credits once when prompts are successfully displayed
         try {
           const res = await fetch('/api/credits', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ value: 2, reason: 'prompts_display' })
+            body: JSON.stringify({ value: CREDIT_COST_PROMPT_GENERATION, reason: 'prompts_display' })
           });
           if (!res.ok) {
             const err = await res.json().catch(() => ({} as any));
-            console.warn('[Credits] Debit on prompts_display failed:', err?.error || res.statusText);
+            logger.warn('[Credits] Debit on prompts_display failed:', err?.error || res.statusText);
           } else if (onCreditsUpdate) {
             onCreditsUpdate();
           }
         } catch (e) {
-          console.warn('[Credits] Debit on prompts_display error:', e);
+          logger.warn('[Credits] Debit on prompts_display error:', e);
         }
       } catch (error) {
-        console.error('Error loading adaptive prompts:', error);
+        logger.error('Error loading adaptive prompts:', error);
         // Fallback to basic prompts
         setDisplayPrompts([
           'Best tools in 2024?',
@@ -147,6 +155,7 @@ export function AnalysisProgressSection({
         setPromptsGenerated(true);
       } finally {
         setLoadingPrompts(false);
+        isGeneratingPromptsRef.current = false;
       }
     }
     
@@ -173,11 +182,6 @@ export function AnalysisProgressSection({
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl font-semibold flex items-center gap-2">
                   {analyzing ? t('title') : t('prompts')}
-                  {!analyzing && (
-                    <span className="inline-flex items-center" title="1 crédit par prompt / 1 credit per prompt" aria-label="1 crédit par prompt">
-                      <Info className="w-4 h-4 text-gray-400" />
-                    </span>
-                  )}
                 </CardTitle>
                 {/* Competitors list on the right */}
                 {!analyzing && (

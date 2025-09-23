@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { analyzeCompetitorsByProvider } from '@/lib/ai-utils';
 import { Company, AIResponse } from '@/lib/types';
 
@@ -13,10 +14,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[RefreshMatrix] 🔄 Recalcul de la matrice de comparaison...');
-    console.log(`[RefreshMatrix] Company: ${company.name}`);
-    console.log(`[RefreshMatrix] Responses: ${responses.length}`);
-    console.log(`[RefreshMatrix] Known competitors: ${knownCompetitors.length}`);
+    logger.info('[RefreshMatrix] 🔄 Recalcul de la matrice de comparaison...');
+    logger.debug(`[RefreshMatrix] Company: ${company.name}`);
+    logger.debug(`[RefreshMatrix] Responses: ${responses.length}`);
+    logger.debug(`[RefreshMatrix] Known competitors: ${knownCompetitors.length}`);
 
     // Recalculer uniquement la matrice de comparaison
     const { providerRankings, providerComparison } = await analyzeCompetitorsByProvider(
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
       knownCompetitors as string[]
     );
 
-    console.log('[RefreshMatrix] ✅ Matrice recalculée avec succès');
+    logger.info('[RefreshMatrix] ✅ Matrice recalculée avec succès');
     
     return NextResponse.json({
       success: true,
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[RefreshMatrix] ❌ Erreur:', error);
+    logger.error('[RefreshMatrix] ❌ Erreur:', error);
     
     return NextResponse.json(
       { 

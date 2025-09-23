@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { generateText } from 'ai';
 import { getProviderModel } from '@/lib/provider-config';
 import { getLocaleFromRequest, getLanguageName } from '@/lib/locale-utils';
@@ -30,26 +31,26 @@ export async function POST(request: NextRequest) {
     let provider = 'openai';
     
     if (!model) {
-      console.log('OpenAI not available, trying Anthropic...');
+      logger.warn('OpenAI not available, trying Anthropic...');
       model = getProviderModel('anthropic', 'claude-3-5-haiku-20241022');
       provider = 'anthropic';
     }
     
     if (!model) {
-      console.log('Anthropic not available, trying Google...');
+      logger.warn('Anthropic not available, trying Google...');
       model = getProviderModel('google', 'gemini-1.5-flash');
       provider = 'google';
     }
     
     if (!model) {
-      console.warn('No AI provider available for prompt generation');
+      logger.warn('No AI provider available for prompt generation');
       return NextResponse.json(
         { error: 'No AI provider available' },
         { status: 503 }
       );
     }
 
-    console.log(`Using ${provider} for prompt generation`);
+    logger.info(`Using ${provider} for prompt generation`);
 
     // Track API call for prompt generation
     const callId = apiUsageTracker.trackCall({
@@ -116,9 +117,9 @@ IMPORTANT !
 
 
     // Log the complete prompt being sent to the AI
-    console.log('=== PROMPT SENT TO AI ===');
-    console.log(prompt);
-    console.log('=== END PROMPT ===');
+    logger.debug('=== PROMPT SENT TO AI ===');
+    logger.debug(prompt);
+    logger.debug('=== END PROMPT ===');
 
     const startTime = Date.now();
     const response = await generateText({
@@ -143,7 +144,7 @@ IMPORTANT !
     // Parse the JSON response
     try {
       const cleanResponse = response.text.trim();
-      console.log('AI response:', cleanResponse);
+      logger.debug('AI response:', cleanResponse);
       
       // Remove any markdown formatting if present
       const jsonMatch = cleanResponse.match(/\[[\s\S]*\]/);
@@ -152,7 +153,7 @@ IMPORTANT !
         if (Array.isArray(parsedPrompts) && parsedPrompts.length > 0) {
           const filteredPrompts = parsedPrompts.filter(p => typeof p === 'string' && p.trim().length > 0);
           
-          console.log('Generated prompts:', filteredPrompts);
+          logger.info('Generated prompts:', filteredPrompts);
           
           return NextResponse.json({
             success: true,
@@ -171,8 +172,8 @@ IMPORTANT !
       throw new Error('Failed to parse AI response as JSON array');
       
     } catch (parseError) {
-      console.error('Failed to parse AI-generated prompts:', parseError);
-      console.error('Raw response:', response.text);
+      logger.error('Failed to parse AI-generated prompts:', parseError);
+      logger.error('Raw response:', response.text);
       
       return NextResponse.json(
         { 
@@ -185,7 +186,7 @@ IMPORTANT !
     }
     
   } catch (error) {
-    console.error('Error in generate-prompts API:', error);
+    logger.error('Error in generate-prompts API:', error);
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
