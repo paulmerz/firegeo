@@ -307,7 +307,10 @@
         "title": "Exemples guidés",
         "ex1": "1) Recommandations de marques (tendances 2025)",
         "ex2": "2) Comparaison : alternative leader",
-        "ex3": "3) Recommandation par produit/usage"
+        "ex3": "3) Recommandation par produit/usage",
+        "title1": "Recommandations de marques (tendances 2025)",
+        "title2": "Comparaison : alternative leader",
+        "title3": "Recommandation par produit/usage"
       }
     },
     "lecture": {
