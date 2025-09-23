@@ -304,9 +304,10 @@
         "li4": "Énoncer contraintes (budget, distribution, matériaux, taille)."
       },
       "examples": {
-        "title1": "Obtenir des recommandations",
-        "title2": "Comparaison",
-        "title3": "Recommandation par produit/usage"
+        "title": "Exemples guidés",
+        "ex1": "1) Recommandations de marques (tendances 2025)",
+        "ex2": "2) Comparaison : alternative leader",
+        "ex3": "3) Recommandation par produit/usage"
       }
     },
     "lecture": {
@@ -355,6 +356,21 @@
       "tracking": {
         "title": "Suivi",
         "p1": "Le compteur de crédits est visible dans le tableau de bord avec alertes seuils."
+      },
+      "rules": {
+        "title": "Règles par action (Brand Monitor)",
+        "li1": "Analyse d'URL : {url} crédit",
+        "li2": "Identifier les concurrents : {competitors} crédits",
+        "li3": "Génération de prompts : {promptGen} crédits (one-shot)",
+        "li4": "Analyse de prompt (WebSearch ON) : {perPromptWeb} crédits par prompt",
+        "li5": "Analyse de prompt (WebSearch OFF) : {perPromptNoWeb} crédit par prompt"
+      },
+      "ui": {
+        "title": "Comportements UI",
+        "li1": "Les boutons restent cliquables : une erreur apparaît si les crédits sont insuffisants.",
+        "li2": "Tooltip du bouton Web Search : {perPromptWeb} ou {perPromptNoWeb} crédit(s) par prompt selon l'état.",
+        "li3": "Ajouter Prompt est toujours autorisé (pas de vérification de crédit en amont).",
+        "li4": "Commencer l'Analyse vérifie dynamiquement : prompts × (1 ou 2 selon WebSearch)."
       }
     },
     "recharge": {
