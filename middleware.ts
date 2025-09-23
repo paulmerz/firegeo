@@ -12,6 +12,34 @@ const intlMiddleware = createIntlMiddleware(routing);
 export default async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   
+  // Handle CORS for API routes
+  if (pathname.startsWith('/api/')) {
+    const origin = request.headers.get('origin');
+    const allowedOrigins = process.env.TRUSTED_ORIGINS?.split(',').map(o => o.trim()) || [
+      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    ];
+    
+    if (origin && allowedOrigins.includes(origin)) {
+      const response = NextResponse.next();
+      response.headers.set('Access-Control-Allow-Origin', origin);
+      response.headers.set('Access-Control-Allow-Credentials', 'true');
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+      
+      console.log('✅ CORS headers set for origin:', origin);
+      
+      // Handle preflight requests
+      if (request.method === 'OPTIONS') {
+        console.log('🔄 Handling preflight request');
+        return new Response(null, { status: 200, headers: response.headers });
+      }
+      
+      return response;
+    } else {
+      console.log('❌ CORS blocked for origin:', origin);
+    }
+  }
+  
   // Si c'est la route racine, laisser next-intl gérer la redirection
   if (pathname === '/') {
     // Si l'utilisateur est connecté, rediriger directement vers /fr/brand-monitor
