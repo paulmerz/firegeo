@@ -11,7 +11,7 @@ export const auth = betterAuth({
   baseURL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false, // Set to true to require email verification
+    requireEmailVerification: process.env.NODE_ENV === 'development', // Require email verification only in development
     sendResetPassword: async ({ user, url }, request) => {
       console.log('Password reset link:', url);
       
@@ -53,7 +53,7 @@ export const auth = betterAuth({
     },
   },
   emailVerification: {
-    sendOnSignUp: false, // Set to true to send verification email on signup
+    sendOnSignUp: process.env.NODE_ENV === 'development', // Send verification email on signup only in development
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }, request) => {
       console.log('Verification link:', url);

@@ -21,6 +21,11 @@ export const auth = betterAuth({
   baseURL: env.NEXT_PUBLIC_APP_URL,
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: env.NODE_ENV === 'development', // Require email verification only in development
+  },
+  emailVerification: {
+    sendOnSignUp: env.NODE_ENV === 'development', // Send verification email on signup only in development
+    autoSignInAfterVerification: true,
   },
   trustedOrigins: env.TRUSTED_ORIGINS.split(',').map(origin => origin.trim()),
   session: {
