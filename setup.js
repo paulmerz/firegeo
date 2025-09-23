@@ -216,10 +216,10 @@ async function main() {
     // App migrations
     await applyMigrations('./migrations', 'app migrations');
     
-    // Drizzle push
-    process.stdout.write('Syncing database schema... ');
+    // Drizzle migrate (safer than push)
+    process.stdout.write('Applying Drizzle migrations... ');
     try {
-      await exec('npm', ['run', 'db:push']);
+      await exec('npm', ['run', 'db:migrate']);
       console.log('✓');
     } catch {
       console.log('✓');

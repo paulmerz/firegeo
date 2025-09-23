@@ -10,6 +10,7 @@ const env = {
   BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET!,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   NODE_ENV: process.env.NODE_ENV || 'development',
+  TRUSTED_ORIGINS: process.env.TRUSTED_ORIGINS || 'http://localhost:3000',
 };
 
 export const auth = betterAuth({
@@ -21,7 +22,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  trustedOrigins: [env.NEXT_PUBLIC_APP_URL],
+  trustedOrigins: env.TRUSTED_ORIGINS.split(',').map(origin => origin.trim()),
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // Update session if older than 1 day
