@@ -66,12 +66,8 @@ export default async function middleware(request: NextRequest) {
   }
   
   // Pour toutes les autres routes, d'abord appliquer l'internationalisation
+  // On NE retourne pas tout de suite pour pouvoir appliquer nos règles d'auth
   const intlResponse = intlMiddleware(request);
-  
-  // Si next-intl veut rediriger, on le fait
-  if (intlResponse) {
-    return intlResponse;
-  }
   
   // Maintenant traiter l'authentification pour les routes avec locale
   const segments = pathname.split('/');
@@ -86,6 +82,15 @@ export default async function middleware(request: NextRequest) {
 
   // Si on est sur la racine localisée (ex: /fr) et que l'utilisateur est connecté, rediriger vers /{locale}/brand-monitor
   if (pathnameWithoutLocale === '/' ) {
+    const sessionCookie = await getSessionCookie(request);
+    if (sessionCookie) {
+      const url = new URL(`/${locale}/brand-monitor`, request.url);
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Si on est sur /{locale}/login et que l'utilisateur est déjà connecté, rediriger vers /{locale}/brand-monitor
+  if (pathnameWithoutLocale === '/login') {
     const sessionCookie = await getSessionCookie(request);
     if (sessionCookie) {
       const url = new URL(`/${locale}/brand-monitor`, request.url);
@@ -110,8 +115,8 @@ export default async function middleware(request: NextRequest) {
     }
   }
 
-  // Créer une réponse avec les headers de sécurité
-  const response = NextResponse.next();
+  // Créer une réponse avec les headers de sécurité (en conservant ceux de next-intl)
+  const response = intlResponse ?? NextResponse.next();
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');

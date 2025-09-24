@@ -4,10 +4,11 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Link, useRouter } from '@/i18n/routing';
 import Image from 'next/image';
-import { signIn } from '@/lib/auth-client';
+import { signIn, useSession } from '@/lib/auth-client';
 import { useTranslations } from 'next-intl';
 
 function LoginForm() {
+  const { data: session, isPending } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -16,6 +17,12 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const t = useTranslations();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!isPending && session) {
+      router.replace('/brand-monitor');
+    }
+  }, [isPending, session, router]);
 
   useEffect(() => {
     if (searchParams.get('reset') === 'success') {
