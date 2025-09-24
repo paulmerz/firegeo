@@ -42,10 +42,23 @@ export default async function middleware(request: NextRequest) {
   
   // Si c'est la route racine, laisser next-intl gérer la redirection
   if (pathname === '/') {
-    // Si l'utilisateur est connecté, rediriger directement vers /fr/brand-monitor
     const sessionCookie = await getSessionCookie(request);
     if (sessionCookie) {
-      const url = new URL(`/brand-monitor`, request.url);
+      // Détecter la locale: priorité au cookie NEXT_LOCALE, puis Accept-Language, sinon defaultLocale
+      const localeCookie = request.cookies.get('NEXT_LOCALE')?.value;
+      const acceptLanguage = request.headers.get('accept-language') || '';
+      const preferredLang = acceptLanguage.split(',')[0]?.split('-')[0]?.toLowerCase();
+
+      let locale: string | undefined = undefined;
+      if (localeCookie && (routing.locales as readonly string[]).includes(localeCookie)) {
+        locale = localeCookie;
+      } else if (preferredLang && (routing.locales as readonly string[]).includes(preferredLang)) {
+        locale = preferredLang;
+      } else {
+        locale = routing.defaultLocale as string;
+      }
+
+      const url = new URL(`/${locale}/brand-monitor`, request.url);
       return NextResponse.redirect(url);
     }
     // Sinon, laisser next-intl faire la détection de locale

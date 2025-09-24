@@ -18,14 +18,14 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 console.log = originalLog;
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-08-27.basil',
 });
 
 async function setupBillingPortal() {
   try {
     const configuration = await stripe.billingPortal.configurations.create({
       business_profile: {
-        headline: 'Fire SaaS - Manage your subscription',
+        headline: 'Voxum - Manage your subscription',
         privacy_policy_url: `${process.env.NEXT_PUBLIC_APP_URL}/privacy`,
         terms_of_service_url: `${process.env.NEXT_PUBLIC_APP_URL}/terms`,
       },
@@ -53,9 +53,6 @@ async function setupBillingPortal() {
               'other',
             ],
           },
-        },
-        subscription_pause: {
-          enabled: false,
         },
         subscription_update: {
           enabled: false,

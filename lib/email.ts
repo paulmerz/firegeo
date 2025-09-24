@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import React from 'react';
 
 // Initialize Resend - you'll need to add RESEND_API_KEY to your .env.local
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -25,16 +26,22 @@ export const sendEmail = async ({
   }
 
   try {
-    const data = await resend.emails.send({
+    const { data: sendData, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'SaaS Starter <onboarding@resend.dev>',
       to,
       subject,
-      text,
-      html: html || text,
+      // Resend v3+ attend un contenu React. On encapsule HTML/texte.
+      react: React.createElement('div', {
+        dangerouslySetInnerHTML: {
+          __html: (html ?? (text ? `<pre>${text}</pre>` : '')) as string,
+        },
+      }),
     });
-    
-    console.log('Email sent:', data.id);
-    return data;
+    if (error) {
+      throw error;
+    }
+    console.log('Email sent:', sendData?.id);
+    return { id: sendData?.id ?? 'unknown' };
   } catch (error) {
     console.error('Failed to send email:', error);
     throw error;

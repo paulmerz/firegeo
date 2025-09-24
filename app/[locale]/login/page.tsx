@@ -41,6 +41,7 @@ function LoginForm() {
       });
       
       if (response.error) {
+        // Les messages sont désormais localisés côté serveur par better-auth-localization
         setError(response.error.message || t('auth.failedToLogin'));
         setLoading(false);
         return;
@@ -50,7 +51,7 @@ function LoginForm() {
       const returnUrl = searchParams.get('from') || '/brand-monitor';
       router.push(returnUrl || '/brand-monitor');
     } catch (err: any) {
-      setError(err.message || t('auth.failedToLogin'));
+      setError(err?.message || t('auth.failedToLogin'));
       setLoading(false);
     }
   };

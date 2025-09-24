@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth';
 import { Pool } from 'pg';
 import { sendEmail } from './email';
 import { autumn } from 'autumn-js/better-auth';
+import { localization } from 'better-auth-localization';
 
 export const auth = betterAuth({
   database: new Pool({
@@ -11,13 +12,13 @@ export const auth = betterAuth({
   baseURL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: process.env.NODE_ENV === 'development', // Require email verification only in development
+    requireEmailVerification: process.env.NODE_ENV === 'production',
     sendResetPassword: async ({ user, url }, request) => {
       console.log('Password reset link:', url);
       
       await sendEmail({
         to: user.email,
-        subject: 'Reset your password - Fire SaaS',
+        subject: 'Reset your password - Voxum',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #333;">Reset Your Password</h2>
@@ -53,14 +54,14 @@ export const auth = betterAuth({
     },
   },
   emailVerification: {
-    sendOnSignUp: process.env.NODE_ENV === 'development', // Send verification email on signup only in development
+    sendOnSignUp: process.env.NODE_ENV === 'production',
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }, request) => {
       console.log('Verification link:', url);
       
       await sendEmail({
         to: user.email,
-        subject: 'Verify your email - Fire SaaS',
+        subject: 'Verify your email - Voxum',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #333;">Verify Your Email Address</h2>
@@ -80,5 +81,24 @@ export const auth = betterAuth({
       });
     },
   },
-  plugins: [autumn()],
+  plugins: [
+    autumn(),
+    localization({
+      defaultLocale: 'default',
+      fallbackLocale: 'default',
+      getLocale: async (request) => {
+        try {
+          if (!request) return 'default';
+          const headerPath = request.headers.get('x-pathname') || request.headers.get('referer') || '';
+          if (/\/(fr)(\/|$)/i.test(headerPath)) return 'fr-FR';
+
+          const lang = request.headers.get('accept-language') || '';
+          if (/fr/i.test(lang)) return 'fr-FR';
+          return 'default';
+        } catch {
+          return 'default';
+        }
+      }
+    })
+  ],
 });

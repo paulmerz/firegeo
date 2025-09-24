@@ -56,6 +56,9 @@ importers:
       better-auth:
         specifier: ^1.2.12
         version: 1.3.14(next@15.3.5(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      better-auth-localization:
+        specifier: ^2.1.8
+        version: 2.1.8(better-auth@1.3.14(next@15.3.5(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1))
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -2053,6 +2056,11 @@ packages:
   baseline-browser-mapping@2.8.6:
     resolution: {integrity: sha512-wrH5NNqren/QMtKUEEJf7z86YjfqW/2uw3IL3/xpqZUC95SSVIFXYQeeGjL6FT/X68IROu6RMehZQS5foy2BXw==}
     hasBin: true
+
+  better-auth-localization@2.1.8:
+    resolution: {integrity: sha512-cNjW0LsJtaKTKDJgvbtNf3XbJmi0Wf5htBrAN6BI30eb9e/dvIIt8l/0Y4ezT/f6Bmv0Ww6NoFaZt+zqaDzP0w==}
+    peerDependencies:
+      better-auth: ^1.3.4
 
   better-auth@1.3.14:
     resolution: {integrity: sha512-2U2TKO4CmFFNxBagrRsgptdhZO9wpjhrSkEwsiB/DUnuFRxueY1pcBJA8xCrq1WnbqL/ktHh7UAEKb20Gb0FhA==}
@@ -6628,6 +6636,10 @@ snapshots:
   base64-js@1.5.1: {}
 
   baseline-browser-mapping@2.8.6: {}
+
+  better-auth-localization@2.1.8(better-auth@1.3.14(next@15.3.5(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)):
+    dependencies:
+      better-auth: 1.3.14(next@15.3.5(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
 
   better-auth@1.3.14(next@15.3.5(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
     dependencies:

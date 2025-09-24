@@ -1,4 +1,5 @@
 import { betterAuth } from 'better-auth';
+import { localization } from 'better-auth-localization';
 import { Pool } from 'pg';
 import * as dotenv from 'dotenv';
 
@@ -21,10 +22,10 @@ export const auth = betterAuth({
   baseURL: env.NEXT_PUBLIC_APP_URL,
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: env.NODE_ENV === 'development', // Require email verification only in development
+    requireEmailVerification: env.NODE_ENV === 'production',
   },
   emailVerification: {
-    sendOnSignUp: env.NODE_ENV === 'development', // Send verification email on signup only in development
+    sendOnSignUp: env.NODE_ENV === 'production',
     autoSignInAfterVerification: true,
   },
   trustedOrigins: env.TRUSTED_ORIGINS.split(',').map(origin => origin.trim()),
@@ -43,4 +44,22 @@ export const auth = betterAuth({
       enabled: env.NODE_ENV === 'production',
     },
   },
+  plugins: [
+    localization({
+      defaultLocale: 'default',
+      fallbackLocale: 'default',
+      getLocale: (request) => {
+        try {
+          if (!request) return 'default';
+          const headerPath = request.headers.get('x-pathname') || request.headers.get('referer') || '';
+          if (/\/(fr)(\/|$)/i.test(headerPath)) return 'fr-FR';
+          const lang = request.headers.get('accept-language') || '';
+          if (/fr/i.test(lang)) return 'fr-FR';
+          return 'default';
+        } catch {
+          return 'default';
+        }
+      }
+    })
+  ]
 });

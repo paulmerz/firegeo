@@ -30,12 +30,7 @@ const originalHandler = autumnHandler({
       logger.error('[Autumn] Error in identify:', error);
       return null;
     }
-  },
-  billingPortalConfig: {
-    business_name: "Fire SaaS",
-    privacy_policy_url: `${process.env.NEXT_PUBLIC_APP_URL}/privacy`,
-    terms_of_service_url: `${process.env.NEXT_PUBLIC_APP_URL}/terms`,
-  },
+  }
 });
 
 // Enhanced error handling wrapper for Autumn routes

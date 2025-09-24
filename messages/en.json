@@ -395,6 +395,7 @@
     "existingAccountDetected": "It looks like you already have an account with this email address.",
     "signInInstead": "Sign in instead",
     "failedToLogin": "Failed to login",
+    "emailNotVerified": "Email not verified. Please check your inbox for a verification email.",
     "failedToRegister": "Failed to register",
     "forgotPasswordTitle": "Reset your password",
     "forgotPasswordDesc": "Enter your email address and we'll send you a link to reset your password.",

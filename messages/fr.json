@@ -483,6 +483,7 @@
     "existingAccountDetected": "Il semble que vous ayez déjà un compte avec cette adresse e-mail.",
     "signInInstead": "Se connecter à la place",
     "failedToLogin": "Échec de la connexion",
+    "emailNotVerified": "E-mail non vérifié. Veuillez vérifier votre boîte de réception pour l'e-mail de vérification.",
     "failedToRegister": "Échec de l'inscription",
     "createAccount": "Créer un compte",
     "creatingAccount": "Création du compte...",
