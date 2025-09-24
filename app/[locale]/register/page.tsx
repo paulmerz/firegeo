@@ -34,8 +34,8 @@ export default function RegisterPage() {
         // Wait a moment for the session to be properly set
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Redirige localisé vers la home
-        router.push('/');
+        // Redirige vers la page d'information de vérification email
+        router.push('/verify-email');
       } else {
         throw response.error;
       }
@@ -209,11 +209,11 @@ export default function RegisterPage() {
                 />
                 <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
                   {t('auth.agreeToTerms')}{' '}
-                  <Link href="#" className="text-orange-600 hover:text-orange-500">
+                  <Link href={`/terms`} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:text-orange-500">
                     {t('footer.termsOfService')}
                   </Link>{' '}
                   {t('auth.and')}{' '}
-                  <Link href="#" className="text-orange-600 hover:text-orange-500">
+                  <Link href={`/privacy`} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:text-orange-500">
                     {t('footer.privacyPolicy')}
                   </Link>
                 </label>

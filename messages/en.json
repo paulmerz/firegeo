@@ -881,4 +881,12 @@
     "scope": "Scope",
     "scopeDesc": "Specify country/region, segment and company size to guide the search."
   }
+  ,
+  "verifyEmail": {
+    "title": "A confirmation email has been sent.",
+    "subtitle": "Please confirm your email within 24 hours to use Voxum.",
+    "hint": "Remember to check your Spam or Promotions folder.",
+    "backHome": "Back to home",
+    "backToLogin": "Back to login"
+  }
 }

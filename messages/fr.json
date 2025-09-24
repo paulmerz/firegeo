@@ -972,4 +972,12 @@
     "scope": "Périmètre",
     "scopeDesc": "Précisez pays/région, segment et taille d'entreprise pour guider la recherche."
   }
+  ,
+  "verifyEmail": {
+    "title": "Email de confirmation envoyé",
+    "subtitle": "Veuillez confirmer votre email dans les 24 heures pour pouvoir utiliser Voxum.",
+    "hint": "Pensez à vérifier votre dossier 'Spam' ou 'Promotions'.",
+    "backHome": "Retour à l'accueil",
+    "backToLogin": "Retour à la connexion"
+  }
 }
