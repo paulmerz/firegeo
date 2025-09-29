@@ -8,18 +8,14 @@ import { useSession } from '@/lib/auth-client';
 function AuthAwareAutumnProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
   
-  // Only render AutumnProvider when logged in
-  if (!session) {
-    return <>{children}</>;
-  }
-  
+  // Always render AutumnProvider, but with different configurations based on auth state
   return (
     <AutumnProvider
       backendUrl="/api/autumn"
       betterAuthUrl={process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : "http://localhost:3000")}
-      allowAnonymous={false}
-      skipInitialFetch={false}
-			includeCredentials={true}
+      allowAnonymous={true}
+      skipInitialFetch={!session}
+      includeCredentials={true}
     >
       <AutumnCustomerProvider>
         {children}

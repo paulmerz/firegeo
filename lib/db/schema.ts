@@ -105,11 +105,34 @@ export const brandAnalyses = pgTable('brand_analyses', {
   updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
 });
 
+// Brand Analysis Sources table - stores individual sources extracted from analyses
+export const brandAnalysisSources = pgTable('brand_analysis_sources', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  analysisId: uuid('analysis_id').notNull().references(() => brandAnalyses.id, { onDelete: 'cascade' }),
+  provider: text('provider'),
+  prompt: text('prompt'),
+  domain: text('domain'),
+  url: text('url'),
+  sourceType: text('source_type').default('web_search'),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+
 // Relations
-export const brandAnalysesRelations = relations(brandAnalyses, ({ one }) => ({
+export const brandAnalysesRelations = relations(brandAnalyses, ({ one, many }) => ({
   userProfile: one(userProfile, {
     fields: [brandAnalyses.userId],
     references: [userProfile.userId],
+  }),
+  sources: many(brandAnalysisSources),
+}));
+
+
+export const brandAnalysisSourcesRelations = relations(brandAnalysisSources, ({ one }) => ({
+  analysis: one(brandAnalyses, {
+    fields: [brandAnalysisSources.analysisId],
+    references: [brandAnalyses.id],
   }),
 }));
 
@@ -126,3 +149,10 @@ export type UserSettings = typeof userSettings.$inferSelect;
 export type NewUserSettings = typeof userSettings.$inferInsert;
 export type BrandAnalysis = typeof brandAnalyses.$inferSelect;
 export type NewBrandAnalysis = typeof brandAnalyses.$inferInsert;
+
+export type BrandAnalysisSource = typeof brandAnalysisSources.$inferSelect;
+
+export type NewBrandAnalysisSource = typeof brandAnalysisSources.$inferInsert;
+export type BrandAnalysisWithSources = BrandAnalysis & {
+  sources: BrandAnalysisSource[];
+};

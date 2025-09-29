@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { brandAnalyses } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { extractAnalysisSources } from '@/lib/brand-monitor-sources';
 import { handleApiError, AuthenticationError, NotFoundError } from '@/lib/api-errors';
 
 // GET /api/brand-monitor/analyses/[analysisId] - Get a specific analysis
@@ -26,13 +27,28 @@ export async function GET(
         eq(brandAnalyses.id, analysisId),
         eq(brandAnalyses.userId, sessionResponse.user.id)
       ),
+      with: {
+        sources: true,
+      },
     });
 
     if (!analysis) {
       throw new NotFoundError('Analysis not found');
     }
 
-    return NextResponse.json(analysis);
+    const sources = extractAnalysisSources(analysis.analysisData, analysis.sources);
+    const baseData = analysis.analysisData && typeof analysis.analysisData === 'object'
+      ? { ...analysis.analysisData }
+      : {};
+
+    return NextResponse.json({
+      ...analysis,
+      sources,
+      analysisData: {
+        ...baseData,
+        sources,
+      },
+    });
   } catch (error) {
     return handleApiError(error);
   }

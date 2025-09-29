@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp, DollarSign, Clock, Zap, AlertCircle } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
-interface ApiUsageSummary {
+export interface ApiUsageSummaryData {
   totalCalls: number;
   totalCost: number;
   totalDuration: number;
@@ -36,13 +35,10 @@ interface ApiUsageSummary {
 }
 
 interface ApiUsageSummaryProps {
-  summary: ApiUsageSummary | null;
-  isVisible?: boolean;
-  onToggle?: () => void;
+  summary: ApiUsageSummaryData | null;
 }
 
-export function ApiUsageSummary({ summary, isVisible = false, onToggle }: ApiUsageSummaryProps) {
-  const t = useTranslations('brandMonitor');
+export function ApiUsageSummary({ summary }: ApiUsageSummaryProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (!summary) return null;

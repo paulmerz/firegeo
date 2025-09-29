@@ -9,7 +9,7 @@ import { Sparkles, Menu, X, Plus, Trash2, Loader2 } from 'lucide-react';
 import { useCustomer, useRefreshCustomer } from '@/hooks/useAutumnCustomer';
 import { useBrandAnalyses, useBrandAnalysis, useDeleteBrandAnalysis } from '@/hooks/useBrandAnalyses';
 import { Button } from '@/components/ui/button';
-import type { BrandAnalysis } from '@/lib/db/schema';
+import type { BrandAnalysisWithSources } from '@/lib/db/schema';
 import { format } from 'date-fns';
 import { useSession } from '@/lib/auth-client';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -32,11 +32,11 @@ function BrandMonitorContent({ session }: { session: any }) {
   const { data: analyses, isLoading: analysesLoading } = useBrandAnalyses();
   const { data: currentAnalysis } = useBrandAnalysis(selectedAnalysisId);
   const deleteAnalysis = useDeleteBrandAnalysis();
-  const analysesList: BrandAnalysis[] = analyses ?? [];
+  const analysesList: BrandAnalysisWithSources[] = analyses ?? [];
   const renderAnalysisItem = (
-    item: BrandAnalysis,
+    item: BrandAnalysisWithSources,
     _index?: number,
-    _array?: BrandAnalysis[]
+    _array?: BrandAnalysisWithSources[]
   ): ReactElement => {
     return (
       <div
@@ -76,6 +76,32 @@ function BrandMonitorContent({ session }: { session: any }) {
   // Get credits from customer data
   const messageUsage = customer?.features?.credits;
   const credits = messageUsage ? (messageUsage.balance || 0) : 0;
+
+  // Determine active plan name/id
+  const activeProduct = customer?.products?.find((p: any) => 
+    p?.status === 'active' || p?.status === 'trialing' || p?.status === 'past_due'
+  );
+  // DEV-only plan override via footer select
+  const [devPlanOverride, setDevPlanOverride] = useState<string | null>(null);
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'development') return;
+    const read = () => {
+      try {
+        const v = localStorage.getItem('devPlanOverride');
+        setDevPlanOverride(v);
+      } catch {}
+    };
+    read();
+    const handler = () => read();
+    window.addEventListener('dev-plan-override-changed', handler);
+    return () => window.removeEventListener('dev-plan-override-changed', handler);
+  }, []);
+
+  const effectivePlanName: string = ((devPlanOverride && process.env.NODE_ENV === 'development')
+    ? devPlanOverride
+    : (activeProduct?.name || activeProduct?.id || '')) as string;
+  const activePlanName: string = effectivePlanName;
+  const isStartPlan = activePlanName.toLowerCase().includes('start') || activePlanName.toLowerCase().includes('free');
 
   useEffect(() => {
     // If there's an auth error, redirect to login
@@ -165,6 +191,9 @@ function BrandMonitorContent({ session }: { session: any }) {
                 // This will be called when analysis completes
                 // We'll implement this in the next step
               }}
+              // UI gating by plan
+              hideSourcesTab={isStartPlan}
+              hideWebSearchSources={isStartPlan}
             />
           </div>
         </div>
@@ -189,8 +218,15 @@ import { logger } from '@/lib/logger';
 export default function BrandMonitorPage() {
   const { data: session, isPending } = useSession();
   const t = useTranslations();
+  const [isClient, setIsClient] = useState(false);
 
-  if (isPending) {
+  // Prevent hydration mismatch by ensuring client-side rendering
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Show loading state during hydration and session check
+  if (!isClient || isPending) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-gray-500" />

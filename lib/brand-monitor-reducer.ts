@@ -1,4 +1,4 @@
-import { Company, CompetitorRanking, AnalysisStage, PartialResultData } from './types';
+import { Company, CompetitorRanking, AnalysisStage, PartialResultData, AnalysisSource, BrandPrompt, AIResponse, ProviderSpecificRanking, ProviderComparisonData } from './types';
 
 // Action Types
 export type BrandMonitorAction =
@@ -90,8 +90,8 @@ export interface AnalysisTile {
 export interface Analysis {
   company: Company;
   knownCompetitors: string[];
-  prompts: any[]; // BrandPrompt[]
-  responses: any[]; // AIResponse[]
+  prompts: BrandPrompt[];
+  responses: AIResponse[];
   scores: {
     visibilityScore: number;
     sentimentScore: number;
@@ -100,13 +100,14 @@ export interface Analysis {
     averagePosition: number;
   };
   competitors: CompetitorRanking[];
-  providerRankings?: any[]; // ProviderSpecificRanking[]
-  providerComparison?: any[]; // ProviderComparisonData[]
+  providerRankings?: ProviderSpecificRanking[];
+  providerComparison?: ProviderComparisonData[];
+  sources?: AnalysisSource[];
   errors?: string[];
   webSearchUsed?: boolean;
 }
 
-export type ResultsTab = 'visibility' | 'matrix' | 'rankings' | 'metrics' | 'prompts';
+export type ResultsTab = 'visibility' | 'matrix' | 'rankings' | 'metrics' | 'prompts' | 'sources';
 
 export interface BrandMonitorState {
   // URL and validation

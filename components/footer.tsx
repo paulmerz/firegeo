@@ -98,13 +98,42 @@ export function Footer() {
             <p className="text-sm">
               © {new Date().getFullYear()} VOXUM. {t('footer.allRightsReserved')}.
             </p>
-            <div className="flex space-x-6 mt-4 md:mt-0">
+            <div className="flex items-center space-x-6 mt-4 md:mt-0">
               <Link href={`/privacy`} className="text-sm hover:text-zinc-900 transition-colors">
                 {t('footer.privacyPolicy')}
               </Link>
               <Link href={`/terms`} className="text-sm hover:text-zinc-900 transition-colors">
                 {t('footer.termsOfService')}
               </Link>
+              {process.env.NODE_ENV === 'development' && (
+                <div className="flex items-center space-x-2">
+                  <label htmlFor="dev-plan-override" className="text-xs text-zinc-500">Plan (DEV)</label>
+                  <select
+                    id="dev-plan-override"
+                    className="text-sm border border-zinc-300 rounded px-2 py-1 bg-white"
+                    defaultValue={typeof window !== 'undefined' ? (localStorage.getItem('devPlanOverride') || '') : ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      try {
+                        if (value) {
+                          localStorage.setItem('devPlanOverride', value);
+                        } else {
+                          localStorage.removeItem('devPlanOverride');
+                        }
+                        if (typeof window !== 'undefined') {
+                          window.dispatchEvent(new Event('dev-plan-override-changed'));
+                        }
+                      } catch {}
+                    }}
+                  >
+                    <option value="">Aucun override (autumnUse)</option>
+                    <option value="free">free</option>
+                    <option value="start">start</option>
+                    <option value="watch">watch</option>
+                    <option value="pro">pro</option>
+                  </select>
+                </div>
+              )}
             </div>
           </div>
         </div>

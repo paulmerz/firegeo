@@ -1,28 +1,25 @@
 'use client';
 
-import React, { useReducer, useCallback, useState, useEffect, useRef } from 'react';
+import React, { useReducer, useCallback, useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { Company } from '@/lib/types';
-import type { BrandAnalysis } from '@/lib/db/schema';
+import type { Company, ProviderSpecificRanking } from '@/lib/types';
+import type { BrandAnalysisWithSources } from '@/lib/db/schema';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { ClientApiError } from '@/lib/client-errors';
 import { 
   brandMonitorReducer, 
   initialBrandMonitorState,
-  BrandMonitorAction,
   IdentifiedCompetitor,
+  PromptCompletionStatus,
+  PromptStatus,
   Analysis
 } from '@/lib/brand-monitor-reducer';
 import {
   validateUrl,
-  validateCompetitorUrl,
-  normalizeCompetitorName,
-  assignUrlToCompetitor,
-  getIndustryCompetitors
+  validateCompetitorUrl
 } from '@/lib/brand-monitor-utils';
-import { preparePromptsForAnalysis } from '@/lib/prompt-utils';
 import { getEnabledProviders } from '@/lib/provider-config';
 import { useSaveBrandAnalysis } from '@/hooks/useBrandAnalyses';
 
@@ -33,6 +30,7 @@ import { AnalysisProgressSection } from './analysis-progress-section';
 import { ResultsNavigation } from './results-navigation';
 import { PromptsResponsesTab } from './prompts-responses-tab';
 import { VisibilityScoreTab } from './visibility-score-tab';
+import { SourcesTab } from './sources-tab';
 import { ErrorMessage } from './error-message';
 import { AddPromptModal } from './modals/add-prompt-modal';
 import { AddCompetitorModal } from './modals/add-competitor-modal';
@@ -40,8 +38,8 @@ import { ProviderComparisonMatrix } from './provider-comparison-matrix';
 import { ProviderRankingsTabs } from './provider-rankings-tabs';
 import { WebSearchToggle } from './web-search-toggle';
 import { logger } from '@/lib/logger';
-import { Switch } from '@/components/ui/switch';
-import { ApiUsageSummary } from './api-usage-summary';
+import { extractAnalysisSources } from '@/lib/brand-monitor-sources';
+import { ApiUsageSummary, ApiUsageSummaryData } from './api-usage-summary';
 import {
   CREDIT_COST_URL_ANALYSIS,
   CREDIT_COST_COMPETITOR_ANALYSIS,
@@ -59,27 +57,114 @@ const isDev = process.env.NODE_ENV === 'development';
 interface BrandMonitorProps {
   creditsAvailable?: number;
   onCreditsUpdate?: () => void;
-  selectedAnalysis?: any;
-  onSaveAnalysis?: (analysis: any) => void;
+  selectedAnalysis?: BrandAnalysisWithSources | null;
+  onSaveAnalysis?: (analysis: BrandAnalysisWithSources) => void;
+  hideSourcesTab?: boolean;
+  hideWebSearchSources?: boolean;
+}
+
+interface CompetitorSearchResponse {
+  success: boolean;
+  competitors: Array<{ name: string; url?: string | null }>;
+  stats?: unknown;
+  warning?: string;
+}
+
+type RawCompany = Omit<Company, 'id' | 'name' | 'url'> & {
+  id?: string;
+  name?: string;
+  url?: string;
+};
+
+interface ScrapeResponse {
+  company: RawCompany;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isAnalysisPayload(value: unknown): value is Analysis {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const candidate = value as Partial<Analysis>;
+  return (
+    isRecord(candidate.company) &&
+    Array.isArray(candidate.competitors) &&
+    Array.isArray(candidate.prompts) &&
+    Array.isArray(candidate.responses) &&
+    isRecord(candidate.scores)
+  );
+}
+
+function normalizeScrapedCompany(input: RawCompany): Company {
+  const url = input.url?.trim();
+  if (!url) {
+    throw new Error('Scraped company is missing a URL');
+  }
+
+  const name = (input.name ?? url).trim() || url;
+  const id = input.id ?? url;
+
+  return {
+    id,
+    name,
+    url,
+    description: input.description,
+    industry: input.industry,
+    logo: input.logo,
+    favicon: input.favicon,
+    scraped: input.scraped,
+    scrapedData: input.scrapedData,
+    businessProfile: input.businessProfile,
+  };
+}
+
+function buildCompanyFromSelection(
+  selection: BrandAnalysisWithSources,
+  analysisData?: Analysis | null
+): Company | null {
+  const reference = analysisData?.company;
+  const url = reference?.url ?? selection.url;
+  if (!url) {
+    return reference ?? null;
+  }
+
+  const name = reference?.name ?? selection.companyName ?? url;
+  const id = reference?.id ?? selection.id ?? url;
+
+  return {
+    id,
+    name,
+    url,
+    description: reference?.description,
+    industry: reference?.industry ?? selection.industry ?? undefined,
+    logo: reference?.logo,
+    favicon: reference?.favicon,
+    scraped: reference?.scraped,
+    scrapedData: reference?.scrapedData,
+    businessProfile: reference?.businessProfile,
+  };
 }
 
 export function BrandMonitor({ 
   creditsAvailable = 0, 
   onCreditsUpdate,
   selectedAnalysis,
-  onSaveAnalysis 
+  onSaveAnalysis,
+  hideSourcesTab = false,
+  hideWebSearchSources = false,
 }: BrandMonitorProps = {}) {
   const t = useTranslations('brandMonitor');
   const tErrors = useTranslations('brandMonitor.errors');
   const tAnalysis = useTranslations('brandMonitor.analysis');
   const [state, dispatch] = useReducer(brandMonitorReducer, initialBrandMonitorState);
-  const [demoUrl] = useState('example.com');
   const saveAnalysis = useSaveBrandAnalysis();
-  const [isLoadingExistingAnalysis, setIsLoadingExistingAnalysis] = useState(false);
   const hasSavedRef = useRef(false);
-  const [useDeepCrawl, setUseDeepCrawl] = useState(false);
   const [isRefreshingMatrix, setIsRefreshingMatrix] = useState(false);
-  const [apiUsageSummary, setApiUsageSummary] = useState<any>(null);
+  const [apiUsageSummary, setApiUsageSummary] = useState<ApiUsageSummaryData | null>(null);
   
   const { startSSEConnection } = useSSEHandler({ 
     state, 
@@ -90,18 +175,24 @@ export function BrandMonitor({
       if (!selectedAnalysis && !hasSavedRef.current) {
         hasSavedRef.current = true;
         
-        const analysisData = {
+        const normalizedSources = extractAnalysisSources(completedAnalysis);
+        const normalizedAnalysis = {
+          ...completedAnalysis,
+          sources: normalizedSources,
+        };
+
+        const analysisData: Partial<BrandAnalysisWithSources> = {
           url: company?.url || url,
           companyName: company?.name,
           industry: company?.industry,
-          analysisData: completedAnalysis,
+          analysisData: normalizedAnalysis,
           competitors: identifiedCompetitors,
           prompts: analyzingPrompts,
-          creditsUsed: (completedAnalysis?.prompts?.length || 0) * (useWebSearch ? CREDIT_COST_PER_PROMPT_ANALYSIS_WEB : CREDIT_COST_PER_PROMPT_ANALYSIS_NO_WEB)
+          creditsUsed: (completedAnalysis?.prompts?.length || 0) * (useWebSearch ? CREDIT_COST_PER_PROMPT_ANALYSIS_WEB : CREDIT_COST_PER_PROMPT_ANALYSIS_NO_WEB),
         };
-        
+
         saveAnalysis.mutate(analysisData, {
-          onSuccess: (savedAnalysis: BrandAnalysis) => {
+          onSuccess: (savedAnalysis: BrandAnalysisWithSources) => {
             logger.info('Analysis saved successfully:', savedAnalysis);
             if (onSaveAnalysis) {
               onSaveAnalysis(savedAnalysis);
@@ -135,7 +226,6 @@ export function BrandMonitor({
     customPrompts,
     removedDefaultPrompts,
     identifiedCompetitors,
-    availableProviders,
     analysisProgress,
     promptCompletionStatus,
     analyzingPrompts,
@@ -151,32 +241,55 @@ export function BrandMonitor({
     useWebSearch,
     useIntelliSearch
   } = state;
-  
+  const displaySources = useMemo(() => {
+    const persisted = selectedAnalysis?.sources ?? null;
+
+    if (analysis) {
+      return extractAnalysisSources(analysis, persisted);
+    }
+
+    if (selectedAnalysis?.analysisData) {
+      return extractAnalysisSources(selectedAnalysis.analysisData, persisted);
+    }
+
+    if (persisted) {
+      return extractAnalysisSources(undefined, persisted);
+    }
+
+    return [];
+  }, [analysis, selectedAnalysis]);
+
   // Remove the auto-save effect entirely - we'll save manually when analysis completes
   
   // Load selected analysis if provided or reset when null
   useEffect(() => {
-    logger.debug('🔄 [BrandMonitor] selectedAnalysis changed:', selectedAnalysis);
-    if (selectedAnalysis && selectedAnalysis.analysisData) {
-      logger.info('📊 [BrandMonitor] Loading existing analysis');
-      setIsLoadingExistingAnalysis(true);
-      // Restore the analysis state from saved data
-      dispatch({ type: 'SET_ANALYSIS', payload: selectedAnalysis.analysisData });
-      if (selectedAnalysis.companyName) {
-        dispatch({ type: 'SCRAPE_SUCCESS', payload: {
-          name: selectedAnalysis.companyName,
-          url: selectedAnalysis.url,
-          industry: selectedAnalysis.industry
-        } as Company });
-      }
-      // Reset the flag after a short delay to ensure the save effect doesn't trigger
-      setTimeout(() => setIsLoadingExistingAnalysis(false), 100);
-    } else if (selectedAnalysis === null) {
-      // Reset state when explicitly set to null (New Analysis clicked)
-      logger.info('🔄 [BrandMonitor] Resetting state for new analysis');
+    logger.debug('[BrandMonitor] selectedAnalysis changed:', selectedAnalysis);
+
+    if (selectedAnalysis === null) {
+      logger.info('[BrandMonitor] Resetting state for new analysis');
       dispatch({ type: 'RESET_STATE' });
       hasSavedRef.current = false;
-      setIsLoadingExistingAnalysis(false);
+      return;
+    }
+
+    if (!selectedAnalysis) {
+      return;
+    }
+
+    logger.info('[BrandMonitor] Loading existing analysis');
+    const analysisPayload = isAnalysisPayload(selectedAnalysis.analysisData)
+      ? selectedAnalysis.analysisData
+      : null;
+
+    if (analysisPayload) {
+      dispatch({ type: 'SET_ANALYSIS', payload: analysisPayload });
+    } else if (selectedAnalysis.analysisData) {
+      logger.warn('[BrandMonitor] Selected analysis data had unexpected shape; skipping load');
+    }
+
+    const restoredCompany = buildCompanyFromSelection(selectedAnalysis, analysisPayload);
+    if (restoredCompany) {
+      dispatch({ type: 'SCRAPE_SUCCESS', payload: restoredCompany });
     }
   }, [selectedAnalysis]);
   
@@ -243,18 +356,20 @@ export function BrandMonitor({
             throw new ClientApiError(errorData);
           }
           throw new Error(errorData.error || tErrors('failedToScrape'));
-        } catch (e) {
-          if (e instanceof ClientApiError) throw e;
+        } catch (innerError) {
+          if (innerError instanceof ClientApiError) throw innerError;
           throw new Error(tErrors('failedToScrape'));
         }
       }
 
-      const data = await response.json();
+      const data: ScrapeResponse = await response.json();
       logger.debug('Scrape data received:', data);
-      
-      if (!data.company) {
+
+      if (!data?.company) {
         throw new Error(tErrors('noCompanyData'));
       }
+
+      const scrapedCompany = normalizeScrapedCompany(data.company);
       // Debit for URL analysis on successful scrape result
       try {
         const debitRes = await fetch('/api/credits', {
@@ -263,13 +378,13 @@ export function BrandMonitor({
           body: JSON.stringify({ value: CREDIT_COST_URL_ANALYSIS, reason: 'scrape_success' })
         });
         if (!debitRes.ok) {
-          const err = await debitRes.json().catch(() => ({} as any));
+          const err = (await debitRes.json().catch(() => null)) as { error?: string } | null;
           logger.warn('[Credits] Debit on scrape_success failed:', err?.error || debitRes.statusText);
         } else if (onCreditsUpdate) {
           onCreditsUpdate();
         }
-      } catch (e) {
-        logger.warn('[Credits] Debit on scrape_success error:', e);
+      } catch (creditError) {
+        logger.warn('[Credits] Debit on scrape_success error:', creditError);
       }
       
       // Scrape was successful - credits have been deducted, refresh the navbar
@@ -282,42 +397,40 @@ export function BrandMonitor({
       
       // After fade out completes, set company and show card with fade in
       setTimeout(() => {
-        dispatch({ type: 'SCRAPE_SUCCESS', payload: data.company });
+        dispatch({ type: 'SCRAPE_SUCCESS', payload: scrapedCompany });
         // Small delay to ensure DOM updates before fade in
         setTimeout(() => {
           dispatch({ type: 'SET_SHOW_COMPANY_CARD', payload: true });
           logger.info('Showing company card');
         }, 50);
       }, 500);
-    } catch (error: any) {
-      logger.error('❌ [BrandMonitor] Scrape error:', error);
-      
+    } catch (unknownError) {
+      logger.error('❌ [BrandMonitor] Scrape error:', unknownError);
+
       let errorMessage = tErrors('failedToExtractCompany');
-      if (error instanceof ClientApiError) {
-        errorMessage = error.getUserMessage();
-      } else if (error.message) {
-        // Log detailed error information for debugging
+      if (unknownError instanceof ClientApiError) {
+        errorMessage = unknownError.getUserMessage();
+      } else if (unknownError instanceof Error) {
         logger.error('❌ [BrandMonitor] Error details:', {
-          message: error.message,
-          name: error.name,
-          stack: error.stack,
-          cause: error.cause
+          message: unknownError.message,
+          name: unknownError.name,
+          stack: unknownError.stack,
+          cause: (unknownError as { cause?: unknown }).cause
         });
-        
-        // Provide more specific error messages based on error type
-        if (error.message.includes('FIRECRAWL_API_KEY not configured')) {
+
+        if (unknownError.message.includes('FIRECRAWL_API_KEY not configured')) {
           errorMessage = 'Clé API Firecrawl manquante. Veuillez configurer FIRECRAWL_API_KEY dans .env.local';
-        } else if (error.message.includes('No AI providers configured')) {
+        } else if (unknownError.message.includes('No AI providers configured')) {
           errorMessage = 'Aucun fournisseur IA configuré. Veuillez configurer au moins une clé API (OpenAI, Anthropic, etc.)';
-        } else if (error.message.includes('timed out')) {
+        } else if (unknownError.message.includes('timed out')) {
           errorMessage = 'Timeout lors du scraping. Le site web met trop de temps à répondre.';
-        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        } else if (unknownError.message.includes('network') || unknownError.message.includes('fetch')) {
           errorMessage = 'Erreur de réseau. Vérifiez votre connexion internet.';
         } else {
-          errorMessage = tErrors('failedToExtractCompanyWithReason', { reason: error.message });
+          errorMessage = tErrors('failedToExtractCompanyWithReason', { reason: unknownError.message });
         }
       }
-      
+
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
@@ -344,7 +457,7 @@ export function BrandMonitor({
         const data = await response.json();
         dispatch({ type: 'SET_AVAILABLE_PROVIDERS', payload: data.providers || ['OpenAI', 'Anthropic', 'Google'] });
       }
-    } catch (e) {
+    } catch {
       // Default to providers with API keys if check fails
       const defaultProviders = [];
       if (process.env.NEXT_PUBLIC_HAS_OPENAI_KEY) defaultProviders.push('OpenAI');
@@ -354,7 +467,7 @@ export function BrandMonitor({
     
     try {
       const detectedLocale = navigator.language.split('-')[0] || 'en';
-      logger.info('🚀 Starting competitor search...');
+      logger.info('ðŸš€ Starting competitor search...');
       logger.debug('🌐 Detected browser locale:', navigator.language, '→', detectedLocale);
       
       // Import search method configuration
@@ -363,8 +476,8 @@ export function BrandMonitor({
       const apiEndpoint = getApiEndpoint(ACTIVE_SEARCH_CONFIG.method);
       const requestBody = buildRequestBody(ACTIVE_SEARCH_CONFIG, company, detectedLocale, useIntelliSearch);
       
-      logger.debug(`🔬 [SearchMethod] Active method: ${ACTIVE_SEARCH_CONFIG.method}`);
-      logger.debug(`🔧 [SearchMethod] Config:`, ACTIVE_SEARCH_CONFIG);
+      logger.debug(`ðŸ”¬ [SearchMethod] Active method: ${ACTIVE_SEARCH_CONFIG.method}`);
+      logger.debug(`ðŸ”§ [SearchMethod] Config:`, ACTIVE_SEARCH_CONFIG);
       
       const response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -378,8 +491,8 @@ export function BrandMonitor({
         throw new Error(`API request failed: ${response.status}`);
       }
       
-      const data = await response.json();
-      
+      const data = (await response.json()) as CompetitorSearchResponse & { error?: string };
+
       if (!data.success) {
         throw new Error(data.error || 'Unknown API error');
       }
@@ -392,23 +505,23 @@ export function BrandMonitor({
           body: JSON.stringify({ value: CREDIT_COST_COMPETITOR_ANALYSIS, reason: 'identify_competitors_success' })
         });
         if (!debitRes.ok) {
-          const err = await debitRes.json().catch(() => ({} as any));
+          const err = (await debitRes.json().catch(() => null)) as { error?: string } | null;
           logger.warn('[Credits] Debit on identify_competitors_success failed:', err?.error || debitRes.statusText);
         } else if (onCreditsUpdate) {
           onCreditsUpdate();
         }
-      } catch (e) {
-        logger.warn('[Credits] Debit on identify_competitors_success error:', e);
+      } catch (creditError) {
+        logger.warn('[Credits] Debit on identify_competitors_success error:', creditError);
       }
       
       // Handle AI web search results
-      const foundCompetitors = data.competitors.map((comp: any) => ({
+      const foundCompetitors: IdentifiedCompetitor[] = data.competitors.map((comp) => ({
         name: comp.name,
-        url: comp.url
+        url: comp.url ?? undefined
       }));
       
-      logger.info('🏆 Found competitors:', foundCompetitors);
-      logger.debug('📊 Stats:', data.stats);
+      logger.info('ðŸ† Found competitors:', foundCompetitors);
+      logger.debug('ðŸ“Š Stats:', data.stats);
       
       if (data.warning) {
         logger.warn('⚠️ Warning:', data.warning);
@@ -416,8 +529,8 @@ export function BrandMonitor({
       
       dispatch({ type: 'SET_IDENTIFIED_COMPETITORS', payload: foundCompetitors });
       logger.info('Final identified competitors:', foundCompetitors);
-    } catch (error) {
-      logger.error('❌ Error in competitor search:', error);
+    } catch (unknownError) {
+      logger.error('❌ Error in competitor search:', unknownError);
       dispatch({ type: 'SET_ERROR', payload: tErrors('failedToFindCompetitors') });
     }
     
@@ -485,11 +598,11 @@ export function BrandMonitor({
       dispatch({ type: 'SET_ANALYSIS_TILES', payload: [] });
       
       // Initialize prompt completion status
-      const initialStatus: any = {};
+      const initialStatus: PromptCompletionStatus = {};
       const expectedProviders = getEnabledProviders().map(config => config.name);
       
       normalizedPrompts.forEach(prompt => {
-        initialStatus[prompt] = {};
+        initialStatus[prompt] = {} as Record<string, PromptStatus>;
         expectedProviders.forEach(provider => {
           initialStatus[prompt][provider] = 'pending';
         });
@@ -519,18 +632,18 @@ export function BrandMonitor({
               body: JSON.stringify({ value: debitValue, reason: 'prompts_analysis' })
             });
             if (!debitRes.ok) {
-              const err = await debitRes.json().catch(() => ({} as any));
+              const err = (await debitRes.json().catch(() => null)) as { error?: string } | null;
               logger.warn('[Credits] Debit for prompts failed:', err?.error || debitRes.statusText);
             } else if (onCreditsUpdate) {
               onCreditsUpdate();
             }
-          } catch (e) {
-            logger.warn('[Credits] Debit for prompts error:', e);
+          } catch (creditError) {
+            logger.warn('[Credits] Debit for prompts error:', creditError);
           }
         }
       );
-    } catch (error) {
-      logger.error('Error preparing prompts or starting analysis:', error);
+    } catch (unknownError) {
+      logger.error('Error preparing prompts or starting analysis:', unknownError);
       dispatch({ type: 'SET_ERROR', payload: tErrors('analysisPreparationFailed') });
     } finally {
       dispatch({ type: 'SET_ANALYZING', payload: false });
@@ -540,7 +653,6 @@ export function BrandMonitor({
   const handleRestart = useCallback(() => {
     dispatch({ type: 'RESET_STATE' });
     hasSavedRef.current = false;
-    setIsLoadingExistingAnalysis(false);
   }, []);
   
   const handleWebSearchToggle = useCallback((enabled: boolean) => {
@@ -560,7 +672,7 @@ export function BrandMonitor({
     setIsRefreshingMatrix(true);
     
     try {
-      logger.info('[RefreshMatrix] 🔄 Début du recalcul de la matrice...');
+      logger.info('[RefreshMatrix] ðŸ”„ Début du recalcul de la matrice...');
       
       // Préparer les données pour l'API
       const knownCompetitors = identifiedCompetitors.map(c => c.name);
@@ -620,6 +732,22 @@ export function BrandMonitor({
   
   // Find brand data
   const brandData = analysis?.competitors?.find(c => c.isOwn);
+  const providerRankingsForDisplay: ProviderSpecificRanking[] | undefined = (() => {
+    const rankings = analysis?.providerRankings;
+    if (!rankings) {
+      return undefined;
+    }
+
+    if (!analysis?.providerComparison) {
+      return rankings;
+    }
+
+    const comparisonBrands = new Set(analysis.providerComparison.map(c => c.competitor));
+    return rankings.map((ranking) => ({
+      ...ranking,
+      competitors: ranking.competitors.filter((competitor) => comparisonBrands.has(competitor.name))
+    }));
+  })();
   
   return (
     <div className="flex flex-col">
@@ -629,27 +757,13 @@ export function BrandMonitor({
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
             <UrlInputSection
-            url={url}
-            urlValid={urlValid}
-            loading={loading}
-            analyzing={analyzing}
-            onUrlChange={handleUrlChange}
-            onSubmit={handleScrape}
-          />
-            {/* Deep Crawl Toggle - Temporarily disabled */}
-            {/* <div className="w-full max-w-5xl px-6">
-              <div className="mt-3 flex items-center gap-2 pl-12">
-                <Switch
-                  id="deep-crawl-toggle"
-                  checked={useDeepCrawl}
-                  onCheckedChange={setUseDeepCrawl}
-                  disabled={loading || analyzing}
-                />
-                <label htmlFor="deep-crawl-toggle" className="text-sm text-gray-700 select-none cursor-pointer">
-                  Activer le crawl profond (plus lent, meilleure compréhension du site)
-                </label>
-              </div>
-            </div> */}
+              url={url}
+              urlValid={urlValid}
+              loading={loading}
+              analyzing={analyzing}
+              onUrlChange={handleUrlChange}
+              onSubmit={handleScrape}
+            />
           </div>
         </div>
       )}
@@ -664,8 +778,6 @@ export function BrandMonitor({
                 company={company}
                 onAnalyze={handlePrepareAnalysis}
                 analyzing={preparingAnalysis}
-                canIdentifyCompetitors={creditsAvailable >= CREDIT_COST_COMPETITOR_ANALYSIS}
-                canContinueToAnalysis={creditsAvailable >= CREDIT_COST_PROMPT_GENERATION}
                 showCompetitors={showCompetitors}
                 identifiedCompetitors={identifiedCompetitors}
                 onRemoveCompetitor={(idx) => dispatch({ type: 'REMOVE_COMPETITOR', payload: idx })}
@@ -677,8 +789,6 @@ export function BrandMonitor({
                   }
                 }}
                 onContinueToAnalysis={handleProceedToPrompts}
-                useIntelliSearch={useIntelliSearch}
-                onIntelliSearchToggle={handleIntelliSearchToggle}
               />
             </div>
             </div>
@@ -731,8 +841,6 @@ export function BrandMonitor({
           }}
           onStartAnalysis={handleAnalyze}
           onCreditsUpdate={onCreditsUpdate}
-          creditsAvailable={creditsAvailable}
-          onError={(msg: string) => dispatch({ type: 'SET_ERROR', payload: msg })}
         />
         </div>
       )}
@@ -744,9 +852,8 @@ export function BrandMonitor({
             {/* API Usage Summary */}
             {isDev && apiUsageSummary && (
               <div className="mb-6">
-                <ApiUsageSummary 
-                  summary={apiUsageSummary} 
-                  isVisible={true}
+                <ApiUsageSummary
+                  summary={apiUsageSummary}
                 />
               </div>
             )}
@@ -756,9 +863,11 @@ export function BrandMonitor({
             <ResultsNavigation
               activeTab={activeResultsTab}
               onTabChange={(tab) => {
+                // Allow click but keep disabled styling/tooltip handled in nav
                 dispatch({ type: 'SET_ACTIVE_RESULTS_TAB', payload: tab });
               }}
               onRestart={handleRestart}
+              hideSourcesTab={hideSourcesTab}
             />
             
             {/* Main Content Area */}
@@ -808,7 +917,6 @@ export function BrandMonitor({
                       {analysis.providerComparison ? (
                         <ProviderComparisonMatrix 
                           data={analysis.providerComparison} 
-                          brandName={company?.name || ''} 
                           competitors={identifiedCompetitors}
                         />
                       ) : (
@@ -821,21 +929,10 @@ export function BrandMonitor({
                   </Card>
                 )}
 
-                {activeResultsTab === 'rankings' && analysis.providerRankings && (
+                {activeResultsTab === 'rankings' && providerRankingsForDisplay && (
                   <div id="provider-rankings" className="h-full">
                     <ProviderRankingsTabs 
-                      providerRankings={(() => {
-                        // Filtrer les providerRankings pour ne montrer que les marques qui sont aussi dans providerComparison
-                        // Cela assure la cohérence entre les deux onglets
-                        if (!analysis.providerComparison) return analysis.providerRankings;
-                        
-                        const comparisonBrands = new Set(analysis.providerComparison.map(c => c.competitor));
-                        
-                        return analysis.providerRankings.map(ranking => ({
-                          ...ranking,
-                          competitors: ranking.competitors.filter((c: any) => comparisonBrands.has(c.name))
-                        }));
-                      })()} 
+                      providerRankings={providerRankingsForDisplay} 
                       brandName={company?.name || tAnalysis('yourBrand')}
                       shareOfVoice={brandData.shareOfVoice}
                       averagePosition={Math.round(brandData.averagePosition)}
@@ -843,6 +940,10 @@ export function BrandMonitor({
                       weeklyChange={brandData.weeklyChange}
                     />
                   </div>
+                )}
+
+                {activeResultsTab === 'sources' && !hideSourcesTab && (
+                  <SourcesTab sources={displaySources} />
                 )}
 
                 {activeResultsTab === 'prompts' && analysis.prompts && (
@@ -870,6 +971,7 @@ export function BrandMonitor({
                         brandName={analysis.company?.name || ''}
                         competitors={analysis.competitors?.map(c => c.name) || []}
                         webSearchUsed={analysis.webSearchUsed}
+                        hideWebSearchSources={hideWebSearchSources}
                       />
                     </CardContent>
                   </Card>
@@ -941,3 +1043,5 @@ export function BrandMonitor({
     </div>
   );
 }
+
+

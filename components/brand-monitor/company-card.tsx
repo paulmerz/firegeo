@@ -1,10 +1,11 @@
 'use client';
 
+/* eslint-disable @next/next/no-img-element */
+
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Globe, Building2, ExternalLink, Plus, Trash2, Brain } from 'lucide-react';
+import { Globe, Building2, ExternalLink, Plus, Trash2 } from 'lucide-react';
 import { Company } from '@/lib/types';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
@@ -14,8 +15,6 @@ interface CompanyCardProps {
   onAnalyze: () => void;
   analyzing: boolean;
   showCompetitors?: boolean;
-  canIdentifyCompetitors?: boolean;
-  canContinueToAnalysis?: boolean;
   identifiedCompetitors?: Array<{ 
     name: string; 
     url?: string;
@@ -30,23 +29,17 @@ interface CompanyCardProps {
   onRemoveCompetitor?: (index: number) => void;
   onAddCompetitor?: () => void;
   onContinueToAnalysis?: () => void;
-  useIntelliSearch?: boolean;
-  onIntelliSearchToggle?: (enabled: boolean) => void;
 }
 
 export function CompanyCard({ 
   company, 
   onAnalyze, 
   analyzing,
-  canIdentifyCompetitors = true,
-  canContinueToAnalysis = true,
   showCompetitors = false,
   identifiedCompetitors = [],
   onRemoveCompetitor,
   onAddCompetitor,
-  onContinueToAnalysis,
-  useIntelliSearch = false,
-  onIntelliSearchToggle
+  onContinueToAnalysis
 }: CompanyCardProps) {
   const t = useTranslations('brandMonitor');
   const [logoError, setLogoError] = React.useState(false);
@@ -130,31 +123,10 @@ export function CompanyCard({
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* IntelliSearch Toggle - Temporarily disabled */}
-              {/* {onIntelliSearchToggle && (
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="intellisearch-toggle"
-                    checked={useIntelliSearch}
-                    onCheckedChange={onIntelliSearchToggle}
-                    disabled={analyzing}
-                  />
-                  <label 
-                    htmlFor="intellisearch-toggle" 
-                    className="text-sm font-medium text-gray-700 select-none cursor-pointer flex items-center gap-1"
-                    title={t('intelliSearchTooltip')}
-                  >
-                    <Brain className="h-4 w-4" />
-                    {t('intelliSearch')}
-                  </label>
-                </div>
-              )} */}
-              
               {/* Identify Competitors Button */}
               <button 
                 onClick={onAnalyze} 
                 disabled={analyzing}
-                title={canIdentifyCompetitors ? undefined : undefined}
                 className="h-9 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#36322F] text-[#fff] hover:bg-[#4a4542] disabled:bg-[#8c8885] disabled:hover:bg-[#8c8885] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100 px-4 py-1"
               >
                 {analyzing ? (
@@ -285,7 +257,7 @@ export function CompanyCard({
                 
                 {onContinueToAnalysis && (
                   <button
-                    onClick={() => { if (onContinueToAnalysis) onContinueToAnalysis(); }}
+                    onClick={onContinueToAnalysis}
                     className="h-10 px-6 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#36322F] text-[#fff] hover:bg-[#4a4542] disabled:bg-[#8c8885] disabled:hover:bg-[#8c8885] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
                   >
                     {t('continueToAnalysis')}

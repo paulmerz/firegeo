@@ -1,14 +1,16 @@
 /**
  * Utilities for highlighting brand mentions in text
+ * Now uses the centralized brand detection service
  */
 
 import React from 'react';
-import { BrandDetectionResult } from './brand-detection-utils';
+import { BrandDetectionResult, BrandDetectionMatch } from './brand-detection-service';
 
 export interface HighlightedSegment {
   text: string;
   highlighted: boolean;
   brandName?: string;
+  variation?: string;
   confidence?: number;
 }
 
@@ -28,18 +30,23 @@ export function highlightBrandMentions(
     end: number;
     brandName: string;
     matchText: string;
+    variation?: string;
     confidence: number;
   }> = [];
   
   detectionResults.forEach((result, brandName) => {
     result.matches.forEach(match => {
-      allMatches.push({
-        start: match.index,
-        end: match.index + match.text.length,
-        brandName,
-        matchText: match.text,
-        confidence: match.confidence
-      });
+      // Only include matches that are actually in the current text
+      if (match.index >= 0 && match.index < text.length) {
+        allMatches.push({
+          start: match.index,
+          end: match.index + match.text.length,
+          brandName,
+          matchText: match.text,
+          variation: match.variation,
+          confidence: match.confidence
+        });
+      }
     });
   });
   
@@ -78,6 +85,7 @@ export function highlightBrandMentions(
       text: match.matchText,
       highlighted: true,
       brandName: match.brandName,
+      variation: match.variation,
       confidence: match.confidence
     });
     
@@ -122,21 +130,39 @@ export function segmentsToHtml(
  */
 export function segmentsToReactElements(
   segments: HighlightedSegment[],
-  highlightClassName: string = 'bg-yellow-200 px-0.5 rounded'
+  highlightClassName: string | ((segment: HighlightedSegment) => string | undefined) = 'bg-yellow-200 px-0.5 rounded'
 ): React.ReactElement[] {
+  const fallbackClass = typeof highlightClassName === 'string'
+    ? highlightClassName
+    : 'bg-yellow-200 px-0.5 rounded';
+
+  const resolveClass = (segment: HighlightedSegment) => {
+    if (typeof highlightClassName === 'function') {
+      return highlightClassName(segment) || fallbackClass;
+    }
+    return highlightClassName;
+  };
+
   return segments.map((segment, index) => {
     if (segment.highlighted) {
       return (
         <span
           key={index}
-          className={highlightClassName}
-          title={`${segment.brandName} (${Math.round((segment.confidence || 0) * 100)}% confidence)`}
+          data-brand-highlight="true"
+          data-brand-name={segment.brandName}
+          data-variation={segment.variation}
+          className={resolveClass(segment)}
+          title={`${segment.brandName}${segment.variation ? ` (${segment.variation})` : ''} (${Math.round((segment.confidence || 0) * 100)}% confidence)`}
         >
           {segment.text}
         </span>
       );
     }
-    return <span key={index}>{segment.text}</span>;
+    return (
+      <span key={index}>
+        {segment.text}
+      </span>
+    );
   });
 }
 

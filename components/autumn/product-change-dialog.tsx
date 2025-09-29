@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,8 @@ interface ProductChangeDialogProps {
 const ProductChangeDialog = ({ open, setOpen, preview }: ProductChangeDialogProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { attach, refetch } = useCustomer();
+  const t = useTranslations('autumn.productChangeDialog');
+  const tc = useTranslations('common');
 
   const handleConfirm = async () => {
     if (!preview.product_id) return;
@@ -59,7 +62,7 @@ const ProductChangeDialog = ({ open, setOpen, preview }: ProductChangeDialogProp
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{preview?.title || 'Confirm Plan Change'}</DialogTitle>
+          <DialogTitle>{preview?.title || t('title')}</DialogTitle>
           {preview?.message && (
             <DialogDescription>{preview.message}</DialogDescription>
           )}
@@ -68,7 +71,7 @@ const ProductChangeDialog = ({ open, setOpen, preview }: ProductChangeDialogProp
         {preview?.due_today?.price !== undefined && (
           <div className="py-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Due today:</span>
+              <span className="text-sm font-medium">{t('dueToday')}</span>
               <span className="text-lg font-semibold">
                 {formatPrice(preview.due_today.price, preview.due_today.currency)}
               </span>
@@ -82,7 +85,7 @@ const ProductChangeDialog = ({ open, setOpen, preview }: ProductChangeDialogProp
             onClick={() => setOpen(false)}
             disabled={isLoading}
           >
-            Cancel
+            {tc('cancel')}
           </Button>
           <Button
             onClick={handleConfirm}
@@ -91,10 +94,10 @@ const ProductChangeDialog = ({ open, setOpen, preview }: ProductChangeDialogProp
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
+                {t('processing')}
               </>
             ) : (
-              'Confirm'
+              tc('confirm')
             )}
           </Button>
         </DialogFooter>

@@ -29,6 +29,8 @@ jobs:
         run: mkdir -p "$(pnpm store path)"
       - run: corepack enable
       - run: pnpm install --no-frozen-lockfile
+      - name: Lint
+        run: pnpm lint
       # pgcrypto is ensured inside setup.js using node-postgres
       - name: Run migrations
         run: node setup.js
@@ -60,6 +62,8 @@ jobs:
         run: mkdir -p "$(pnpm store path)"
       - run: corepack enable
       - run: pnpm install --no-frozen-lockfile
+      - name: Lint
+        run: pnpm lint
       # pgcrypto is ensured inside setup.js using node-postgres
       - name: Run migrations
         run: node setup.js

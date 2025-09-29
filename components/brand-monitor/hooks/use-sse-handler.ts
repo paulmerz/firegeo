@@ -1,29 +1,44 @@
 import { useRef, useEffect } from 'react';
-import { BrandMonitorState, BrandMonitorAction } from '@/lib/brand-monitor-reducer';
+import {
+  BrandMonitorState,
+  BrandMonitorAction,
+  Analysis,
+  PromptCompletionStatus
+} from '@/lib/brand-monitor-reducer';
 import { SSEParser } from '@/lib/sse-parser';
-import { 
-  ProgressData, 
-  CompetitorFoundData, 
-  PromptGeneratedData, 
-  AnalysisProgressData, 
+import {
+  ProgressData,
+  CompetitorFoundData,
+  PromptGeneratedData,
+  AnalysisProgressData,
   PartialResultData,
-  BrandExtractionProgressData
+  BrandExtractionProgressData,
+  SSEEvent,
+  AnalysisStage
 } from '@/lib/types';
+import type { ApiUsageSummaryData } from '../api-usage-summary';
 
 interface UseSSEHandlerProps {
   state: BrandMonitorState;
   dispatch: React.Dispatch<BrandMonitorAction>;
   onCreditsUpdate?: () => void;
-  onAnalysisComplete?: (analysis: any) => void;
-  onApiUsageSummary?: (summary: any) => void;
+  onAnalysisComplete?: (analysis: Analysis) => void;
+  onApiUsageSummary?: (summary: ApiUsageSummaryData) => void;
 }
 
 import { logger } from '@/lib/logger';
 
+type SSEMessage<T = unknown> = Omit<SSEEvent<T>, 'stage'> & { stage?: AnalysisStage };
+
+interface AnalysisCompletePayload {
+  analysis: Analysis;
+  apiUsageSummary?: ApiUsageSummaryData;
+}
+
 export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComplete, onApiUsageSummary }: UseSSEHandlerProps) {
   // Use ref to track current prompt status to avoid closure issues in SSE handler
-  const promptCompletionStatusRef = useRef(state.promptCompletionStatus);
-  const analyzingPromptsRef = useRef(state.analyzingPrompts);
+  const promptCompletionStatusRef = useRef<PromptCompletionStatus>(state.promptCompletionStatus);
+  const analyzingPromptsRef = useRef<string[]>(state.analyzingPrompts);
   
   useEffect(() => {
     promptCompletionStatusRef.current = state.promptCompletionStatus;
@@ -34,11 +49,16 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
   }, [state.analyzingPrompts]);
 
   // Fonction pour calculer la progression globale
-  const calculateGlobalProgress = (stage: string, stageProgress: number, promptCompletionStatus: any, analyzingPrompts: string[]) => {
+  const calculateGlobalProgress = (
+    stage: string,
+    stageProgress: number,
+    promptCompletionStatus: PromptCompletionStatus | undefined,
+    analyzingPrompts: string[]
+  ) => {
     switch (stage) {
       case 'analyzing-prompts':
         // Calculer la progression basée sur les prompts terminés (0-70%)
-        if (!promptCompletionStatus || !analyzingPrompts || analyzingPrompts.length === 0) {
+        if (!promptCompletionStatus || analyzingPrompts.length === 0) {
           return 0;
         }
         
@@ -72,7 +92,7 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
     }
   };
 
-  const handleSSEEvent = (eventData: any) => {
+  const handleSSEEvent = (eventData: SSEMessage<unknown>) => {
     logger.debug('[SSE] Received event:', eventData.type, eventData.data);
     
     try {
@@ -357,25 +377,28 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
         });
         break;
 
-      case 'complete':
-        const completeData = eventData.data as { analysis: any; apiUsageSummary?: any };
-        dispatch({
-          type: 'ANALYSIS_COMPLETE',
-          payload: completeData.analysis
-        });
+      case 'complete': {
+        const completeData = eventData.data as AnalysisCompletePayload;
+        if (completeData.analysis) {
+          dispatch({
+            type: 'ANALYSIS_COMPLETE',
+            payload: completeData.analysis
+          });
+        }
         // Update credits after analysis is complete
         if (onCreditsUpdate) {
           onCreditsUpdate();
         }
         // Call the completion callback
-        if (onAnalysisComplete) {
+        if (completeData.analysis && onAnalysisComplete) {
           onAnalysisComplete(completeData.analysis);
         }
         // Handle API usage summary if provided
-        if (onApiUsageSummary && completeData.apiUsageSummary) {
+        if (completeData.apiUsageSummary && onApiUsageSummary) {
           onApiUsageSummary(completeData.apiUsageSummary);
         }
         break;
+      }
 
       case 'error':
         const errorData = eventData.data as { message?: string };

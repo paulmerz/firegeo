@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, Fragment } from 'react';
+/* eslint-disable @next/next/no-img-element */
+
+import React, { useState } from 'react';
 import { ProviderComparisonData } from '@/lib/types';
 import { ArrowUpDownIcon, ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
 import { CompetitorCell } from './competitor-cell';
@@ -9,7 +11,6 @@ import { useTranslations } from 'next-intl';
 
 interface ProviderComparisonMatrixProps {
   data: ProviderComparisonData[];
-  brandName: string;
   competitors?: { 
     name: string; 
     url?: string;
@@ -20,6 +21,8 @@ interface ProviderComparisonMatrixProps {
     };
   }[];
 }
+
+type ProviderMetrics = ProviderComparisonData['providers'][string];
 
 // Provider icon mapping
 const getProviderIcon = (provider: string) => {
@@ -90,7 +93,7 @@ const generateFallbackUrl = (competitorName: string): string | undefined => {
   return possibleDomains[0];
 };
 
-export function ProviderComparisonMatrix({ data, brandName, competitors }: ProviderComparisonMatrixProps) {
+export function ProviderComparisonMatrix({ data, competitors }: ProviderComparisonMatrixProps) {
   // Hooks must be called before any conditional returns
   const [sortColumn, setSortColumn] = useState<string>('competitor');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('asc');
@@ -152,15 +155,17 @@ export function ProviderComparisonMatrix({ data, brandName, competitors }: Provi
   };
 
   // Helper to safely fetch provider data regardless of key casing/variant
-  const getProviderData = (competitor: ProviderComparisonData, providerDisplayName: string) => {
-    const providersMap: any = (competitor as any).providers || {};
+  const getProviderData = (
+    competitor: ProviderComparisonData,
+    providerDisplayName: string
+  ): ProviderMetrics | undefined => {
+    const providersMap = competitor.providers;
     const normalized = normalizeProviderName(providerDisplayName);
     return (
-      providersMap[providerDisplayName] ||
-      providersMap[normalized] ||
-      providersMap[providerDisplayName.toLowerCase()] ||
-      providersMap[providerDisplayName.toUpperCase()] ||
-      undefined
+      providersMap[providerDisplayName] ??
+      providersMap[normalized] ??
+      providersMap[providerDisplayName.toLowerCase()] ??
+      providersMap[providerDisplayName.toUpperCase()]
     );
   };
 

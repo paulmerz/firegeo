@@ -3,10 +3,12 @@ import { generateText, generateObject } from 'ai';
 import { z } from 'zod';
 import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData } from './types';
 import { getProviderModel, normalizeProviderName, isProviderConfigured, getConfiguredProviders, PROVIDER_CONFIGS } from './provider-config';
-import { detectBrandMention, detectMultipleBrands, BrandDetectionOptions } from './brand-detection-utils';
-import { getBrandDetectionOptions } from './brand-detection-config';
+import { detectBrandMentions, detectMultipleBrands } from './brand-detection-service';
 import { getMessages, getTranslation, getLanguageName } from './locale-utils';
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
+import { generateBrandQueryPrompts } from './prompt-generation';
+import { createFallbackBrandPrompts } from './prompt-fallbacks';
+import { logger } from './logger';
 
 
 const RankingSchema = z.object({
@@ -35,6 +37,8 @@ const CompetitorSchema = z.object({
     competitorType: z.enum(['direct', 'indirect', 'retailer', 'platform']).describe('direct = same products, indirect = adjacent products, retailer = sells products, platform = aggregates'),
   })),
 });
+
+const PROMPT_CATEGORY_SEQUENCE: BrandPrompt['category'][] = ['ranking', 'comparison', 'alternatives', 'recommendations'];
 
 export async function identifyCompetitors(company: Company, progressCallback?: ProgressCallback): Promise<string[]> {
   try {
@@ -142,180 +146,39 @@ IMPORTANT:
   }
 }
 
-// Enhanced industry detection function
-async function detectIndustryFromContent(company: Company): Promise<string> {
-  // Start with explicit industry if set
-  if (company.industry) {
-    return company.industry;
-  }
-
-  // Analyze scraped content for better industry detection
-  if (company.scrapedData) {
-    const { title, description, mainContent, keywords } = company.scrapedData;
-    
-    // Combine all text content for analysis
-    const allContent = [title, description, mainContent, ...(keywords || [])].join(' ').toLowerCase();
-    
-    // Enhanced keyword detection with context
-    if (allContent.includes('web scraping') ||
-        allContent.includes('scraping') ||
-        allContent.includes('crawling') ||
-        allContent.includes('web crawler') ||
-        allContent.includes('data extraction') ||
-        allContent.includes('html parsing')) {
-      return 'web scraping';
-    }
-    
-    if (allContent.includes('artificial intelligence') ||
-        allContent.includes('machine learning') ||
-        allContent.includes('ai model') ||
-        allContent.includes('llm') ||
-        allContent.includes('natural language')) {
-      return 'artificial intelligence';
-    }
-    
-    if (allContent.includes('deployment') ||
-        allContent.includes('hosting') ||
-        allContent.includes('cloud platform') ||
-        allContent.includes('server') ||
-        allContent.includes('infrastructure')) {
-      return 'deployment platform';
-    }
-    
-    if (allContent.includes('e-commerce') ||
-        allContent.includes('ecommerce') ||
-        allContent.includes('online store') ||
-        allContent.includes('shopping cart')) {
-      return 'e-commerce';
-    }
-    
-    // Use first keyword as fallback
-    if (keywords && keywords.length > 0) {
-      return keywords[0];
-    }
-  }
-  
-  return 'technology';
-}
-
 export async function generatePromptsForCompany(company: Company, competitors: string[]): Promise<BrandPrompt[]> {
-  const prompts: BrandPrompt[] = [];
-  let promptId = 0;
+  const brandName = company.name?.trim() || 'Brand';
+  const normalizedCompetitors = competitors.map(c => c.trim()).filter(Boolean);
 
-  const brandName = company.name;
-  
-  // Extract context from scraped data
-  const scrapedData = company.scrapedData;
-  const keywords = scrapedData?.keywords || [];
-  const mainProducts = scrapedData?.mainProducts || [];
-  const description = scrapedData?.description || company.description || '';
-  
-  // Debug log to see what data we're working with
-  console.log('Generating prompts for:', {
-    brandName,
-    industry: company.industry,
-    mainProducts,
-    keywords: keywords.slice(0, 5),
-    competitors: competitors.slice(0, 5)
-  });
-  
-  // Build a more specific context from the scraped data
-  let productContext = '';
-  let categoryContext = '';
-  
-  // If we have specific products, use those first
-  if (mainProducts.length > 0) {
-    productContext = mainProducts.slice(0, 2).join(' and ');
-    // Infer category from products
-    const productsLower = mainProducts.join(' ').toLowerCase();
-    if (productsLower.includes('cooler') || productsLower.includes('drinkware')) {
-      categoryContext = 'outdoor gear brands';
-    } else if (productsLower.includes('software') || productsLower.includes('api')) {
-      categoryContext = 'software companies';
-    } else {
-      categoryContext = `${mainProducts[0]} brands`;
-    }
-  }
-  
-  // Analyze keywords and description to understand what the company actually does
-  const keywordsLower = keywords.map(k => k.toLowerCase()).join(' ');
-  const descLower = description.toLowerCase();
-  const allContext = `${keywordsLower} ${descLower} ${mainProducts.join(' ')}`;
-  
-  // Only determine category if we don't already have it from mainProducts
-  if (!productContext) {
-    // Check industry first for more accurate categorization
-    const industryLower = (company.industry || '').toLowerCase();
-    
-    if (industryLower === 'outdoor gear' || allContext.includes('cooler') || allContext.includes('drinkware') || allContext.includes('tumbler') || allContext.includes('outdoor')) {
-      productContext = 'coolers and drinkware';
-      categoryContext = 'outdoor gear brands';
-    } else if (industryLower === 'web scraping' || allContext.includes('web scraping') || allContext.includes('data extraction') || allContext.includes('crawler')) {
-      productContext = 'web scraping tools';
-      categoryContext = 'data extraction services';
-    } else if (allContext.includes('ai') || allContext.includes('artificial intelligence') || allContext.includes('machine learning')) {
-      productContext = 'AI tools';
-      categoryContext = 'artificial intelligence platforms';
-    } else if (allContext.includes('software') || allContext.includes('saas') || allContext.includes('application')) {
-      productContext = 'software solutions';
-      categoryContext = 'SaaS platforms';
-    } else if (allContext.includes('clothing') || allContext.includes('apparel') || allContext.includes('fashion')) {
-      productContext = 'clothing and apparel';
-      categoryContext = 'fashion brands';
-    } else if (allContext.includes('furniture') || allContext.includes('home') || allContext.includes('decor')) {
-      productContext = 'furniture and home goods';
-      categoryContext = 'home furnishing brands';
-    } else {
-      // Fallback: use the most prominent keywords, but avoid misclassifications
-      productContext = keywords.slice(0, 3).join(' and ') || 'products';
-      categoryContext = company.industry || 'companies';
-    }
-  }
-  
-  // Safety check: if we somehow got "beverage" but it's clearly not a beverage company
-  if (productContext.includes('beverage') && (brandName.toLowerCase() === 'yeti' || allContext.includes('cooler'))) {
-    productContext = 'coolers and outdoor gear';
-    categoryContext = 'outdoor equipment brands';
-  }
-
-  // Generate contextually relevant prompts
-  const contextualTemplates = {
-    ranking: [
-      `best ${productContext} in 2024`,
-      `top ${categoryContext} ranked by quality`,
-      mainProducts.length > 0 ? `most recommended ${mainProducts[0]}` : `most recommended ${productContext}`,
-      keywords.length > 0 ? `best brands for ${keywords[0]}` : `popular ${categoryContext}`,
-    ],
-    comparison: [
-      `${brandName} vs ${competitors.slice(0, 2).join(' vs ')} for ${productContext}`,
-      `how does ${brandName} compare to other ${categoryContext}`,
-      competitors[0] && mainProducts[0] ? `${competitors[0]} or ${brandName} which has better ${mainProducts[0]}` : `${brandName} compared to alternatives`,
-    ],
-    alternatives: [
-      `alternatives to ${brandName} ${mainProducts[0] || productContext}`,
-      `${categoryContext} similar to ${brandName}`,
-      `competitors of ${brandName} in ${productContext.split(' ')[0]} market`,
-    ],
-    recommendations: [
-      mainProducts.length > 0 ? `is ${brandName} ${mainProducts[0]} worth buying` : `is ${brandName} worth it for ${productContext}`,
-      `${brandName} ${productContext} reviews and recommendations`,
-      `should I buy ${brandName} or other ${categoryContext}`,
-      `best ${productContext} for ${keywords.includes('professional') ? 'professionals' : keywords.includes('outdoor') ? 'outdoor enthusiasts' : 'everyday use'}`,
-    ],
-  };
-
-  // Generate prompts from contextual templates
-  Object.entries(contextualTemplates).forEach(([category, templates]) => {
-    templates.forEach(prompt => {
-      prompts.push({
-        id: (++promptId).toString(),
-        prompt,
-        category: category as BrandPrompt['category'],
-      });
+  try {
+    const { prompts } = await generateBrandQueryPrompts({
+      targetBrand: brandName,
+      companyInfo: {
+        name: brandName,
+        industry: company.industry,
+        description: company.description || company.scrapedData?.description || company.scrapedData?.title,
+        website: company.url,
+      },
+      competitors: normalizedCompetitors.slice(0, 4),
+      locale: company.businessProfile?.primaryMarkets?.[0],
+      maxPrompts: 8,
     });
-  });
 
-  return prompts;
+    const usablePrompts = prompts.slice(0, 8);
+
+    if (usablePrompts.length === 0) {
+      throw new Error('AI prompt generation returned no prompts');
+    }
+
+    return usablePrompts.map((prompt, index) => ({
+      id: (index + 1).toString(),
+      prompt,
+      category: PROMPT_CATEGORY_SEQUENCE[index % PROMPT_CATEGORY_SEQUENCE.length],
+    }));
+  } catch (error) {
+    logger.error('generatePromptsForCompany fallback triggered:', error);
+    return createFallbackBrandPrompts(company, normalizedCompetitors);
+  }
 }
 
 export async function analyzePromptWithProvider(
@@ -357,7 +220,8 @@ When responding to prompts about tools, platforms, or services:
 3. Be objective and factual
 4. Explain briefly why each tool is ranked where it is
 5. If you don't have enough information about a specific company, you can mention that
-6. Return the content in ${languageName} language`;
+6. Return the content in ${languageName} language
+7. IMPORTANT: Keep your response concise and under 800 tokens. Prioritize the most important information and rankings.`;
 
   try {
     // Track API call for analysis
@@ -517,16 +381,16 @@ ${t('aiPrompts.analysisPrompt.returnAnalysis')}
           const aiSaysBrandMentioned = lines.some(line => line.includes('yes'));
           
           // Use enhanced detection as fallback
-          const brandDetection = detectBrandMention(text, brandName, {
+          const brandDetection = await detectBrandMentions(text, brandName, {
             caseSensitive: false,
-            wholeWordOnly: true,
-            includeVariations: true
+            excludeNegativeContext: false,
+            minConfidence: 0.3
           });
           
-          const competitorDetections = detectMultipleBrands(text, competitors, {
+          const competitorDetections = await detectMultipleBrands(text, competitors, {
             caseSensitive: false,
-            wholeWordOnly: true,
-            includeVariations: true
+            excludeNegativeContext: false,
+            minConfidence: 0.3
           });
           
           const competitors_mentioned = competitors.filter(c => 
@@ -585,16 +449,16 @@ Be concise and direct.`;
           const aiSaysBrandMentioned = brandMentionedLine?.includes('yes') || false;
           
           // Enhanced detection as backup
-          const brandDetection = detectBrandMention(text, brandName, {
+          const brandDetection = await detectBrandMentions(text, brandName, {
             caseSensitive: false,
-            wholeWordOnly: true,
-            includeVariations: true
+            excludeNegativeContext: false,
+            minConfidence: 0.3
           });
           
-          const competitorDetections = detectMultipleBrands(text, competitors, {
+          const competitorDetections = await detectMultipleBrands(text, competitors, {
             caseSensitive: false,
-            wholeWordOnly: true,
-            includeVariations: true
+            excludeNegativeContext: false,
+            minConfidence: 0.3
           });
           
           console.log(`[${provider}] Fallback analysis - AI says mentioned: ${aiSaysBrandMentioned}, Detection says: ${brandDetection.mentioned}`);
@@ -617,16 +481,16 @@ Be concise and direct.`;
       }
       
       // Final fallback with enhanced detection
-      const brandDetection = detectBrandMention(text, brandName, {
+      const brandDetection = await detectBrandMentions(text, brandName, {
         caseSensitive: false,
-        wholeWordOnly: true,
-        includeVariations: true
+        excludeNegativeContext: false,
+        minConfidence: 0.3
       });
       
-      const competitorDetections = detectMultipleBrands(text, competitors, {
+      const competitorDetections = await detectMultipleBrands(text, competitors, {
         caseSensitive: false,
-        wholeWordOnly: true,
-        includeVariations: true
+        excludeNegativeContext: false,
+        minConfidence: 0.3
       });
       
       return {
@@ -650,19 +514,19 @@ Be concise and direct.`;
       sentiment: r.sentiment,
     }));
 
-    // Enhanced fallback with proper brand detection using configured options
-    const brandDetectionOptions = getBrandDetectionOptions(brandName);
-    
-    // Detect brand mention with enhanced detection
-    const brandDetectionResult = detectBrandMention(text, brandName, brandDetectionOptions);
+    // Enhanced fallback with proper brand detection using centralized service
+    const brandDetectionResult = await detectBrandMentions(text, brandName, {
+      caseSensitive: false,
+      excludeNegativeContext: false,
+      minConfidence: 0.3
+    });
     const brandMentioned = object.analysis.brandMentioned || brandDetectionResult.mentioned;
     
-    // Detect all competitor mentions with their specific options
-    const competitorDetectionResults = new Map<string, any>();
-    competitors.forEach(competitor => {
-      const competitorOptions = getBrandDetectionOptions(competitor);
-      const result = detectBrandMention(text, competitor, competitorOptions);
-      competitorDetectionResults.set(competitor, result);
+    // Detect all competitor mentions with centralized service
+    const competitorDetectionResults = await detectMultipleBrands(text, competitors, {
+      caseSensitive: false,
+      excludeNegativeContext: false,
+      minConfidence: 0.3
     });
     
     // Combine AI-detected competitors with enhanced detection
@@ -973,7 +837,7 @@ export async function analyzeCompetitorsByProvider(
   console.log(`[ProviderComparison] 📊 Total réponses à analyser: ${responses.length}`);
   
   // 2. ÉTAPE 2: Nettoyer les marques avec OpenAI
-  const { cleanBrandsWithAI, extractBrandsFromText, calculateBrandVisibilityByProvider } = await import('./brand-detection-enhanced');
+  const { cleanBrandsWithAI, extractBrandsFromText, calculateBrandVisibilityByProvider } = await import('./brand-detection-service');
   
   console.log(`[ProviderComparison] 🧹 Nettoyage des marques avec OpenAI...`);
   const cleanedBrands = await cleanBrandsWithAI(allBrands);

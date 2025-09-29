@@ -1,6 +1,7 @@
 'use client';
 
-import { useCustomer, usePricingTable } from 'autumn-js/react';
+import { useCustomer } from '@/hooks/useAutumnCustomer';
+import { usePricingTable } from 'autumn-js/react';
 import { useSession } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';

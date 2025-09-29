@@ -71,7 +71,7 @@ export default function DocsPage() {
                   href={`#${s.id}`}
                   onClick={() => setActive(s.id)}
                   className={`block w-full text-left rounded-md px-3 py-2 text-sm transition-colors ${active===s.id? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100':'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:text-zinc-50 dark:hover:bg-zinc-900'}`}
-                >{labelFor(s.id)}</a>
+                ><h2>{labelFor(s.id)}</h2></a>
               ))}
             </nav>
           </aside>

@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable @next/next/no-img-element */
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { ProviderSpecificRanking } from '@/lib/types';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import Image from 'next/image';
-import { getConfiguredProviders } from '@/lib/provider-config';
 import { useTranslations } from 'next-intl';
 
 // Provider icon mapping

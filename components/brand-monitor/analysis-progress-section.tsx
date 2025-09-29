@@ -1,12 +1,16 @@
+'use client';
+
+/* eslint-disable @next/next/no-img-element */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Trash2, CheckIcon, Info } from 'lucide-react';
+import { Loader2, Plus, Trash2, CheckIcon } from 'lucide-react';
 import { Company, AnalysisStage } from '@/lib/types';
 import { IdentifiedCompetitor, PromptCompletionStatus } from '@/lib/brand-monitor-reducer';
 import { getEnabledProviders } from '@/lib/provider-config';
 import { useTranslations } from 'next-intl';
-import { getDisplayPrompts, isCustomPrompt, getDefaultPromptIndex } from '@/lib/prompt-utils';
+import { getDisplayPrompts, getDefaultPromptIndex } from '@/lib/prompt-utils';
 import { CREDIT_COST_PROMPT_GENERATION } from '@/config/constants';
 import { logger } from '@/lib/logger';
 
@@ -29,8 +33,6 @@ interface AnalysisProgressSectionProps {
   onAddPromptClick: () => void;
   onStartAnalysis: (displayPrompts: string[]) => void;
   onCreditsUpdate?: () => void;
-  creditsAvailable?: number;
-  onError?: (message: string) => void;
 }
 
 // Provider icon mapping
@@ -90,9 +92,7 @@ export function AnalysisProgressSection({
   onRemoveCustomPrompt,
   onAddPromptClick,
   onStartAnalysis,
-  onCreditsUpdate,
-  creditsAvailable = 0,
-  onError
+  onCreditsUpdate
 }: AnalysisProgressSectionProps) {
   const t = useTranslations('brandMonitor.analysisProgress');
   const [displayPrompts, setDisplayPrompts] = useState<string[]>([]);
@@ -135,7 +135,7 @@ export function AnalysisProgressSection({
             body: JSON.stringify({ value: CREDIT_COST_PROMPT_GENERATION, reason: 'prompts_display' })
           });
           if (!res.ok) {
-            const err = await res.json().catch(() => ({} as any));
+            const err = (await res.json().catch(() => null)) as { error?: string } | null;
             logger.warn('[Credits] Debit on prompts_display failed:', err?.error || res.statusText);
           } else if (onCreditsUpdate) {
             onCreditsUpdate();
@@ -160,7 +160,7 @@ export function AnalysisProgressSection({
     }
     
     loadPrompts();
-  }, [company, analyzing, identifiedCompetitors, prompts, promptsGenerated]);
+  }, [company, analyzing, identifiedCompetitors, prompts, promptsGenerated, customPrompts, removedDefaultPrompts, onCreditsUpdate]);
   
   // Handle adding new custom prompts without regenerating
   useEffect(() => {

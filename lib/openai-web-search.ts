@@ -194,6 +194,25 @@ function filterBrandVariations(coreBrand: string, variations: string[]): string[
   return Array.from(keep);
 }
 
+// Utility: get hostname from URL (without www)
+function hostnameFromUrl(url: string): string {
+  try {
+    const { hostname } = new URL(url);
+    return hostname.replace(/^www\./i, '') || hostname;
+  } catch {
+    return 'Source web';
+  }
+}
+
+// Utility: trim snippet without cutting mid-word
+function trimAtWord(input: string, limit: number): string {
+  if (!input) return '';
+  if (input.length <= limit) return input;
+  const slice = input.slice(0, limit);
+  const lastSpace = slice.lastIndexOf(' ');
+  return (lastSpace > 40 ? slice.slice(0, lastSpace) : slice).trim();
+}
+
 /**
  * OpenAI Web Search Implementation using the Responses API
  * Documentation: https://platform.openai.com/docs/guides/tools-web-search?api-mode=responses
@@ -339,14 +358,14 @@ export async function analyzePromptWithOpenAIWebSearch(
     model = 'gpt-4o-mini';
   }
 
-  // Enhanced prompt for web search - more explicit instruction with source requirements
+  // Enhanced prompt for web search - do not ask model to append sources section in text
   const enhancedPrompt = `IMPORTANT: You must search the web for current, factual information to answer this question. Do not rely on your training data alone.
 
 Question: ${originalPrompt}
 
-Please search for recent information, current rankings, and up-to-date data to provide an accurate and current response.
+Please search for recent information, current rankings, and up-to-date data to provide an accurate and current response. Do not append any explicit "Sources consultées" section to the text.
 
-CRITICAL: At the end of your response, please include a section called "Sources consultées:" and list all the websites and sources you used to gather this information. Include the website names and URLs when possible.
+IMPORTANT: Keep your response concise and under 800 tokens. Prioritize the most important information and rankings.
 
 Return the content in ${languageName} language.`;
 
@@ -429,51 +448,30 @@ Return the content in ${languageName} language.`;
     
     // Method 3: Extract sources from the response text itself
     const responseText = response.output_text;
+    // Clean any inline sources section so it won't render in UI
+    const cleanedText = responseText.replace(/\n?Sources consultées?:[\s\S]*$/i, '').trim();
     
-    // Look for "Sources consultées:" section
-    const sourcesMatch = responseText.match(/Sources consultées?:[\s\S]*$/i);
-    if (sourcesMatch) {
-      const sourcesSection = sourcesMatch[0];
-      console.log(`[OpenAI Web Search] Found sources section: ${sourcesSection.substring(0, 200)}...`);
-      
-      // Extract URLs from sources section
-      const urlMatches = sourcesSection.match(/https?:\/\/[^\s\)]+/g);
-      if (urlMatches) {
-        urlMatches.forEach((url: string) => {
-          // Clean up URL (remove trailing punctuation)
-          const cleanUrl = url.replace(/[.,;)]+$/, '');
-          webSearchSources.push({ 
-            url: cleanUrl, 
-            title: 'Source from response text',
-            type: 'extracted'
-          });
-        });
-      }
-      
-      // Extract website names mentioned
-      const websiteMatches = sourcesSection.match(/(?:selon|d'après|source:?)\s+([A-Z][a-zA-Z\s]+)/gi);
-      if (websiteMatches) {
-        websiteMatches.forEach((match: string) => {
-          const siteName = match.replace(/^(?:selon|d'après|source:?)\s+/i, '').trim();
-          if (siteName && !webSearchSources.find(s => s.title?.includes(siteName))) {
-            webSearchSources.push({ 
-              title: siteName,
-              type: 'website_mention'
-            });
-          }
-        });
-      }
-    }
-    
-    // Method 4: Extract URLs from anywhere in the response text
+    // Method 4: Extract URLs from anywhere in the response text with context
     if (webSearchSources.length === 0) {
-      const allUrls = responseText.match(/https?:\/\/[^\s\)]+/g);
+      const allUrls = cleanedText.match(/https?:\/\/[^\s\)]+/g);
       if (allUrls) {
         allUrls.forEach((url: string) => {
           const cleanUrl = url.replace(/[.,;)]+$/, '');
+          
+          // Try to extract context around the URL
+          const urlIndex = cleanedText.indexOf(url);
+          const contextStart = Math.max(0, urlIndex - 100);
+          const contextEnd = Math.min(cleanedText.length, urlIndex + url.length + 100);
+          const context = cleanedText.substring(contextStart, contextEnd);
+          
+          // Extract a meaningful snippet (clean, not mid-word)
+          const sentences = context.split(/[.!?]+/);
+          const relevantSentence = sentences.find(s => s.includes(url)) || sentences[0];
+          const snippet = relevantSentence ? trimAtWord(relevantSentence.trim(), 200) : 'Source trouvée dans la réponse';
+          
           webSearchSources.push({ 
             url: cleanUrl, 
-            title: 'URL found in response',
+            domain: hostnameFromUrl(cleanUrl),
             type: 'url_extraction'
           });
         });
@@ -489,7 +487,7 @@ Return the content in ${languageName} language.`;
           urlMatches.forEach((url: string) => {
             webSearchSources.push({ 
               url, 
-              title: 'Source from reasoning',
+              domain: 'Source from reasoning',
               type: 'reasoning'
             });
           });
@@ -499,7 +497,7 @@ Return the content in ${languageName} language.`;
 
     console.log(`[OpenAI Web Search] Web search sources found: ${webSearchSources.length}`);
     if (webSearchSources.length > 0) {
-      console.log(`[OpenAI Web Search] Sources:`, webSearchSources.map(s => s.url || s.title).join(', '));
+      console.log(`[OpenAI Web Search] Sources:`, webSearchSources.map(s => s.url || s.domain).join(', '));
     }
     
     // For debugging, show if web search was actually used
@@ -514,7 +512,7 @@ Return the content in ${languageName} language.`;
 
     // Analyze the response for brand mentions and rankings
     const analysisResult = await analyzeResponseContent(
-      response.output_text,
+      cleanedText,
       brandName,
       competitors,
       languageName,
@@ -525,7 +523,7 @@ Return the content in ${languageName} language.`;
     return {
       provider: 'OpenAI',
       prompt: originalPrompt, // Keep the original prompt for proper frontend matching
-      response: response.output_text,
+      response: cleanedText,
       rankings: analysisResult.rankings,
       competitors: analysisResult.competitors,
       brandMentioned: analysisResult.brandMentioned,

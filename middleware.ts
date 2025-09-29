@@ -74,8 +74,9 @@ export default async function middleware(request: NextRequest) {
   const locale = segments[1];
   
   // Vérifier que nous avons une locale valide
+  // Si la locale est absente ou invalide, laisser l'internationalisation gérer la redirection
   if (!routing.locales.includes(locale as any)) {
-    return NextResponse.next();
+    return intlResponse;
   }
   
   const pathnameWithoutLocale = pathname.replace(`/${locale}`, '') || '/';
@@ -135,6 +136,6 @@ export const config = {
     // - _next/image (image optimization files)
     // - favicon.ico (favicon file)
     // - public folder
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).)',
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)',
   ],
 };

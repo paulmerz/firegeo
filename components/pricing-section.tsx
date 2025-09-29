@@ -2,9 +2,10 @@
 
 import React from 'react';
 import { useTranslations } from 'next-intl';
-import { useSession } from '@/lib/auth-client';
-import PricingTable from '@/components/autumn/pricing-table';
 import StaticPricingTable from '@/components/static-pricing-table';
+// NOTE: Le tableau dynamique (Autumn) n'est plus utilisé depuis cette section.
+// Si vous devez changer de produit, passez par le Dashboard.
+// import PricingTable from '@/components/autumn/pricing-table';
 
 export interface StaticProduct {
   id: string;
@@ -27,7 +28,6 @@ interface PricingSectionProps {
 }
 
 export default function PricingSection({ products, showHeader = true }: PricingSectionProps) {
-  const { data: session } = useSession();
   const t = useTranslations();
 
   return (
@@ -46,11 +46,9 @@ export default function PricingSection({ products, showHeader = true }: PricingS
           )}
 
           <div className="bg-white rounded-[20px] p-0 border-0">
-            {session ? (
-              <PricingTable />
-            ) : (
-              <StaticPricingTable products={products || []} />
-            )}
+            {/* Affichage forcé de la tarification statique.
+                L’utilisateur change de produit uniquement depuis le Dashboard. */}
+            <StaticPricingTable products={products || []} />
           </div>
         </div>
       </div>

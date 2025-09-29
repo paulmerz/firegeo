@@ -1,7 +1,8 @@
-import { AIResponse, AnalysisProgressData, Company, PartialResultData, ProgressData, PromptGeneratedData, ScoringProgressData, SSEEvent } from './types';
+import { AIResponse, AnalysisProgressData, Company, PartialResultData, ProgressData, PromptGeneratedData, ScoringProgressData, SSEEvent, AnalysisSource } from './types';
 import { generatePromptsForCompany, analyzePromptWithProvider, calculateBrandScores, analyzeCompetitors, identifyCompetitors, analyzeCompetitorsByProvider } from './ai-utils';
 import { analyzePromptWithProvider as analyzePromptWithProviderEnhanced } from './ai-utils-enhanced';
 import { canonicalizeBrandsWithOpenAI } from './openai-web-search';
+import { extractAnalysisSources } from './brand-monitor-sources';
 import { getConfiguredProviders } from './provider-config';
 import { apiUsageTracker } from './api-usage-tracker';
 import { logger } from './logger';
@@ -24,6 +25,7 @@ export interface AnalysisResult {
   competitors: any[];
   providerRankings: any;
   providerComparison: any;
+  sources: AnalysisSource[];
   errors?: string[];
   webSearchUsed?: boolean;
   apiUsageSummary?: any;
@@ -606,7 +608,7 @@ export async function performAnalysis({
     logger.error(`[AnalyzeCommon] ❌ No responses collected!`);
   }
 
-  return {
+  const analysisResult: AnalysisResult = {
     company,
     knownCompetitors: competitors,
     prompts: analysisPrompts,
@@ -615,10 +617,15 @@ export async function performAnalysis({
     competitors: competitorRankings,
     providerRankings,
     providerComparison,
+    sources: [],
     errors: errors.length > 0 ? errors : undefined,
     webSearchUsed: useWebSearch,
     apiUsageSummary: apiUsageTracker.getSummary(),
   };
+
+  analysisResult.sources = extractAnalysisSources(analysisResult);
+
+  return analysisResult;
 }
 
 /**

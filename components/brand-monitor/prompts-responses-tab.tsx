@@ -1,6 +1,9 @@
+'use client';
+
+/* eslint-disable @next/next/no-img-element */
+
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronsDown, ChevronsUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { BrandPrompt, AIResponse } from '@/lib/types';
@@ -16,6 +19,7 @@ interface PromptsResponsesTabProps {
   brandName: string;
   competitors: string[];
   webSearchUsed?: boolean;
+  hideWebSearchSources?: boolean;
 }
 
 // Provider icon mapping
@@ -68,11 +72,14 @@ export function PromptsResponsesTab({
   onToggleExpand,
   brandName,
   competitors,
-  webSearchUsed = false
+  webSearchUsed = false,
+  hideWebSearchSources = false
 }: PromptsResponsesTabProps) {
   const t = useTranslations('brandMonitor');
   const [allExpanded, setAllExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  // Track which (prompt, provider) sources list is expanded beyond 3
+  const [expandedSources, setExpandedSources] = useState<Record<string, boolean>>({});
   
   const handleExpandAll = () => {
     if (allExpanded) {
@@ -108,9 +115,9 @@ export function PromptsResponsesTab({
     .filter(idx => idx !== null);
   
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 max-w-full overflow-hidden">
       {/* Web Search Indicator */}
-      {webSearchUsed && (
+      {webSearchUsed && !hideWebSearchSources && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,53 +138,66 @@ export function PromptsResponsesTab({
       
       {/* Search and Controls */}
       {prompts.length > 0 && (
-        <div className="flex items-center gap-4 mb-4">
-          {/* Search Input */}
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('searchPromptsPlaceholder')}
-              className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
-            />
-            <svg 
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+        <div className="flex flex-col gap-3 mb-4">
+          <div className="flex items-center gap-4">
+            {/* Search Input */}
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('searchPromptsPlaceholder')}
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+              />
+              <svg 
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            
+            {/* Expand/Collapse All Button */}
+            <button
+              onClick={handleExpandAll}
+              className="h-9 px-4 py-2 rounded-[10px] text-sm font-medium flex items-center gap-2 transition-all duration-200 bg-orange-500 text-white hover:bg-orange-600 [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#c2410c,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(234,_88,_12,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#c2410c,_0px_1px_3px_0px_rgba(234,_88,_12,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#c2410c,_0px_1px_2px_0px_rgba(234,_88,_12,_30%)]"
+            >
+              {allExpanded ? (
+                <>
+                  <ChevronsUp className="h-4 w-4" />
+                  Collapse All
+                </>
+              ) : (
+                <>
+                  <ChevronsDown className="h-4 w-4" />
+                  Expand All
+                </>
+              )}
+            </button>
           </div>
-          
-          {/* Expand/Collapse All Button */}
-          <button
-            onClick={handleExpandAll}
-            className="h-9 px-4 py-2 rounded-[10px] text-sm font-medium flex items-center gap-2 transition-all duration-200 bg-orange-500 text-white hover:bg-orange-600 [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#c2410c,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(234,_88,_12,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#c2410c,_0px_1px_3px_0px_rgba(234,_88,_12,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#c2410c,_0px_1px_2px_0px_rgba(234,_88,_12,_30%)]"
-          >
-            {allExpanded ? (
-              <>
-                <ChevronsUp className="h-4 w-4" />
-                Collapse All
-              </>
-            ) : (
-              <>
-                <ChevronsDown className="h-4 w-4" />
-                Expand All
-              </>
-            )}
-          </button>
+
+          <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-3 w-3 rounded-sm border border-orange-300 bg-orange-200" aria-hidden="true" />
+              <span>{t('legendTargetBrand', { defaultMessage: 'Target brand mentions' })}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-3 w-3 rounded-sm border border-gray-300 bg-gray-200" aria-hidden="true" />
+              <span>{t('legendCompetitorBrand', { defaultMessage: 'Competitor mentions' })}</span>
+            </div>
+          </div>
         </div>
       )}
       
@@ -216,7 +236,7 @@ export function PromptsResponsesTab({
           <div
             key={idx}
             className={`
-              relative border rounded-lg transition-all duration-300
+              relative border rounded-lg transition-all duration-300 max-w-full overflow-hidden
               ${isExpanded 
                 ? 'border-orange-200 bg-white shadow-md' 
                 : 'border-gray-200 bg-white hover:border-orange-100 hover:shadow-sm'
@@ -320,7 +340,7 @@ export function PromptsResponsesTab({
                             </Badge>
                           )}
                         </div>
-                        <div className="bg-gray-50 rounded-md p-3 text-sm text-gray-700 select-text cursor-text">
+                        <div className="bg-gray-50 rounded-md p-3 text-sm text-gray-700 select-text cursor-text max-w-full overflow-hidden">
                           {isFailed ? (
                             <div className="text-red-600 italic">
                               Response failed or returned empty content
@@ -331,56 +351,82 @@ export function PromptsResponsesTab({
                               brandName={brandName}
                               competitors={competitors}
                               showHighlighting={true}
-                              highlightClassName="bg-green-100 text-green-900 px-0.5 rounded font-medium"
                               renderMarkdown={true}
                             />
                           )}
                         </div>
                         
                         {/* Web Search Sources */}
-                        {response.webSearchSources && response.webSearchSources.length > 0 && (
+                        {!hideWebSearchSources && response.webSearchSources && response.webSearchSources.length > 0 && (
                           <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
                             <div className="flex items-center gap-1 mb-2">
                               <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                               </svg>
-                              <span className="text-xs font-medium text-blue-800">Sources de recherche web</span>
+                              <span className="text-xs font-medium text-blue-800">Sources consultées</span>
                             </div>
                             <div className="space-y-1">
-                              {response.webSearchSources.slice(0, 3).map((source: any, sourceIdx: number) => {
-                                const title = (source.title || '').toString().trim();
-                                const url = (source.url || '').toString().trim();
-                                const norm = title.toLowerCase();
-                                const isGenericTitle = !title ||
-                                  norm === 'citation' ||
-                                  norm.startsWith('citation') ||
-                                  norm.includes('url found') ||
-                                  norm.includes('source from response') ||
-                                  norm.includes('source from reasoning') ||
-                                  norm.includes('extracted');
-                                const displayText = isGenericTitle ? url : title;
+                              {(() => {
+                                const expandKey = `${idx}-${providerName}`;
+                                const toDomain = (input: string): string | null => {
+                                  if (!input) return null;
+                                  try {
+                                    const maybeUrl = /^(https?:)?\/\//i.test(input) ? input : `https://${input}`;
+                                    const { hostname } = new URL(maybeUrl);
+                                    return hostname.replace(/^www\./i, '');
+                                  } catch {
+                                    // Fallback: strip path if any
+                                    return input.split('/')[0].replace(/^www\./i, '').trim() || null;
+                                  }
+                                };
+                                const domains = Array.from(new Set(
+                                  (response.webSearchSources || [])
+                                    .map((s: any) => toDomain(
+                                      typeof s?.domain === 'string' && s.domain.trim()
+                                        ? s.domain
+                                        : (typeof s?.url === 'string' ? s.url : '')
+                                    ))
+                                    .filter(Boolean)
+                                )) as string[];
+
+                                const showAll = !!expandedSources[expandKey];
+                                const visible = showAll ? domains : domains.slice(0, 3);
                                 return (
-                                  <div key={sourceIdx} className="text-xs text-blue-700">
-                                    {url ? (
-                                      <a 
-                                        href={url} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="hover:text-blue-900 underline"
-                                      >
-                                        {displayText || url}
-                                      </a>
-                                    ) : (
-                                      <span>{displayText || 'Source'}</span>
+                                  <>
+                                    {visible.map((domain) => (
+                                      <div key={domain} className="text-xs text-blue-700">
+                                        <a
+                                          href={`https://${domain}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="hover:text-blue-900 underline"
+                                        >
+                                          {domain}
+                                        </a>
+                                      </div>
+                                    ))}
+                                    {domains.length > 3 && (
+                                      showAll ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => setExpandedSources(prev => ({ ...prev, [expandKey]: false }))}
+                                          className="text-xs text-blue-600 italic underline"
+                                        >
+                                          {t('sourcesTab.showLess')}
+                                        </button>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => setExpandedSources(prev => ({ ...prev, [expandKey]: true }))}
+                                          className="text-xs text-blue-600 italic underline"
+                                        >
+                                          +{domains.length - 3} {t('sourcesTab.showMore')}
+                                        </button>
+                                      )
                                     )}
-                                  </div>
+                                  </>
                                 );
-                              })}
-                              {response.webSearchSources.length > 3 && (
-                                <div className="text-xs text-blue-600 italic">
-                                  +{response.webSearchSources.length - 3} autres sources
-                                </div>
-                              )}
+                              })()}
                             </div>
                           </div>
                         )}

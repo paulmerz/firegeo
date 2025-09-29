@@ -1,6 +1,7 @@
 'use client';
 
-import { useCustomer, usePricingTable } from 'autumn-js/react';
+import { useCustomer } from '@/hooks/useAutumnCustomer';
+import { usePricingTable } from 'autumn-js/react';
 import { useSession } from '@/lib/auth-client';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -81,9 +82,6 @@ function DashboardContent({ session }: { session: any }) {
       await attach({
         productId,
         dialog: ProductChangeDialog,
-        returnUrl: window.location.origin + '/dashboard',
-        successUrl: window.location.origin + '/dashboard',
-        cancelUrl: window.location.origin + '/dashboard',
       });
     } finally {
       setLoadingProductId(null);
@@ -202,8 +200,156 @@ function DashboardContent({ session }: { session: any }) {
           </div>
         </div>
 
-        {/* Settings Section */}
+        {/* Available Plans */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <h2 className="text-xl font-semibold mb-4">{t('dashboard.availablePlans')}</h2>
+          {!products ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {(() => {
+                const findProductDetails = (id?: string) => (products || []).find((p: any) => p.id === id);
+                const parseCreditsFromDisplay = (p: any): number => {
+                  const items = p?.items || [];
+                  for (const it of items) {
+                    const text: string | undefined = it?.display?.primary_text;
+                    if (!text) continue;
+                    const match = text.match(/([0-9][0-9\s,\.]*)\s*credits?/i);
+                    if (match && match[1]) {
+                      const normalized = match[1].replace(/[\s,]/g, '');
+                      const num = Number(normalized);
+                      if (!Number.isNaN(num)) return num;
+                    }
+                  }
+                  return 0;
+                };
+                const getIncludedCredits = (p: any) => {
+                  if (!p) return 0;
+                  const unitItem = p?.items?.find((it: any) => it.type === 'unit' && it.unit?.quantity !== undefined);
+                  if (unitItem?.unit?.quantity !== undefined && unitItem.unit.quantity !== null) {
+                    return unitItem.unit.quantity as number;
+                  }
+                  return parseCreditsFromDisplay(p);
+                };
+                const activeProductDetails = findProductDetails(activeProduct?.id);
+                const activeCredits = activeProductDetails ? getIncludedCredits(activeProductDetails) : 0;
+
+                return products
+                  .filter((product) => product.id !== 'free' && product.id !== '50')
+                  .map((product) => {
+                const isCurrentPlan = activeProduct?.id === product.id;
+                const isScheduledPlan = scheduledProduct?.id === product.id;
+                const features = product.properties?.is_free ? product.items : product.items?.slice(1) || [];
+
+                  const productCredits = getIncludedCredits(product);
+                  const isLowerTierThanActive = !!activeProduct && productCredits < activeCredits;
+                  const isFreePlan = product.properties?.is_free || product.id === 'free';
+
+                  return (
+                  <div key={product.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-lg">
+                          {product.display?.name || product.name}
+                          {isCurrentPlan && (
+                            <span className="ml-2 text-sm text-green-600">{t('dashboard.currentPlanLabel')}</span>
+                          )}
+                          {isScheduledPlan && (
+                            <span className="ml-2 text-sm text-orange-600">{t('dashboard.scheduledLabel')}</span>
+                          )}
+                        </h3>
+                        {product.display?.description && (
+                          <p className="text-sm text-gray-600 mt-1">{product.display.description}</p>
+                        )}
+                        <ul className="mt-3 space-y-1">
+                          {features.slice(0, 3).map((item, index) => (
+                            <li key={index} className="flex items-start text-sm">
+                              {isCurrentPlan ? (
+                                <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                              ) : (
+                                <Lock className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
+                              )}
+                              <span className={!isCurrentPlan ? 'text-gray-500' : ''}>
+                                {item.display?.primary_text}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      {!isCurrentPlan && !isScheduledPlan && !isFreePlan && (
+                        <Button 
+                          onClick={() => handleUpgrade(product.id)} 
+                          size="sm"
+                          variant="outline"
+                          disabled={loadingProductId !== null}
+                        >
+                          {loadingProductId === product.id ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              {t('dashboard.loading')}
+                            </>
+                          ) : (
+                            isLowerTierThanActive ? t('dashboard.downgrade') : t('dashboard.upgrade')
+                          )}
+                        </Button>
+                      )}
+                      {isScheduledPlan && (() => {
+                        const scheduledStart = scheduledProduct?.started_at || scheduledProduct?.current_period_end;
+                        if (!scheduledStart) return null;
+                        return (
+                          <span className="text-sm text-gray-500">
+                            {t('dashboard.starts')} {new Date(scheduledStart).toLocaleDateString()}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                  );
+                });
+              })()}
+            </div>
+          )}
+        </div>
+
+        {/* Usage Stats */}
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <h2 className="text-xl font-semibold mb-4">{t('dashboard.usageStatistics')}</h2>
+          {Object.keys(userFeatures).length > 0 ? (
+            <div className="space-y-4">
+              {Object.entries(userFeatures).map(([featureId, feature]) => (
+                <div key={featureId}>
+                  <div className="mb-4">
+                    <h3 className="font-medium mb-2 capitalize">{featureId.replace(/_/g, ' ')}</h3>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>{t('dashboard.used')}</span>
+                      <span>{(feature.usage || 0)} / {(feature.included_usage ?? ((feature.balance ?? 0) + (feature.usage || 0)))}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-orange-500 h-2 rounded-full transition-all"
+                        style={{
+                          width: `${Math.min(((feature.usage || 0) / ((feature.included_usage ?? ((feature.balance ?? 0) + (feature.usage || 0))) || 1)) * 100, 100)}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                  {feature.next_reset_at ? (
+                    <p className="text-sm text-gray-600">
+                      {t('dashboard.resetsOn')}: {new Date(feature.next_reset_at).toLocaleDateString()}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500">{t('dashboard.noUsageData')}</p>
+          )}
+        </div>
+
+        {/* Settings Section */}
+        <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">{t('dashboard.settings')}</h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -248,147 +394,6 @@ function DashboardContent({ session }: { session: any }) {
           </div>
         </div>
 
-        {/* User Info */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">{t('dashboard.accountInformation')}</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600">{t('dashboard.email')}</p>
-              <p className="font-medium">{session.user?.email}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">{t('dashboard.currentPlan')}</p>
-              <p className="font-medium flex items-center">
-                {activeProduct ? (
-                  <>
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
-                    {activeProduct.name || activeProduct.id}
-                    {scheduledProduct && (
-                      <span className="ml-2 text-sm text-gray-500">
-                        ({t('dashboard.changingTo')} {scheduledProduct.name || scheduledProduct.id} {t('dashboard.on')} {new Date(scheduledProduct.started_at || scheduledProduct.current_period_end).toLocaleDateString()})
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle className="h-4 w-4 text-yellow-500 mr-1" />
-                    {t('dashboard.freePlan')}
-                  </>
-                )}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Usage Stats */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">{t('dashboard.usageStatistics')}</h2>
-          {Object.keys(userFeatures).length > 0 ? (
-            <div className="space-y-4">
-              {Object.entries(userFeatures).map(([featureId, feature]) => (
-                <div key={featureId}>
-                  <div className="mb-4">
-                    <h3 className="font-medium mb-2 capitalize">{featureId.replace(/_/g, ' ')}</h3>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>{t('dashboard.used')}</span>
-                      <span>{feature.usage || 0} / {feature.included_usage || feature.balance + (feature.usage || 0)}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-orange-500 h-2 rounded-full transition-all"
-                        style={{
-                          width: `${Math.min(((feature.usage || 0) / (feature.included_usage || feature.balance + (feature.usage || 0) || 1)) * 100, 100)}%`
-                        }}
-                      />
-                    </div>
-                  </div>
-                  {feature.next_reset_at && (
-                    <p className="text-sm text-gray-600">
-                      {t('dashboard.resetsOn')}: {new Date(feature.next_reset_at).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500">{t('dashboard.noUsageData')}</p>
-          )}
-        </div>
-
-        {/* Available Plans */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">{t('dashboard.availablePlans')}</h2>
-          {!products ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {products.map((product) => {
-                const isCurrentPlan = activeProduct?.id === product.id;
-                const isScheduledPlan = scheduledProduct?.id === product.id;
-                const features = product.properties?.is_free ? product.items : product.items?.slice(1) || [];
-                
-                return (
-                  <div key={product.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-lg">
-                          {product.display?.name || product.name}
-                          {isCurrentPlan && (
-                            <span className="ml-2 text-sm text-green-600">{t('dashboard.currentPlanLabel')}</span>
-                          )}
-                          {isScheduledPlan && (
-                            <span className="ml-2 text-sm text-orange-600">{t('dashboard.scheduledLabel')}</span>
-                          )}
-                        </h3>
-                        {product.display?.description && (
-                          <p className="text-sm text-gray-600 mt-1">{product.display.description}</p>
-                        )}
-                        <ul className="mt-3 space-y-1">
-                          {features.slice(0, 3).map((item, index) => (
-                            <li key={index} className="flex items-start text-sm">
-                              {isCurrentPlan ? (
-                                <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                              ) : (
-                                <Lock className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
-                              )}
-                              <span className={!isCurrentPlan ? 'text-gray-500' : ''}>
-                                {item.display?.primary_text}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      {!isCurrentPlan && !isScheduledPlan && (
-                        <Button 
-                          onClick={() => handleUpgrade(product.id)} 
-                          size="sm"
-                          variant="outline"
-                          disabled={loadingProductId !== null}
-                        >
-                          {loadingProductId === product.id ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              {t('dashboard.loading')}
-                            </>
-                          ) : (
-                            product.properties?.is_free ? t('dashboard.downgrade') : t('dashboard.upgrade')
-                          )}
-                        </Button>
-                      )}
-                      {isScheduledPlan && (
-                        <span className="text-sm text-gray-500">
-                          {t('dashboard.starts')} {new Date(scheduledProduct.started_at || scheduledProduct.current_period_end).toLocaleDateString()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

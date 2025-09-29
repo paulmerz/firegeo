@@ -50,7 +50,9 @@
   "docs": {},
   "privacy": {
     "title": "Politique de confidentialité – VOXUM",
-    "meta": { "version": "Version : {date} — En vigueur à compter de cette date" },
+    "meta": {
+      "version": "Version : {date} — En vigueur à compter de cette date"
+    },
     "nav": {
       "aria": "Sommaire de la politique de confidentialité",
       "overview": "Vue d'ensemble",
@@ -171,21 +173,81 @@
       "p1": "<strong>MAJ Holding Sàrl – VOXUM</strong>\nEmail : <strong>privacy@maj.digital</strong>\nAdresse : Ch. Bois-Gentil 7, 1203 Genève, Suisse"
     },
     "appendix": {
-      "th1": "Fournisseur", "th2": "Rôle", "th3": "Finalité", "th4": "Localisation(s)", "th5": "Catégories de données",
-      "neon":   { "name": "Neon (neon.com)", "role": "Sous-traitant", "purpose": "Base de données Postgres", "loc": "UE (selon région choisie)", "data": "Compte, prompts, sorties, métadonnées" },
-      "openai": { "name": "OpenAI", "role": "Sous-traitant / responsable indép. selon cas", "purpose": "Génération IA via API", "loc": "US/UE selon région", "data": "Prompts, contexte minimal, sorties" },
-      "anthropic": { "name": "Anthropic (Claude)", "role": "Sous-traitant / responsable indép. selon cas", "purpose": "Génération IA via API", "loc": "US/UE selon région", "data": "Prompts, contexte minimal, sorties" },
-      "perplexity": { "name": "Perplexity", "role": "Sous-traitant / responsable indép. selon cas", "purpose": "Recherche/IA via API", "loc": "US/UE selon région", "data": "Requêtes, contexte minimal, sorties" },
-      "firecrawl": { "name": "Firecrawl", "role": "Sous-traitant", "purpose": "Récupération de contenus publics", "loc": "Variable", "data": "URLs, contenus publics, métadonnées" },
-      "google": { "name": "Google (APIs / Analytics)", "role": "Sous-traitant / responsable indép. selon cas", "purpose": "Recherche, infra, analytics", "loc": "Mondial (incl. US/UE)", "data": "Identifiants en ligne, métriques d'usage" },
-      "stripe": { "name": "Stripe", "role": "Sous-traitant", "purpose": "Paiements & facturation (portail)", "loc": "Mondial (incl. US/UE)", "data": "Nom, email, adresse de facturation, identifiants client, métadonnées et tokens de paiement" },
-      "autumn": { "name": "UseAutumn", "role": "Sous-traitant", "purpose": "Abonnements & gestion client (UseAutumn)", "loc": "UE/US selon région", "data": "Identifiants de compte, email, état d'abonnement, métadonnées de plan" },
-      "vercel": { "name": "Vercel", "role": "Sous-traitant", "purpose": "Hébergement & déploiement", "loc": "Mondial (incl. US/UE)", "data": "Logs serveur, IP, métadonnées de requêtes" }
+      "th1": "Fournisseur",
+      "th2": "Rôle",
+      "th3": "Finalité",
+      "th4": "Localisation(s)",
+      "th5": "Catégories de données",
+      "neon": {
+        "name": "Neon (neon.com)",
+        "role": "Sous-traitant",
+        "purpose": "Base de données Postgres",
+        "loc": "UE (selon région choisie)",
+        "data": "Compte, prompts, sorties, métadonnées"
+      },
+      "openai": {
+        "name": "OpenAI",
+        "role": "Sous-traitant / responsable indép. selon cas",
+        "purpose": "Génération IA via API",
+        "loc": "US/UE selon région",
+        "data": "Prompts, contexte minimal, sorties"
+      },
+      "anthropic": {
+        "name": "Anthropic (Claude)",
+        "role": "Sous-traitant / responsable indép. selon cas",
+        "purpose": "Génération IA via API",
+        "loc": "US/UE selon région",
+        "data": "Prompts, contexte minimal, sorties"
+      },
+      "perplexity": {
+        "name": "Perplexity",
+        "role": "Sous-traitant / responsable indép. selon cas",
+        "purpose": "Recherche/IA via API",
+        "loc": "US/UE selon région",
+        "data": "Requêtes, contexte minimal, sorties"
+      },
+      "firecrawl": {
+        "name": "Firecrawl",
+        "role": "Sous-traitant",
+        "purpose": "Récupération de contenus publics",
+        "loc": "Variable",
+        "data": "URLs, contenus publics, métadonnées"
+      },
+      "google": {
+        "name": "Google (APIs / Analytics)",
+        "role": "Sous-traitant / responsable indép. selon cas",
+        "purpose": "Recherche, infra, analytics",
+        "loc": "Mondial (incl. US/UE)",
+        "data": "Identifiants en ligne, métriques d'usage"
+      },
+      "stripe": {
+        "name": "Stripe",
+        "role": "Sous-traitant",
+        "purpose": "Paiements & facturation (portail)",
+        "loc": "Mondial (incl. US/UE)",
+        "data": "Nom, email, adresse de facturation, identifiants client, métadonnées et tokens de paiement"
+      },
+      "autumn": {
+        "name": "UseAutumn",
+        "role": "Sous-traitant",
+        "purpose": "Abonnements & gestion client (UseAutumn)",
+        "loc": "UE/US selon région",
+        "data": "Identifiants de compte, email, état d'abonnement, métadonnées de plan"
+      },
+      "vercel": {
+        "name": "Vercel",
+        "role": "Sous-traitant",
+        "purpose": "Hébergement & déploiement",
+        "loc": "Mondial (incl. US/UE)",
+        "data": "Logs serveur, IP, métadonnées de requêtes"
+      }
     }
   },
   "terms": {
     "title": "Conditions Générales d'Utilisation – VOXUM",
-    "meta": { "version": "Version : {date} — En vigueur à compter de cette date" },
+    "meta": {
+      "version": "Version : {date} — En vigueur à compter de cette date"
+    },
     "nav": {
       "aria": "Sommaire des CGU",
       "general": "1) Général",
@@ -253,192 +315,192 @@
       },
       "contact": {
         "p1": "Contact: info@maj.digital — MAJ Holding Sàrl, Ch. Bois-Gentil 7, 1203 Genève, Suisse."
-    },
-    "objectif": {
-      "title": "Objectif de l'outil",
-      "p1": "Accélérer la découverte, la comparaison et la recommandation de marques/produits en combinant recherche web temps réel et analyse IA, tout en gardant des sorties structurées exploitables par l'équipe (Marketing, Growth, Produit, Achats).",
-      "results": {
-        "title": "Résultats attendus",
-        "li1": "Listes de marques pertinentes et à jour (recherche web OpenAI/Perplexity).",
-        "li2": "Comparaisons d'alternatives avec critères, sentiment et niveau de confiance.",
-        "li3": "Réponses structurées via AIResponse (rankings, mentions, sources)."
       },
-      "map": {
-        "title": "Cartographie aux modules",
-        "orchestrator": "Orchestration analyses:",
-        "openai": {
-          "label": "OpenAI Web Search (Responses + web_search):",
-          "link": "documentation",
-          "impl": "code"
+      "objectif": {
+        "title": "Objectif de l'outil",
+        "p1": "Accélérer la découverte, la comparaison et la recommandation de marques/produits en combinant recherche web temps réel et analyse IA, tout en gardant des sorties structurées exploitables par l'équipe (Marketing, Growth, Produit, Achats).",
+        "results": {
+          "title": "Résultats attendus",
+          "li1": "Listes de marques pertinentes et à jour (recherche web OpenAI/Perplexity).",
+          "li2": "Comparaisons d'alternatives avec critères, sentiment et niveau de confiance.",
+          "li3": "Réponses structurées via AIResponse (rankings, mentions, sources)."
         },
-        "perplexity": "Pipeline concurrents Perplexity → conversion OpenAI:",
-        "model": "Modèle de sortie:",
-        "in": "dans"
+        "map": {
+          "title": "Cartographie aux modules",
+          "orchestrator": "Orchestration analyses:",
+          "openai": {
+            "label": "OpenAI Web Search (Responses + web_search):",
+            "link": "documentation",
+            "impl": "code"
+          },
+          "perplexity": "Pipeline concurrents Perplexity → conversion OpenAI:",
+          "model": "Modèle de sortie:",
+          "in": "dans"
+        },
+        "more": {
+          "title": "Aller plus loin",
+          "p1": "Consultez <prompts>Bien écrire ses prompts</prompts> et <lecture>Lire et interpréter les résultats</lecture> pour maximiser la pertinence et l'interprétation des analyses."
+        }
       },
-      "more": {
-        "title": "Aller plus loin",
-        "p1": "Consultez <prompts>Bien écrire ses prompts</prompts> et <lecture>Lire et interpréter les résultats</lecture> pour maximiser la pertinence et l'interprétation des analyses."
+      "prompts": {
+        "title": "Bien écrire ses prompts",
+        "p1": "Les prompts doivent être spécifiques, séparés par intention et alignés sur les structures de sortie attendues (AIResponse). Utilisez des critères mesurables et le contexte marché pour guider la recherche web.",
+        "types": {
+          "title": "Mener 3 types d'analyses distinctes",
+          "ranking": "<0>Ranking</0> — « top {industry} en {year} »; vise des listes comparables et exploitables pour <1>rankings</1>.",
+          "comparison": "<0>Comparison</0> — comparer {brand} vs {competitors}; insistez sur les critères.",
+          "alternatives": "<0>Alternatives</0> — « alternatives à {brand} »; garder 3–5 options max.",
+          "recommendations": "<0>Recommendations</0> — par usage/besoin, contraintes et budget."
+        },
+        "tech": {
+          "title": "Options techniques",
+          "li1": "<strong>Recherche web</strong>: activez useWebSearch pour OpenAI — voir <link>OpenAI Web Search</link>.",
+          "li2": "<strong>Modèles</strong>: privilégier gpt-4o-mini (coût/latence) et bascule vers gpt-4o si besoin.",
+          "li3": "<strong>Périmètre</strong>: précisez pays/région, segment et taille d'entreprise pour guider la recherche."
+        },
+        "best": {
+          "title": "Bonnes pratiques",
+          "li1": "Définir 3–5 critères mesurables et un contexte (marché, pays, cible).",
+          "li2": "Séparer découverte, comparaison et recommandation en prompts distincts.",
+          "li3": "Limiter à 5 options pour faciliter la décision.",
+          "li4": "Énoncer contraintes (budget, distribution, matériaux, taille)."
+        },
+        "examples": {
+          "title": "Exemples guidés",
+          "ex1": "1) Recommandations de marques (tendances 2025)",
+          "ex2": "2) Comparaison : alternative leader",
+          "ex3": "3) Recommandation par produit/usage",
+          "title1": "Recommandations de marques (tendances 2025)",
+          "title2": "Comparaison : alternative leader",
+          "title3": "Recommandation par produit/usage"
+        }
+      },
+      "lecture": {
+        "title": "Lire et interpréter les résultats",
+        "p1": "Cette section vous guide pour mieux comprendre l'interprétation des résultats d'analyse. Elle explique comment les scores sont calculés et leur signification dans chaque onglet :",
+        "structure": {
+          "title": "Structure AIResponse (extraits)",
+          "li1": "response: texte généré.",
+          "li2": "rankings: liste de CompanyRanking (position, company, sentiment).",
+          "li3": "competitors: concurrents mentionnés/détectés.",
+          "li4": "brandMentioned, brandPosition: détection de la marque cible.",
+          "li5": "sentiment, confidence: synthèse d'humeur et confiance.",
+          "li6": "webSearchSources: sources issues de la recherche web (si activée)."
+        },
+        "rankings": {
+          "title": "Interpréter les classements",
+          "p1": "Les positions proviennent de l'analyse structurée du texte généré. La détection s'appuie sur des variations intelligentes de marque pour réduire les faux négatifs."
+        },
+        "sources": {
+          "title": "Sources de recherche web",
+          "p1": "Si la recherche web est activée, les URLs peuvent être extraites depuis plusieurs champs de la réponse OpenAI (chemins alternatifs, annotations) et directement du texte (« Sources consultées »). Utilisez ces sources pour auditer la fraîcheur et la fiabilité."
+        },
+        "scores": {
+          "title": "Scores et matrices",
+          "li1": "<strong>Prompts et Réponses</strong>: Cet onglet affiche les prompts utilisés pour l'analyse ainsi que les différentes réponses générées par chaque IA. Cela vous permet de voir comment chaque modèle d'IA interprète et répond aux questions posées.",
+          "li2": "<strong>Matrice de Comparaison</strong>: La matrice de comparaison vous permet de visualiser la position de votre marque par rapport à ses concurrents en termes de visibilité. Les pourcentages sont calculés en fonction du nombre d'occurrences de chaque marque dans les réponses par rapport au nombre total de réponses. Cela vous aide à identifier les forces et faiblesses de votre marque face à la concurrence.",
+          "li3": "<strong>Classement des Marques</strong>: Ce classement montre la position de votre marque et de ses concurrents sur le marché. Les scores sont basés sur la visibilité de chaque marque dans les réponses générées par les différentes IA. Cela vous donne une idée de la notoriété de votre marque par rapport à d'autres acteurs du marché.",
+          "li4": "<strong>Score de Visibilité</strong>: Le score de visibilité mesure la présence en ligne de votre marque. Il est calculé en fonction du nombre de mentions sur l'ensemble des IA ainsi que du sentiment moyen attribué. Un score élevé indique une visibilité positive accrue de votre marque en ligne. Cela vous permet de suivre l'évolution de la perception de votre marque sur le web."
+        }
+      },
+      "credits": {
+        "title": "Consommation de crédits",
+        "p1": "Les crédits sont consommés lors des opérations suivantes: scraping, recherche web, appels IA (génération, conversion structurée). Le coût dépend des modèles, des longueurs de contexte et de la profondeur de recherche.",
+        "factors": {
+          "title": "Facteurs influents",
+          "li1": "<strong>Recherche web OpenAI</strong>: ajoute un coût en tokens (réponses + extraction des sources).",
+          "li2": "<strong>Pipeline concurrents Perplexity</strong>: coût Perplexity + conversion structurée OpenAI.",
+          "li3": "<strong>Modèle</strong>: gpt-4o-mini recommandé pour optimiser coûts/latence."
+        },
+        "orders": {
+          "title": "Ordres de grandeur",
+          "li1": "Découverte rapide: faible coût.",
+          "li2": "Comparaison détaillée (3–5 alternatives): coût moyen.",
+          "li3": "Recherche web étendue + structuration: coût plus élevé."
+        },
+        "tracking": {
+          "title": "Suivi",
+          "p1": "Le compteur de crédits est visible dans le tableau de bord avec alertes seuils."
+        },
+        "rules": {
+          "title": "Règles par action (Brand Monitor)",
+          "li1": "Analyse d'URL : {url} crédit",
+          "li2": "Identifier les concurrents : {competitors} crédits",
+          "li3": "Génération de prompts : {promptGen} crédits (one-shot)",
+          "li4": "Analyse de prompt (WebSearch ON) : {perPromptWeb} crédits par prompt",
+          "li5": "Analyse de prompt (WebSearch OFF) : {perPromptNoWeb} crédit par prompt"
+        },
+        "ui": {
+          "title": "Comportements UI",
+          "li1": "Les boutons restent cliquables : une erreur apparaît si les crédits sont insuffisants.",
+          "li2": "Tooltip du bouton Web Search : {perPromptWeb} ou {perPromptNoWeb} crédit(s) par prompt selon l'état.",
+          "li3": "Ajouter Prompt est toujours autorisé (pas de vérification de crédit en amont).",
+          "li4": "Commencer l'Analyse vérifie dynamiquement : prompts × (1 ou 2 selon WebSearch)."
+        }
+      },
+      "recharge": {
+        "title": "Recharger ses crédits",
+        "p1": "Vous pouvez recharger vos crédits à tout moment depuis la page des plans. Les achats sont immédiats et les crédits disponibles instantanément après paiement sécurisé.",
+        "p2": "Accédez à la page <plans>Plans & Tarifs</plans> pour choisir l'offre adaptée à votre usage.",
+        "best": {
+          "title": "Bonnes pratiques de gestion",
+          "li1": "Planifier les analyses lourdes (web search + structuration) en période creuse.",
+          "li2": "Séparer découverte, comparaison et recommandation en runs distincts.",
+          "li3": "Surveiller les alertes de seuils pour anticiper les recharges."
+        }
+      },
+      "openai": {
+        "title": "OpenAI Web Search",
+        "intro": "Cette section documente l'intégration de la recherche web OpenAI via l'API Responses et l'outil web_search. Elle couvre le flux technique, l'intégration dans le code, la configuration, la gestion des erreurs et des exemples de tests.",
+        "tabs": {
+          "overview": "Vue d'ensemble",
+          "flow": "Flux technique",
+          "code": "Intégration code",
+          "errors": "Erreurs & Fallbacks",
+          "tests": "Tests"
+        },
+        "overview": {
+          "featuresTitle": "Fonctionnalités",
+          "li1": "Intégration OpenAI Responses avec l'outil web_search.",
+          "li2": "Extraction robuste des sources (plusieurs chemins de réponse pris en charge).",
+          "li3": "Analyse structurée du texte de sortie (détection marques/compétiteurs, classement, sentiment).",
+          "li4": "Fallbacks contrôlés (modèle, absence d'API key, erreurs auth).",
+          "webEnabled": "Recherche web activée",
+          "demo": "Démonstration UI"
+        },
+        "flow": {
+          "title": "Flux technique (résumé)",
+          "li1": "L'UI active useWebSearch pour le provider OpenAI.",
+          "li2": "analyzePromptWithOpenAIWebSearch construit un prompt renforcé (section « Sources consultées »).",
+          "li3": "Appel client.responses.create avec tools: [{ type: \"web_search\" }] et max_output_tokens.",
+          "li4": "Vérification de output_text puis extraction des sources via champs connus, annotations et URLs dans le texte.",
+          "li5": "Appel d'une analyse structurée via chat.completions.create pour produire rankings/sentiment/mentions.",
+          "li6": "Détection renforcée des marques via variations intelligentes (normalisation et IA si multi-mots).",
+          "li7": "Retour d'un objet AIResponse incluant webSearchSources."
+        },
+        "code": {
+          "title": "Exemples d'intégration",
+          "call1": "Appel direct de l'implémentation OpenAI Web Search :",
+          "call2": "Activation automatique via orchestration (si disponible) :",
+          "env": "Configuration requise :"
+        },
+        "errors": {
+          "title": "Gestion des erreurs et fallbacks",
+          "li1": "Clé manquante : si OPENAI_API_KEY absent → exception lors de l'initialisation client.",
+          "li2": "Modèle non supporté : bascule vers gpt-4o-mini. Modèles supportés: gpt-4o, gpt-4o-mini.",
+          "li3": "Erreurs d'auth (401, invalid_api_key) : la fonction retourne null pour ignorer ce provider.",
+          "li4": "Réponse vide : lève une erreur explicite « empty response ».",
+          "li5": "Analyse structurée échouée : fallback sur analyse textuelle avec détection par variations."
+        },
+        "tests": {
+          "title": "Tests & validation",
+          "cli": "Script CLI (si présent) :",
+          "checks": "Vérifications attendues :",
+          "li1": "Présence de output_text non vide.",
+          "li2": "Extraction d'au moins 1–3 webSearchSources lorsque pertinent.",
+          "li3": "Champs structurés (rankings, sentiment, mentions) cohérents avec la réponse."
+        }
       }
-    },
-    "prompts": {
-      "title": "Bien écrire ses prompts",
-      "p1": "Les prompts doivent être spécifiques, séparés par intention et alignés sur les structures de sortie attendues (AIResponse). Utilisez des critères mesurables et le contexte marché pour guider la recherche web.",
-      "types": {
-        "title": "Mener 3 types d'analyses distinctes",
-        "ranking": "<0>Ranking</0> — « top {industry} en {year} »; vise des listes comparables et exploitables pour <1>rankings</1>.",
-        "comparison": "<0>Comparison</0> — comparer {brand} vs {competitors}; insistez sur les critères.",
-        "alternatives": "<0>Alternatives</0> — « alternatives à {brand} »; garder 3–5 options max.",
-        "recommendations": "<0>Recommendations</0> — par usage/besoin, contraintes et budget."
-      },
-      "tech": {
-        "title": "Options techniques",
-        "li1": "<strong>Recherche web</strong>: activez useWebSearch pour OpenAI — voir <link>OpenAI Web Search</link>.",
-        "li2": "<strong>Modèles</strong>: privilégier gpt-4o-mini (coût/latence) et bascule vers gpt-4o si besoin.",
-        "li3": "<strong>Périmètre</strong>: précisez pays/région, segment et taille d'entreprise pour guider la recherche."
-      },
-      "best": {
-        "title": "Bonnes pratiques",
-        "li1": "Définir 3–5 critères mesurables et un contexte (marché, pays, cible).",
-        "li2": "Séparer découverte, comparaison et recommandation en prompts distincts.",
-        "li3": "Limiter à 5 options pour faciliter la décision.",
-        "li4": "Énoncer contraintes (budget, distribution, matériaux, taille)."
-      },
-      "examples": {
-        "title": "Exemples guidés",
-        "ex1": "1) Recommandations de marques (tendances 2025)",
-        "ex2": "2) Comparaison : alternative leader",
-        "ex3": "3) Recommandation par produit/usage",
-        "title1": "Recommandations de marques (tendances 2025)",
-        "title2": "Comparaison : alternative leader",
-        "title3": "Recommandation par produit/usage"
-      }
-    },
-    "lecture": {
-      "title": "Lire et interpréter les résultats",
-      "p1": "Cette section vous guide pour mieux comprendre l'interprétation des résultats d'analyse. Elle explique comment les scores sont calculés et leur signification dans chaque onglet :",
-      "structure": {
-        "title": "Structure AIResponse (extraits)",
-        "li1": "response: texte généré.",
-        "li2": "rankings: liste de CompanyRanking (position, company, sentiment).",
-        "li3": "competitors: concurrents mentionnés/détectés.",
-        "li4": "brandMentioned, brandPosition: détection de la marque cible.",
-        "li5": "sentiment, confidence: synthèse d'humeur et confiance.",
-        "li6": "webSearchSources: sources issues de la recherche web (si activée)."
-      },
-      "rankings": {
-        "title": "Interpréter les classements",
-        "p1": "Les positions proviennent de l'analyse structurée du texte généré. La détection s'appuie sur des variations intelligentes de marque pour réduire les faux négatifs."
-      },
-      "sources": {
-        "title": "Sources de recherche web",
-        "p1": "Si la recherche web est activée, les URLs peuvent être extraites depuis plusieurs champs de la réponse OpenAI (chemins alternatifs, annotations) et directement du texte (« Sources consultées »). Utilisez ces sources pour auditer la fraîcheur et la fiabilité."
-      },
-      "scores": {
-        "title": "Scores et matrices",
-        "li1": "<strong>Prompts et Réponses</strong>: Cet onglet affiche les prompts utilisés pour l'analyse ainsi que les différentes réponses générées par chaque IA. Cela vous permet de voir comment chaque modèle d'IA interprète et répond aux questions posées.",
-        "li2": "<strong>Matrice de Comparaison</strong>: La matrice de comparaison vous permet de visualiser la position de votre marque par rapport à ses concurrents en termes de visibilité. Les pourcentages sont calculés en fonction du nombre d'occurrences de chaque marque dans les réponses par rapport au nombre total de réponses. Cela vous aide à identifier les forces et faiblesses de votre marque face à la concurrence.",
-        "li3": "<strong>Classement des Marques</strong>: Ce classement montre la position de votre marque et de ses concurrents sur le marché. Les scores sont basés sur la visibilité de chaque marque dans les réponses générées par les différentes IA. Cela vous donne une idée de la notoriété de votre marque par rapport à d'autres acteurs du marché.",
-        "li4": "<strong>Score de Visibilité</strong>: Le score de visibilité mesure la présence en ligne de votre marque. Il est calculé en fonction du nombre de mentions sur l'ensemble des IA ainsi que du sentiment moyen attribué. Un score élevé indique une visibilité positive accrue de votre marque en ligne. Cela vous permet de suivre l'évolution de la perception de votre marque sur le web."
-      }
-    },
-    "credits": {
-      "title": "Consommation de crédits",
-      "p1": "Les crédits sont consommés lors des opérations suivantes: scraping, recherche web, appels IA (génération, conversion structurée). Le coût dépend des modèles, des longueurs de contexte et de la profondeur de recherche.",
-      "factors": {
-        "title": "Facteurs influents",
-        "li1": "<strong>Recherche web OpenAI</strong>: ajoute un coût en tokens (réponses + extraction des sources).",
-        "li2": "<strong>Pipeline concurrents Perplexity</strong>: coût Perplexity + conversion structurée OpenAI.",
-        "li3": "<strong>Modèle</strong>: gpt-4o-mini recommandé pour optimiser coûts/latence."
-      },
-      "orders": {
-        "title": "Ordres de grandeur",
-        "li1": "Découverte rapide: faible coût.",
-        "li2": "Comparaison détaillée (3–5 alternatives): coût moyen.",
-        "li3": "Recherche web étendue + structuration: coût plus élevé."
-      },
-      "tracking": {
-        "title": "Suivi",
-        "p1": "Le compteur de crédits est visible dans le tableau de bord avec alertes seuils."
-      },
-      "rules": {
-        "title": "Règles par action (Brand Monitor)",
-        "li1": "Analyse d'URL : {url} crédit",
-        "li2": "Identifier les concurrents : {competitors} crédits",
-        "li3": "Génération de prompts : {promptGen} crédits (one-shot)",
-        "li4": "Analyse de prompt (WebSearch ON) : {perPromptWeb} crédits par prompt",
-        "li5": "Analyse de prompt (WebSearch OFF) : {perPromptNoWeb} crédit par prompt"
-      },
-      "ui": {
-        "title": "Comportements UI",
-        "li1": "Les boutons restent cliquables : une erreur apparaît si les crédits sont insuffisants.",
-        "li2": "Tooltip du bouton Web Search : {perPromptWeb} ou {perPromptNoWeb} crédit(s) par prompt selon l'état.",
-        "li3": "Ajouter Prompt est toujours autorisé (pas de vérification de crédit en amont).",
-        "li4": "Commencer l'Analyse vérifie dynamiquement : prompts × (1 ou 2 selon WebSearch)."
-      }
-    },
-    "recharge": {
-      "title": "Recharger ses crédits",
-      "p1": "Vous pouvez recharger vos crédits à tout moment depuis la page des plans. Les achats sont immédiats et les crédits disponibles instantanément après paiement sécurisé.",
-      "p2": "Accédez à la page <plans>Plans & Tarifs</plans> pour choisir l'offre adaptée à votre usage.",
-      "best": {
-        "title": "Bonnes pratiques de gestion",
-        "li1": "Planifier les analyses lourdes (web search + structuration) en période creuse.",
-        "li2": "Séparer découverte, comparaison et recommandation en runs distincts.",
-        "li3": "Surveiller les alertes de seuils pour anticiper les recharges."
-      }
-    },
-    "openai": {
-      "title": "OpenAI Web Search",
-      "intro": "Cette section documente l'intégration de la recherche web OpenAI via l'API Responses et l'outil web_search. Elle couvre le flux technique, l'intégration dans le code, la configuration, la gestion des erreurs et des exemples de tests.",
-      "tabs": {
-        "overview": "Vue d'ensemble",
-        "flow": "Flux technique",
-        "code": "Intégration code",
-        "errors": "Erreurs & Fallbacks",
-        "tests": "Tests"
-      },
-      "overview": {
-        "featuresTitle": "Fonctionnalités",
-        "li1": "Intégration OpenAI Responses avec l'outil web_search.",
-        "li2": "Extraction robuste des sources (plusieurs chemins de réponse pris en charge).",
-        "li3": "Analyse structurée du texte de sortie (détection marques/compétiteurs, classement, sentiment).",
-        "li4": "Fallbacks contrôlés (modèle, absence d'API key, erreurs auth).",
-        "webEnabled": "Recherche web activée",
-        "demo": "Démonstration UI"
-      },
-      "flow": {
-        "title": "Flux technique (résumé)",
-        "li1": "L'UI active useWebSearch pour le provider OpenAI.",
-        "li2": "analyzePromptWithOpenAIWebSearch construit un prompt renforcé (section « Sources consultées »).",
-        "li3": "Appel client.responses.create avec tools: [{ type: \"web_search\" }] et max_output_tokens.",
-        "li4": "Vérification de output_text puis extraction des sources via champs connus, annotations et URLs dans le texte.",
-        "li5": "Appel d'une analyse structurée via chat.completions.create pour produire rankings/sentiment/mentions.",
-        "li6": "Détection renforcée des marques via variations intelligentes (normalisation et IA si multi-mots).",
-        "li7": "Retour d'un objet AIResponse incluant webSearchSources."
-      },
-      "code": {
-        "title": "Exemples d'intégration",
-        "call1": "Appel direct de l'implémentation OpenAI Web Search :",
-        "call2": "Activation automatique via orchestration (si disponible) :",
-        "env": "Configuration requise :"
-      },
-      "errors": {
-        "title": "Gestion des erreurs et fallbacks",
-        "li1": "Clé manquante : si OPENAI_API_KEY absent → exception lors de l'initialisation client.",
-        "li2": "Modèle non supporté : bascule vers gpt-4o-mini. Modèles supportés: gpt-4o, gpt-4o-mini.",
-        "li3": "Erreurs d'auth (401, invalid_api_key) : la fonction retourne null pour ignorer ce provider.",
-        "li4": "Réponse vide : lève une erreur explicite « empty response ».",
-        "li5": "Analyse structurée échouée : fallback sur analyse textuelle avec détection par variations."
-      },
-      "tests": {
-        "title": "Tests & validation",
-        "cli": "Script CLI (si présent) :",
-        "checks": "Vérifications attendues :",
-        "li1": "Présence de output_text non vide.",
-        "li2": "Extraction d'au moins 1–3 webSearchSources lorsque pertinent.",
-        "li3": "Champs structurés (rankings, sentiment, mentions) cohérents avec la réponse."
-      }
-    }
     }
   },
   "auth": {
@@ -520,6 +582,7 @@
     "marketingEmailsDesc": "Recevoir des e-mails sur les nouvelles fonctionnalités et offres",
     "accountInformation": "Informations du compte",
     "currentPlan": "Plan actuel",
+    "currentPlanSelected": "Plan actuel sélectionné",
     "freePlan": "Plan gratuit",
     "changingTo": "Changement vers",
     "usageStatistics": "Statistiques d'utilisation",
@@ -589,6 +652,8 @@
     "addCustomPromptPlaceholder": "Exemple : Quel est le meilleur scraper IA ?",
     "enterCustomPromptPlaceholder": "Entrez un prompt personnalisé (utilisez {brand} et {industry} comme espaces réservés)",
     "searchPromptsPlaceholder": "Rechercher les prompts et réponses...",
+    "legendTargetBrand": "Mentions de la marque cible",
+    "legendCompetitorBrand": "Mentions des concurrents",
     "enterUrlPlaceholder": "Entrez l'URL de votre site web (ex : exemple.com)",
     "enterUrlPlaceholderShort": "exemple.com",
     "competitorNamePlaceholder": "ex : Anthropic",
@@ -610,7 +675,10 @@
       "promptsResponses": "Prompts et réponses",
       "providerRankings": "Classements des Marques",
       "visibilityScore": "Score de visibilité",
-      "analyzeAnotherWebsite": "Analyser un autre site web"
+      "analyzeAnotherWebsite": "Analyser un autre site web",
+      "sources": "Sources",
+      "upgradeRequiredTitle": "Disponible à partir du plan \"Watch\"",
+      "upgradeCta": "Augmenter mon plan"
     },
     "analysisProgress": {
       "title": "Progression de l'analyse",
@@ -654,9 +722,9 @@
       },
       "yourBrand": "Votre marque"
     },
-      "providerRankings": {
-        "title": "Classements des Marques",
-        "description": "Performance de votre marque par fournisseur IA",
+    "providerRankings": {
+      "title": "Classements des Marques",
+      "description": "Performance de votre marque par fournisseur IA",
       "averageRank": "Rang Moyen",
       "company": "Entreprise",
       "visibility": "Visibilité",
@@ -676,6 +744,17 @@
       "overallScore": "Score Global",
       "rank": "Rang",
       "visibilityTooltip": "visibilité"
+    },
+    "sourcesTab": {
+      "title": "Sources consultées",
+      "description": "Passez en revue les sources utilisées par les IA pour cette analyse.",
+      "source": "Source",
+      "provider": "Fournisseur",
+      "prompt": "Prompt",
+      "link": "Ouvrir la source",
+      "empty": "Aucune source enregistrée pour cette analyse.",
+      "showMore": "autres sources",
+      "showLess": "Afficher moins"
     }
   },
   "pricing": {
@@ -735,7 +814,7 @@
         "price": "39€",
         "priceDesc": "/mois",
         "feature1": "150 crédits",
-        "feature2": "Crédits reportés de mois en mois"
+        "feature2": "Affichage des sources"
       },
       "pro": {
         "name": "Pro",
@@ -743,7 +822,7 @@
         "priceDesc": "/mois",
         "feature1": "250 crédits",
         "feature2": "Support sous 24h",
-        "feature3": "Crédits reportés de mois en mois"
+        "feature3": "Affichage des sources"
       },
       "enterprise": {
         "name": "Entreprise",
@@ -971,13 +1050,20 @@
     "modelsDesc": "Privilégier gpt-4o-mini (coût/latence) et bascule vers gpt-4o si besoin.",
     "scope": "Périmètre",
     "scopeDesc": "Précisez pays/région, segment et taille d'entreprise pour guider la recherche."
-  }
-  ,
+  },
   "verifyEmail": {
     "title": "Email de confirmation envoyé",
     "subtitle": "Veuillez confirmer votre email dans les 24 heures pour pouvoir utiliser Voxum.",
     "hint": "Pensez à vérifier votre dossier 'Spam' ou 'Promotions'.",
     "backHome": "Retour à l'accueil",
     "backToLogin": "Retour à la connexion"
+  }
+  ,
+  "autumn": {
+    "productChangeDialog": {
+      "title": "Confirmer le changement de plan",
+      "dueToday": "À payer aujourd'hui :",
+      "processing": "Traitement..."
+    }
   }
 }

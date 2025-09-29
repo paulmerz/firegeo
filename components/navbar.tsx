@@ -68,9 +68,16 @@ function UserCredits() {
 export function Navbar() {
   const { data: session, isPending } = useSession();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
   const t = useTranslations();
   const locale = useLocale();
+
+  // Éviter l'erreur d'hydratation en s'assurant que le rendu côté client
+  // correspond au rendu côté serveur
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -90,7 +97,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href={session ? `/brand-monitor` : `/`} locale={locale} className="flex items-center">
+            <Link href={isClient && session ? `/brand-monitor` : `/`} locale={locale} className="flex items-center">
               <Image
                 src="/logo_voxum.svg"
                 alt="VOXUM"
@@ -102,7 +109,7 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center space-x-4">
-            {session && (
+            {isClient && session && (
               <>
                 {/* <Link
                   href={`/chat`}
@@ -120,19 +127,21 @@ export function Navbar() {
                 </Link>
               </>
             )}
-            <Link
-              href={`/plans`}
-              locale={locale}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-            >
-              {t('common.pricing')}
-            </Link>
-            {session && (
+            {!(isClient && session) && (
+              <Link
+                href={`/plans`}
+                locale={locale}
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+              >
+                {t('common.pricing')}
+              </Link>
+            )}
+            {isClient && session && (
               <UserCredits />
             )}
             {isPending ? (
               <div className="text-sm text-gray-400">{t('common.loading')}</div>
-            ) : session ? (
+            ) : isClient && session ? (
               <>
                 <Link
                   href={`/dashboard`}

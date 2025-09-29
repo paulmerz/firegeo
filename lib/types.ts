@@ -128,6 +128,20 @@ export interface AIResponse {
   };
 }
 
+export interface AnalysisSource {
+  id?: string;
+  analysisId?: string;
+  provider?: string;
+  prompt?: string;
+  domain?: string;
+  url?: string;
+  sourceType?: string;
+  metadata?: Record<string, unknown> | null;
+  rank?: number;
+  createdAt?: string;
+}
+
+
 export interface CompanyRanking {
   position: number | null;
   company: string;

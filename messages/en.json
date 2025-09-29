@@ -50,7 +50,9 @@
   "docs": {},
   "privacy": {
     "title": "Privacy Policy – VOXUM",
-    "meta": { "version": "Version: {date} — Effective as of this date" },
+    "meta": {
+      "version": "Version: {date} — Effective as of this date"
+    },
     "nav": {
       "aria": "Privacy policy table of contents",
       "overview": "Overview",
@@ -132,7 +134,9 @@
       "li3": "Authorities & advisors: legal obligations, rights protection, financing/transaction operations (under adequate NDAs).",
       "p2": "Transparency: subprocessor list available on request; prior notice for material changes where required."
     },
-    "transfers": { "p1": "Hosting primarily in Switzerland/EU (notably via Neon). Transfers outside Switzerland/EU/EEA (e.g., United States) may occur if necessary to perform the Service. Safeguards: SCCs (EU 2021/914) adapted to Swiss law and appropriate supplementary measures. By providing your data, you consent to such transfers as permitted by law." },
+    "transfers": {
+      "p1": "Hosting primarily in Switzerland/EU (notably via Neon). Transfers outside Switzerland/EU/EEA (e.g., United States) may occur if necessary to perform the Service. Safeguards: SCCs (EU 2021/914) adapted to Swiss law and appropriate supplementary measures. By providing your data, you consent to such transfers as permitted by law."
+    },
     "retention": {
       "li1": "Account & identity: contract term + 24 months.",
       "li2": "Billing & accounting: 10 years.",
@@ -153,31 +157,97 @@
       "li3": "Withdrawal of consent at any time (no retroactive effect).",
       "p1": "Exercise your rights: info@maj.digital. Right to lodge a complaint: FDPIC (Switzerland) or your local EU authority."
     },
-    "security": { "p1": "Proportionate measures: encryption, segmentation, least privilege, vulnerability management, backups, logging, subprocessor review. No security is absolute; follow good practices (strong passwords, 2FA, caution with exports)." },
+    "security": {
+      "p1": "Proportionate measures: encryption, segmentation, least privilege, vulnerability management, backups, logging, subprocessor review. No security is absolute; follow good practices (strong passwords, 2FA, caution with exports)."
+    },
     "roles": {
       "li1": "MAJ is controller for account data, billing, Site usage, and orchestration of requests.",
       "li2": "MAJ is processor for third-party personal data provided to produce analyses (DPA available on request).",
       "li3": "You remain responsible for the lawfulness of data you enter and informing data subjects where required.",
       "p1": "AI outputs may contain errors; we limit inclusion of unnecessary personal data and honor deletion requests when possible and lawful."
     },
-    "children": { "p1": "B2B service; not intended for persons under 16. If collected inadvertently, contact us for deletion." },
-    "contact": { "p1": "<strong>MAJ Holding Sàrl – VOXUM</strong>\nEmail: <strong>privacy@maj.digital</strong>\nAddress: Ch. Bois-Gentil 7, 1203 Geneva, Switzerland" },
+    "children": {
+      "p1": "B2B service; not intended for persons under 16. If collected inadvertently, contact us for deletion."
+    },
+    "contact": {
+      "p1": "<strong>MAJ Holding Sàrl – VOXUM</strong>\nEmail: <strong>privacy@maj.digital</strong>\nAddress: Ch. Bois-Gentil 7, 1203 Geneva, Switzerland"
+    },
     "appendix": {
-      "th1": "Provider", "th2": "Role", "th3": "Purpose", "th4": "Location(s)", "th5": "Data categories",
-      "neon":   { "name": "Neon (neon.com)", "role": "Subprocessor", "purpose": "Postgres database", "loc": "EU (per chosen region)", "data": "Account, prompts, outputs, metadata" },
-      "openai": { "name": "OpenAI", "role": "Subprocessor / independent controller where applicable", "purpose": "AI generation via API", "loc": "US/EU per region", "data": "Prompts, minimal context, outputs" },
-      "anthropic": { "name": "Anthropic (Claude)", "role": "Subprocessor / independent controller where applicable", "purpose": "AI generation via API", "loc": "US/EU per region", "data": "Prompts, minimal context, outputs" },
-      "perplexity": { "name": "Perplexity", "role": "Subprocessor / independent controller where applicable", "purpose": "Search/AI via API", "loc": "US/EU per region", "data": "Queries, minimal context, outputs" },
-      "firecrawl": { "name": "Firecrawl", "role": "Subprocessor", "purpose": "Public content retrieval", "loc": "Variable", "data": "URLs, public content, metadata" },
-      "google": { "name": "Google (APIs / Analytics)", "role": "Subprocessor / independent controller where applicable", "purpose": "Search, infra, analytics", "loc": "Global (incl. US/EU)", "data": "Online identifiers, usage metrics" },
-      "stripe": { "name": "Stripe", "role": "Subprocessor", "purpose": "Payments & billing (portal)", "loc": "Global (incl. US/EU)", "data": "Name, email, billing address, customer IDs, metadata and payment tokens" },
-      "autumn": { "name": "UseAutumn", "role": "Subprocessor", "purpose": "Subscriptions & customer management (UseAutumn)", "loc": "EU/US per region", "data": "Account identifiers, email, subscription state, plan metadata" },
-      "vercel": { "name": "Vercel", "role": "Subprocessor", "purpose": "Hosting & deployment", "loc": "Global (incl. US/EU)", "data": "Server logs, IP, request metadata" }
+      "th1": "Provider",
+      "th2": "Role",
+      "th3": "Purpose",
+      "th4": "Location(s)",
+      "th5": "Data categories",
+      "neon": {
+        "name": "Neon (neon.com)",
+        "role": "Subprocessor",
+        "purpose": "Postgres database",
+        "loc": "EU (per chosen region)",
+        "data": "Account, prompts, outputs, metadata"
+      },
+      "openai": {
+        "name": "OpenAI",
+        "role": "Subprocessor / independent controller where applicable",
+        "purpose": "AI generation via API",
+        "loc": "US/EU per region",
+        "data": "Prompts, minimal context, outputs"
+      },
+      "anthropic": {
+        "name": "Anthropic (Claude)",
+        "role": "Subprocessor / independent controller where applicable",
+        "purpose": "AI generation via API",
+        "loc": "US/EU per region",
+        "data": "Prompts, minimal context, outputs"
+      },
+      "perplexity": {
+        "name": "Perplexity",
+        "role": "Subprocessor / independent controller where applicable",
+        "purpose": "Search/AI via API",
+        "loc": "US/EU per region",
+        "data": "Queries, minimal context, outputs"
+      },
+      "firecrawl": {
+        "name": "Firecrawl",
+        "role": "Subprocessor",
+        "purpose": "Public content retrieval",
+        "loc": "Variable",
+        "data": "URLs, public content, metadata"
+      },
+      "google": {
+        "name": "Google (APIs / Analytics)",
+        "role": "Subprocessor / independent controller where applicable",
+        "purpose": "Search, infra, analytics",
+        "loc": "Global (incl. US/EU)",
+        "data": "Online identifiers, usage metrics"
+      },
+      "stripe": {
+        "name": "Stripe",
+        "role": "Subprocessor",
+        "purpose": "Payments & billing (portal)",
+        "loc": "Global (incl. US/EU)",
+        "data": "Name, email, billing address, customer IDs, metadata and payment tokens"
+      },
+      "autumn": {
+        "name": "UseAutumn",
+        "role": "Subprocessor",
+        "purpose": "Subscriptions & customer management (UseAutumn)",
+        "loc": "EU/US per region",
+        "data": "Account identifiers, email, subscription state, plan metadata"
+      },
+      "vercel": {
+        "name": "Vercel",
+        "role": "Subprocessor",
+        "purpose": "Hosting & deployment",
+        "loc": "Global (incl. US/EU)",
+        "data": "Server logs, IP, request metadata"
+      }
     }
   },
   "terms": {
     "title": "Terms of Service – VOXUM",
-    "meta": { "version": "Version: {date} — Effective as of this date" },
+    "meta": {
+      "version": "Version: {date} — Effective as of this date"
+    },
     "nav": {
       "aria": "Terms of Service table of contents",
       "general": "1) General",
@@ -202,7 +272,9 @@
         "p3": "We may modify these Terms at any time; you will be informed appropriately. Any subsequent use constitutes acceptance of the updated Terms.",
         "p4": "Some services (payments, API, integrations) may be subject to specific terms in addition to these Terms."
       },
-      "personal": { "p1": "By using the Service, you confirm you are at least 18 years old and, where applicable, authorized to act for the legal entity on whose behalf you use the Service." },
+      "personal": {
+        "p1": "By using the Service, you confirm you are at least 18 years old and, where applicable, authorized to act for the legal entity on whose behalf you use the Service."
+      },
       "access": {
         "p1": "Equipment and telecommunication fees required to access the Service are at your expense.",
         "p2": "Internet use involves risks (interception, loss, viruses). You accept these risks; we disclaim any resulting liability to the extent permitted by law."
@@ -217,16 +289,33 @@
         "p2": "License: a personal, revocable, non-exclusive and non-transferable license is granted to you to use the Service strictly under these Terms.",
         "p3": "User content: you retain your rights over content you submit. You grant us a worldwide, non-exclusive, free and transferable license to host, process, display and reproduce such content to operate the Service. We may remove any unlawful content or content contrary to the Terms."
       },
-      "restrictions": { "p1": "Prohibited notably: (i) massive extraction or reuse of content (scraping/crawling), (ii) attempting to access source code, (iii) using the Service for unlawful activities, (iv) circumventing our usage limits, (v) using the Service to train models or evaluate individuals, unless agreed in writing." },
-      "privacy": { "p1": "Our Privacy Policy forms an integral part of these Terms and describes personal data processing: /privacy." },
-      "changes": { "p1": "We may modify, suspend or stop all or part of the Service, with or without notice, without liability, within legal limits." },
-      "warranty": { "p1": "The Service is provided 'as is' and 'as available'. No warranty of accuracy, availability or fitness for a particular purpose is given. AI model outputs may contain errors; you remain responsible for their use." },
-      "liability": { "p1": "To the extent permitted by law, we disclaim liability for indirect or consequential damages (loss of profit, data, opportunity). Total liability, if any, is capped at amounts paid for the Service over the last 12 months." },
-      "indemnification": { "p1": "You will indemnify VOXUM against any claim arising from your breach of the Terms, law, or third-party rights." },
-      "misc": { "p1": "Severability: invalidity of a clause does not affect the rest. Assignment: you may not assign your rights without our consent; we may assign the Service. Force majeure: we are not liable for force majeure events." },
-      "law": { "p1": "Swiss law applies; exclusive venue in Geneva, subject to mandatory venue." },
-      "contact": { "p1": "Contact: info@maj.digital — MAJ Holding Sàrl, Ch. Bois-Gentil 7, 1203 Geneva, Switzerland." },
-
+      "restrictions": {
+        "p1": "Prohibited notably: (i) massive extraction or reuse of content (scraping/crawling), (ii) attempting to access source code, (iii) using the Service for unlawful activities, (iv) circumventing our usage limits, (v) using the Service to train models or evaluate individuals, unless agreed in writing."
+      },
+      "privacy": {
+        "p1": "Our Privacy Policy forms an integral part of these Terms and describes personal data processing: /privacy."
+      },
+      "changes": {
+        "p1": "We may modify, suspend or stop all or part of the Service, with or without notice, without liability, within legal limits."
+      },
+      "warranty": {
+        "p1": "The Service is provided 'as is' and 'as available'. No warranty of accuracy, availability or fitness for a particular purpose is given. AI model outputs may contain errors; you remain responsible for their use."
+      },
+      "liability": {
+        "p1": "To the extent permitted by law, we disclaim liability for indirect or consequential damages (loss of profit, data, opportunity). Total liability, if any, is capped at amounts paid for the Service over the last 12 months."
+      },
+      "indemnification": {
+        "p1": "You will indemnify VOXUM against any claim arising from your breach of the Terms, law, or third-party rights."
+      },
+      "misc": {
+        "p1": "Severability: invalidity of a clause does not affect the rest. Assignment: you may not assign your rights without our consent; we may assign the Service. Force majeure: we are not liable for force majeure events."
+      },
+      "law": {
+        "p1": "Swiss law applies; exclusive venue in Geneva, subject to mandatory venue."
+      },
+      "contact": {
+        "p1": "Contact: info@maj.digital — MAJ Holding Sàrl, Ch. Bois-Gentil 7, 1203 Geneva, Switzerland."
+      },
       "objectif": {
         "title": "Tool Objective",
         "p1": "Accelerate brand/product discovery, comparison and recommendations by combining real-time web search and AI analysis, while keeping outputs structured and actionable for the team (Marketing, Growth, Product, Procurement).",
@@ -239,12 +328,19 @@
         "map": {
           "title": "Mapping to modules",
           "orchestrator": "Analysis orchestration:",
-          "openai": { "label": "OpenAI Web Search (Responses + web_search):", "link": "documentation", "impl": "implementation" },
+          "openai": {
+            "label": "OpenAI Web Search (Responses + web_search):",
+            "link": "documentation",
+            "impl": "implementation"
+          },
           "perplexity": "Competitor pipeline Perplexity → OpenAI structured conversion:",
           "model": "Output model:",
           "in": "in"
         },
-        "more": { "title": "Go further", "p1": "See <prompts>Writing effective prompts</prompts> and <lecture>Read and interpret results</lecture> to maximize relevance and interpretation." }
+        "more": {
+          "title": "Go further",
+          "p1": "See <prompts>Writing effective prompts</prompts> and <lecture>Read and interpret results</lecture> to maximize relevance and interpretation."
+        }
       },
       "prompts": {
         "title": "Writing effective prompts",
@@ -256,13 +352,13 @@
           "alternatives": "<0>Alternatives</0> — “alternatives to {brand}”; keep 3–5 options max.",
           "recommendations": "<0>Recommendations</0> — by use/need, constraints and budget."
         },
-        "examples": { 
-          "title": "Guided examples", 
-          "ex1": "1) Brand recommendations (trends 2025)", 
-          "ex2": "2) Comparison: leader alternative", 
+        "examples": {
+          "title": "Guided examples",
+          "ex1": "1) Brand recommendations (trends 2025)",
+          "ex2": "2) Comparison: leader alternative",
           "ex3": "3) Recommendation by product/use",
           "title1": "Brand recommendations (trends 2025)",
-          "title2": "Comparison: leader alternative", 
+          "title2": "Comparison: leader alternative",
           "title3": "Recommendation by product/use"
         },
         "tech": {
@@ -291,10 +387,16 @@
           "li5": "sentiment, confidence: mood summary and confidence.",
           "li6": "webSearchSources: sources from web search (if enabled)."
         },
-        "rankings": { "title": "Interpreting rankings", "p1": "Positions come from structured analysis of the generated text. Detection uses intelligent brand variations to reduce false negatives." },
-        "sources": { "title": "Web search sources", "p1": "If web search is enabled, URLs may be extracted from several OpenAI response fields (alternate paths, annotations) and directly from text (“Sources consulted”). Use these sources to audit freshness and reliability." },
-        "scores": { 
-          "title": "Scores and matrices", 
+        "rankings": {
+          "title": "Interpreting rankings",
+          "p1": "Positions come from structured analysis of the generated text. Detection uses intelligent brand variations to reduce false negatives."
+        },
+        "sources": {
+          "title": "Web search sources",
+          "p1": "If web search is enabled, URLs may be extracted from several OpenAI response fields (alternate paths, annotations) and directly from text (“Sources consulted”). Use these sources to audit freshness and reliability."
+        },
+        "scores": {
+          "title": "Scores and matrices",
           "li1": "<strong>Prompts and Responses</strong>: This tab displays the prompts used for analysis as well as the different responses generated by each AI. This allows you to see how each AI model interprets and responds to the questions asked.",
           "li2": "<strong>Comparison Matrix</strong>: The comparison matrix allows you to visualize your brand's position relative to competitors in terms of visibility. Percentages are calculated based on the number of mentions of each brand in responses relative to the total number of responses. This helps you identify your brand's strengths and weaknesses against the competition.",
           "li3": "<strong>Brand Rankings</strong>: This ranking shows the position of your brand and competitors in the market. Scores are based on each brand's visibility in responses generated by different AIs. This gives you an idea of your brand's recognition compared to other market players.",
@@ -304,36 +406,68 @@
       "credits": {
         "title": "Credit consumption",
         "p1": "Credits are consumed during the following operations: scraping, web search, AI calls (generation, structured conversion). Cost depends on models, context lengths, and search depth.",
-      "rules": {
-        "title": "Rules per action (Brand Monitor)",
-        "li1": "URL analysis: {url} credit",
-        "li2": "Identify competitors: {competitors} credits",
-        "li3": "Prompt generation: {promptGen} credits (one-shot)",
-        "li4": "Prompt analysis (WebSearch ON): {perPromptWeb} credits per prompt",
-        "li5": "Prompt analysis (WebSearch OFF): {perPromptNoWeb} credit per prompt"
-      },
-        "factors": { "title": "Influencing factors", "li1": "<strong>OpenAI web search</strong>: adds token cost (responses + source extraction).", "li2": "<strong>Perplexity competitor pipeline</strong>: Perplexity cost + OpenAI structured conversion.", "li3": "<strong>Model</strong>: gpt-4o-mini recommended to optimize cost/latency." },
-        "orders": { "title": "Orders of magnitude", "li1": "Quick discovery: low cost.", "li2": "Detailed comparison (3–5 alternatives): medium cost.", "li3": "Extended web search + structuring: higher cost." },
-      "tracking": { "title": "Tracking", "p1": "The credit counter is visible in the dashboard with threshold alerts." },
-      "ui": {
-        "title": "UI behaviors",
-        "li1": "Buttons remain clickable: an error appears if credits are insufficient.",
-        "li2": "Web Search button tooltip: {perPromptWeb} or {perPromptNoWeb} credit(s) per prompt depending on state.",
-        "li3": "Add Prompt is always allowed (no credit check upfront).",
-        "li4": "Start Analysis checks dynamically: prompts × (1 or 2 depending on WebSearch)."
-      }
+        "rules": {
+          "title": "Rules per action (Brand Monitor)",
+          "li1": "URL analysis: {url} credit",
+          "li2": "Identify competitors: {competitors} credits",
+          "li3": "Prompt generation: {promptGen} credits (one-shot)",
+          "li4": "Prompt analysis (WebSearch ON): {perPromptWeb} credits per prompt",
+          "li5": "Prompt analysis (WebSearch OFF): {perPromptNoWeb} credit per prompt"
+        },
+        "factors": {
+          "title": "Influencing factors",
+          "li1": "<strong>OpenAI web search</strong>: adds token cost (responses + source extraction).",
+          "li2": "<strong>Perplexity competitor pipeline</strong>: Perplexity cost + OpenAI structured conversion.",
+          "li3": "<strong>Model</strong>: gpt-4o-mini recommended to optimize cost/latency."
+        },
+        "orders": {
+          "title": "Orders of magnitude",
+          "li1": "Quick discovery: low cost.",
+          "li2": "Detailed comparison (3–5 alternatives): medium cost.",
+          "li3": "Extended web search + structuring: higher cost."
+        },
+        "tracking": {
+          "title": "Tracking",
+          "p1": "The credit counter is visible in the dashboard with threshold alerts."
+        },
+        "ui": {
+          "title": "UI behaviors",
+          "li1": "Buttons remain clickable: an error appears if credits are insufficient.",
+          "li2": "Web Search button tooltip: {perPromptWeb} or {perPromptNoWeb} credit(s) per prompt depending on state.",
+          "li3": "Add Prompt is always allowed (no credit check upfront).",
+          "li4": "Start Analysis checks dynamically: prompts × (1 or 2 depending on WebSearch)."
+        }
       },
       "recharge": {
         "title": "Recharge credits",
         "p1": "You can top up credits at any time from the plans page. Purchases are immediate and credits become available instantly after secure payment.",
         "p2": "Go to <plans>Plans & Pricing</plans> to choose the offer suited to your usage.",
-        "best": { "title": "Management best practices", "li1": "Schedule heavy analyses (web search + structuring) during off-peak periods.", "li2": "Separate discovery, comparison and recommendation into distinct runs.", "li3": "Monitor threshold alerts to anticipate top-ups." }
+        "best": {
+          "title": "Management best practices",
+          "li1": "Schedule heavy analyses (web search + structuring) during off-peak periods.",
+          "li2": "Separate discovery, comparison and recommendation into distinct runs.",
+          "li3": "Monitor threshold alerts to anticipate top-ups."
+        }
       },
       "openai": {
         "title": "OpenAI Web Search",
         "intro": "This section documents the OpenAI web search integration via the Responses API and the web_search tool. It covers the technical flow, code integration, configuration, error handling, and test examples.",
-        "tabs": { "overview": "Overview", "flow": "Technical flow", "code": "Code integration", "errors": "Errors & Fallbacks", "tests": "Tests" },
-        "overview": { "featuresTitle": "Features", "li1": "OpenAI Responses integration with the web_search tool.", "li2": "Robust source extraction (multiple response paths supported).", "li3": "Structured analysis of output text (brand/competitor detection, ranking, sentiment).", "li4": "Controlled fallbacks (model, missing API key, auth errors).", "webEnabled": "Web search enabled", "demo": "UI demo" },
+        "tabs": {
+          "overview": "Overview",
+          "flow": "Technical flow",
+          "code": "Code integration",
+          "errors": "Errors & Fallbacks",
+          "tests": "Tests"
+        },
+        "overview": {
+          "featuresTitle": "Features",
+          "li1": "OpenAI Responses integration with the web_search tool.",
+          "li2": "Robust source extraction (multiple response paths supported).",
+          "li3": "Structured analysis of output text (brand/competitor detection, ranking, sentiment).",
+          "li4": "Controlled fallbacks (model, missing API key, auth errors).",
+          "webEnabled": "Web search enabled",
+          "demo": "UI demo"
+        },
         "flow": {
           "title": "Technical flow (summary)",
           "li1": "UI enables useWebSearch for the OpenAI provider.",
@@ -344,9 +478,28 @@
           "li6": "Enhanced brand detection via intelligent variations (normalization and AI if multi-word).",
           "li7": "Return an AIResponse object including webSearchSources."
         },
-        "code": { "title": "Integration examples", "call1": "Direct call to OpenAI Web Search implementation:", "call2": "Automatic activation via orchestration (if available):", "env": "Required configuration:" },
-        "errors": { "title": "Error handling and fallbacks", "li1": "Missing key: if OPENAI_API_KEY is absent → exception during client initialization.", "li2": "Unsupported model: switch to gpt-4o-mini. Supported: gpt-4o, gpt-4o-mini.", "li3": "Auth errors (401, invalid_api_key): function returns null to ignore this provider.", "li4": "Empty response: throws explicit \"empty response\" error.", "li5": "Structured analysis failed: fallback to textual analysis with variation-based detection." },
-        "tests": { "title": "Tests & validation", "cli": "CLI script (if present):", "checks": "Expected checks:", "li1": "Non-empty output_text.", "li2": "Extraction of at least 1–3 webSearchSources when relevant.", "li3": "Structured fields (rankings, sentiment, mentions) consistent with the response." }
+        "code": {
+          "title": "Integration examples",
+          "call1": "Direct call to OpenAI Web Search implementation:",
+          "call2": "Automatic activation via orchestration (if available):",
+          "env": "Required configuration:"
+        },
+        "errors": {
+          "title": "Error handling and fallbacks",
+          "li1": "Missing key: if OPENAI_API_KEY is absent → exception during client initialization.",
+          "li2": "Unsupported model: switch to gpt-4o-mini. Supported: gpt-4o, gpt-4o-mini.",
+          "li3": "Auth errors (401, invalid_api_key): function returns null to ignore this provider.",
+          "li4": "Empty response: throws explicit \"empty response\" error.",
+          "li5": "Structured analysis failed: fallback to textual analysis with variation-based detection."
+        },
+        "tests": {
+          "title": "Tests & validation",
+          "cli": "CLI script (if present):",
+          "checks": "Expected checks:",
+          "li1": "Non-empty output_text.",
+          "li2": "Extraction of at least 1–3 webSearchSources when relevant.",
+          "li3": "Structured fields (rankings, sentiment, mentions) consistent with the response."
+        }
       }
     }
   },
@@ -429,6 +582,7 @@
     "marketingEmailsDesc": "Receive emails about new features and offers",
     "accountInformation": "Account Information",
     "currentPlan": "Current Plan",
+    "currentPlanSelected": "Currently Selected Plan",
     "freePlan": "Free Plan",
     "changingTo": "Changing to",
     "usageStatistics": "Usage Statistics",
@@ -498,6 +652,8 @@
     "addCustomPromptPlaceholder": "Example: What is the best AI scraper?",
     "enterCustomPromptPlaceholder": "Enter a custom prompt (use {brand} and {industry} as placeholders)",
     "searchPromptsPlaceholder": "Search prompts and responses...",
+    "legendTargetBrand": "Target brand mentions",
+    "legendCompetitorBrand": "Competitor mentions",
     "enterUrlPlaceholder": "Enter your website URL (e.g., example.com)",
     "enterUrlPlaceholderShort": "example.com",
     "competitorNamePlaceholder": "e.g., Anthropic",
@@ -519,7 +675,10 @@
       "promptsResponses": "Prompts & Responses",
       "providerRankings": "Brand Rankings",
       "visibilityScore": "Visibility Score",
-      "analyzeAnotherWebsite": "Analyze another website"
+      "analyzeAnotherWebsite": "Analyze another website",
+      "sources": "Sources",
+      "upgradeRequiredTitle": "Available from the \"Watch\" plan",
+      "upgradeCta": "Upgrade my plan"
     },
     "analysisProgress": {
       "title": "Analysis Progress",
@@ -546,9 +705,9 @@
       "analysisPreparationFailed": "Failed to prepare analysis. Please try again."
     },
     "analysis": {
-        "startingAnalysis": "Starting analysis...",
-        "extractingBrands": "Extracting brand mentions...",
-        "brandExtractionComplete": "Brand extraction complete",
+      "startingAnalysis": "Starting analysis...",
+      "extractingBrands": "Extracting brand mentions...",
+      "brandExtractionComplete": "Brand extraction complete",
       "comparisonMatrix": {
         "title": "Comparison Matrix",
         "description": "Compare the proportion of brand mentions detected per response provided by AI providers based on the total number of responses provided",
@@ -585,6 +744,17 @@
       "overallScore": "Overall Score",
       "rank": "Rank",
       "visibilityTooltip": "visibility"
+    },
+    "sourcesTab": {
+      "title": "Sources consulted",
+      "description": "Review where AI models gathered their information for this analysis.",
+      "source": "Source",
+      "provider": "Provider",
+      "prompt": "Prompt",
+      "link": "Open source",
+      "empty": "No sources recorded for this analysis yet.",
+      "showMore": "other sources",
+      "showLess": "Show less"
     }
   },
   "pricing": {
@@ -708,15 +878,15 @@
       "aiModels": {
         "title": "AI Multi-Models",
         "description": "OpenAI, Claude, Perplexity and more"
-        },
-        "realtime": {
-          "title": "PromptGen©",
-          "description": "Automatically generate prompts tailored to your brand and market"
-        },
-        "competitor": {
-          "title": "MarketComp©",
-          "description": "Assess your brand’s performance against competitors"
-        }
+      },
+      "realtime": {
+        "title": "PromptGen©",
+        "description": "Automatically generate prompts tailored to your brand and market"
+      },
+      "competitor": {
+        "title": "MarketComp©",
+        "description": "Assess your brand’s performance against competitors"
+      }
     },
     "pricing": {
       "title": "Monitor Your Brand Visibility",
@@ -880,13 +1050,20 @@
     "modelsDesc": "Favor gpt-4o-mini (cost/latency) and switch to gpt-4o if needed.",
     "scope": "Scope",
     "scopeDesc": "Specify country/region, segment and company size to guide the search."
-  }
-  ,
+  },
   "verifyEmail": {
     "title": "A confirmation email has been sent.",
     "subtitle": "Please confirm your email within 24 hours to use Voxum.",
     "hint": "Remember to check your Spam or Promotions folder.",
     "backHome": "Back to home",
     "backToLogin": "Back to login"
+  }
+  ,
+  "autumn": {
+    "productChangeDialog": {
+      "title": "Confirm Plan Change",
+      "dueToday": "Due today:",
+      "processing": "Processing..."
+    }
   }
 }

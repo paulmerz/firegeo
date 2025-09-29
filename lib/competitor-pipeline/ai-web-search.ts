@@ -10,7 +10,7 @@ export interface AISearchCompetitor {
   name: string;
   domain: string;
   url: string;
-  snippet: string;
+  // snippet field removed from database schema
   confidence: number;
   source: 'ai-web-search';
   competitionScore?: number;
@@ -158,7 +158,7 @@ export async function findCompetitorsWithAIWebSearch(
     console.log('='.repeat(80));
     competitors.forEach((comp, index) => {
       console.log(`${index + 1}. ${comp.name} (${comp.domain})`);
-      console.log(`   📝 ${comp.snippet}`);
+      console.log(`   📝 Competitor found`);
       console.log(`   🎯 Confidence: ${(comp.confidence * 100).toFixed(1)}%`);
       console.log('');
     });
@@ -430,7 +430,7 @@ ${scoreFilteringInstruction}`;
       name: comp.name,
       domain: comp.domain,
       url: comp.domain.startsWith('http') ? comp.domain : `https://${comp.domain}`,
-      snippet: comp.description || 'Found via research',
+      // snippet field removed from database schema
       confidence: 0.8,
       source: 'ai-web-search',
       competitionScore: comp.competitionScore || (useIntelliSearch ? undefined : 5)
@@ -521,7 +521,7 @@ async function convertResearchToCompetitors(
             name: cleanName,
             domain: domain,
             url: domain.startsWith('http') ? domain : `https://${domain}`,
-            snippet: `Competitor found via research`,
+            // snippet field removed from database schema
             confidence: 0.8,
             source: 'ai-web-search',
             competitionScore: 5
@@ -538,13 +538,13 @@ async function convertResearchToCompetitors(
     console.log('🔍 [AIWebSearch] Extracting competitors from web search sources');
     
     for (const source of researchResult.webSearchSources.slice(0, maxResults)) {
-      if (source.url && source.title) {
+      if (source.url && source.domain) {
         try {
           const url = new URL(source.url);
           const domain = url.hostname.replace(/^www\./, '');
           
-          // Extract potential company name from title
-          const name = source.title.split(' - ')[0].split(' | ')[0].trim();
+          // Extract potential company name from domain
+          const name = source.domain.split('.')[0].replace(/[-_]/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
           
           if (name && !foundCompetitors.has(name.toLowerCase())) {
             foundCompetitors.add(name.toLowerCase());
@@ -559,7 +559,7 @@ async function convertResearchToCompetitors(
                 name: name,
                 domain: domain,
                 url: source.url,
-                snippet: source.title || 'Found via web search',
+                // snippet field removed from database schema
                 confidence: 0.7,
                 source: 'ai-web-search',
                 competitionScore: 5

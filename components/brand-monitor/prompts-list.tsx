@@ -47,20 +47,6 @@ const providerIcons: Record<string, React.ReactNode> = {
   ),
 };
 
-// Default prompts
-const defaultPrompts: string[] = [
-  "What are the top 10 {industry} tools in 2024?",
-  "List the best {industry} platforms available today",
-  "Compare the top 5 {industry} tools including {brand}",
-  "What are the best alternatives to {brand}?",
-  "Which {industry} tool would you recommend for businesses?",
-  "What are the most popular {industry} solutions?",
-  "How do the major {industry} platforms compare?",
-  "List similar tools to {brand} for {industry}",
-  "What's the best {industry} solution for enterprise use?",
-  "Which {industry} platform offers the best value?",
-];
-
 export function PromptsList({
   prompts,
   onAddPrompt,

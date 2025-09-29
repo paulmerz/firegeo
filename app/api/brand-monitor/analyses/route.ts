@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { brandAnalyses } from '@/lib/db/schema';
+import { brandAnalyses, brandAnalysisSources } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
+import { extractAnalysisSources } from '@/lib/brand-monitor-sources';
 import { handleApiError, AuthenticationError, ValidationError } from '@/lib/api-errors';
 
 // GET /api/brand-monitor/analyses - Get user's brand analyses
@@ -16,12 +17,32 @@ export async function GET(request: NextRequest) {
       throw new AuthenticationError('Please log in to view your analyses');
     }
 
+
     const analyses = await db.query.brandAnalyses.findMany({
       where: eq(brandAnalyses.userId, sessionResponse.user.id),
       orderBy: desc(brandAnalyses.createdAt),
+      with: {
+        sources: true,
+      },
     });
-
-    return NextResponse.json(analyses);
+    
+    const enrichedAnalyses = analyses.map((analysis) => {
+      const sources = extractAnalysisSources(analysis.analysisData, analysis.sources);
+      const baseData = analysis.analysisData && typeof analysis.analysisData === 'object'
+        ? { ...analysis.analysisData }
+        : {};
+    
+      return {
+        ...analysis,
+        sources,
+        analysisData: {
+          ...baseData,
+          sources,
+        },
+      };
+    });
+    
+    return NextResponse.json(enrichedAnalyses);
   } catch (error) {
     return handleApiError(error);
   }
@@ -47,6 +68,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
+
     const [analysis] = await db.insert(brandAnalyses).values({
       userId: sessionResponse.user.id,
       url: body.url,
@@ -57,8 +79,39 @@ export async function POST(request: NextRequest) {
       prompts: body.prompts,
       creditsUsed: body.creditsUsed || 10,
     }).returning();
-
-    return NextResponse.json(analysis);
+    
+    const extractedSources = extractAnalysisSources(body.analysisData);
+    let persistedSources: Array<{ [key: string]: unknown }> = [];
+    
+    if (extractedSources.length > 0) {
+      const values = extractedSources.map((source) => ({
+        analysisId: analysis.id,
+        provider: source.provider ?? null,
+        prompt: source.prompt ?? null,
+        domain: source.domain ?? null,
+        url: source.url ?? null,
+        sourceType: source.sourceType ?? null,
+        metadata: source.metadata ?? null,
+      }));
+    
+      persistedSources = await db.insert(brandAnalysisSources)
+        .values(values)
+        .returning();
+    }
+    
+    const normalizedSources = extractAnalysisSources(body.analysisData, persistedSources);
+    const baseData = analysis.analysisData && typeof analysis.analysisData === 'object'
+      ? { ...analysis.analysisData }
+      : {};
+    
+    return NextResponse.json({
+      ...analysis,
+      sources: normalizedSources,
+      analysisData: {
+        ...baseData,
+        sources: normalizedSources,
+      },
+    });
   } catch (error) {
     return handleApiError(error);
   }

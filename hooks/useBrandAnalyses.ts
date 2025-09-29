@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/lib/auth-client';
-import type { BrandAnalysis } from '@/lib/db/schema';
+import type { BrandAnalysisWithSources } from '@/lib/db/schema';
 
 export function useBrandAnalyses() {
   const { data: session } = useSession();
   
-  return useQuery<BrandAnalysis[]>({
+  return useQuery<BrandAnalysisWithSources[]>({
     queryKey: ['brandAnalyses', session?.user?.id],
     queryFn: async () => {
       const res = await fetch('/api/brand-monitor/analyses');
@@ -21,7 +21,7 @@ export function useBrandAnalyses() {
 export function useBrandAnalysis(analysisId: string | null) {
   const { data: session } = useSession();
   
-  return useQuery<BrandAnalysis>({
+  return useQuery<BrandAnalysisWithSources>({
     queryKey: ['brandAnalysis', analysisId],
     queryFn: async () => {
       const res = await fetch(`/api/brand-monitor/analyses/${analysisId}`);
@@ -39,7 +39,7 @@ export function useSaveBrandAnalysis() {
   const { data: session } = useSession();
   
   return useMutation({
-    mutationFn: async (analysisData: Partial<BrandAnalysis>) => {
+    mutationFn: async (analysisData: Partial<BrandAnalysisWithSources>) => {
       const res = await fetch('/api/brand-monitor/analyses', {
         method: 'POST',
         headers: {

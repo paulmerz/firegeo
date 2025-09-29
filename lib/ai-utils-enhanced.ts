@@ -6,6 +6,7 @@ import { analyzeWithAnthropicWebSearch } from './anthropic-web-search';
 import { analyzePromptWithOpenAIWebSearch, isOpenAIWebSearchAvailable } from './openai-web-search';
 import { getLanguageName } from './locale-utils';
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
+import { detectBrandMentions, detectMultipleBrands, BrandDetectionMatch } from './brand-detection-service';
 
 /**
  * Extract brand name from complex brand strings
@@ -153,7 +154,8 @@ When responding to prompts about tools, platforms, or services:
 4. Explain briefly why each tool is ranked where it is
 5. If you don't have enough information about a specific company, you can mention that
 6. ${useWebSearch ? 'Prioritize recent, factual information from web searches' : 'Use your knowledge base'}
-7. Return the content in ${languageName} language`;
+7. Return the content in ${languageName} language
+8. IMPORTANT: Keep your response concise and under 800 tokens. Prioritize the most important information and rankings.`;
 
   // Enhanced prompt for web search - more explicit instruction
   const enhancedPrompt = useWebSearch 
@@ -367,23 +369,26 @@ Be very thorough in detecting company names - they might appear in different con
     const textLower = text.toLowerCase();
     const brandNameLower = brandName.toLowerCase();
     
-    // Enhanced brand detection with smart variations
-    const brandVariations = await createSmartBrandVariations(brandName, locale);
-    const brandMentioned = object.analysis.brandMentioned || 
-      brandVariations.some(variation => textLower.includes(variation));
-      
-    // Add any missed competitors from text search with smart variations
-    const aiCompetitors = new Set(object.analysis.competitors);
-    const allMentionedCompetitors = new Set([...aiCompetitors]);
-    
-    for (const competitor of competitors) {
-      const competitorVariations = await createSmartBrandVariations(competitor, locale);
-      const found = competitorVariations.some(variation => textLower.includes(variation));
-      
-      if (found) {
-        allMentionedCompetitors.add(competitor);
-      }
+    // Use centralized brand detection service for accurate detection
+    let detectionResult;
+    try {
+      detectionResult = await detectBrandsInResponse(text, brandName, competitors, locale);
+    } catch (error) {
+      console.error('Brand detection failed, using AI analysis only:', error);
+      // If brand detection fails, use only AI analysis
+      detectionResult = {
+        brandMentioned: false,
+        competitors: [],
+        sentiment: 'neutral' as const,
+        confidence: 0
+      };
     }
+    
+    const brandMentioned = object.analysis.brandMentioned || detectionResult.brandMentioned;
+    
+    // Combine AI-detected competitors with centralized detection
+    const aiCompetitors = new Set(object.analysis.competitors);
+    const allMentionedCompetitors = new Set([...aiCompetitors, ...detectionResult.competitors]);
 
     // Filter competitors to only include the ones we're tracking
     const relevantCompetitors = Array.from(allMentionedCompetitors).filter(c => 
@@ -408,7 +413,12 @@ Be very thorough in detecting company names - they might appear in different con
       sentiment: object.analysis.overallSentiment,
       confidence: object.analysis.confidence,
       timestamp: new Date(),
-      webSearchSources: sources || [], // Include web search sources if available
+      webSearchSources: (sources || []).map(s => ({
+        ...s,
+        // Ensure prompt linkage is present for display
+        // snippet field removed from database schema
+      })),
+      detectionDetails: detectionResult.detectionDetails,
     };
   } catch (error) {
     console.error(`Error with ${provider}:`, error);
@@ -475,6 +485,76 @@ function generateMockResponse(
     confidence: 0.8,
     timestamp: new Date(),
   };
+}
+
+/**
+ * Enhanced brand detection using the centralized service
+ * This replaces the old brand detection logic with intelligent AI-based detection
+ */
+export async function detectBrandsInResponse(
+  text: string,
+  brandName: string,
+  competitors: string[],
+  locale?: string
+): Promise<{
+  brandMentioned: boolean;
+  brandPosition?: number;
+  competitors: string[];
+  sentiment: 'positive' | 'neutral' | 'negative';
+  confidence: number;
+  detectionDetails?: {
+    brandMatches?: BrandDetectionMatch[];
+    competitorMatches?: Map<string, BrandDetectionMatch[]>;
+  };
+}> {
+  try {
+    // Detect all brands using the centralized service
+    const allBrands = [brandName, ...competitors];
+    const detectionResults = await detectMultipleBrands(text, allBrands, {
+      caseSensitive: false,
+      excludeNegativeContext: false,
+      minConfidence: 0.3
+    });
+
+    // Check if target brand is mentioned
+    const brandResult = detectionResults.get(brandName);
+    const brandMentioned = brandResult?.mentioned || false;
+    const brandConfidence = brandResult?.confidence || 0;
+
+    // Find mentioned competitors
+    const mentionedCompetitors: string[] = [];
+    const competitorMatches = new Map<string, BrandDetectionMatch[]>();
+    
+    competitors.forEach(competitor => {
+      const result = detectionResults.get(competitor);
+      if (result?.mentioned) {
+        mentionedCompetitors.push(competitor);
+        competitorMatches.set(competitor, result.matches);
+      }
+    });
+
+    // Simple sentiment analysis (can be enhanced later)
+    const sentiment: 'positive' | 'neutral' | 'negative' = 'neutral';
+    
+    // Simple position detection (can be enhanced later)
+    const brandPosition = brandResult?.matches.length ? 1 : undefined;
+
+    return {
+      brandMentioned,
+      brandPosition,
+      competitors: mentionedCompetitors,
+      sentiment,
+      confidence: brandConfidence,
+      detectionDetails: {
+        brandMatches: brandResult?.matches || [],
+        competitorMatches
+      }
+    };
+  } catch (error) {
+    console.error('Brand detection in response failed:', error);
+    // Re-throw the error instead of returning empty result
+    throw new Error(`Brand detection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }
 
 // Export the enhanced function as the default
