@@ -7,7 +7,7 @@ export interface ApiErrorResponse {
     statusCode: number;
     timestamp: string;
     fields?: Record<string, string>;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   };
 }
 
@@ -16,7 +16,7 @@ export class ClientApiError extends Error {
   public readonly statusCode: number;
   public readonly timestamp: Date;
   public readonly fields?: Record<string, string>;
-  public readonly metadata?: Record<string, any>;
+  public readonly metadata?: Record<string, unknown>;
 
   constructor(errorResponse: ApiErrorResponse) {
     super(errorResponse.error.message);

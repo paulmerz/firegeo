@@ -1,7 +1,3 @@
-import { generateText } from 'ai';
-import { z } from 'zod';
-import { getProviderModel, isProviderConfigured } from './provider-config';
-
 // ============================================
 // Provider-Specific Search Configurations
 // ============================================
@@ -18,10 +14,10 @@ import { getProviderModel, isProviderConfigured } from './provider-config';
 // Enhanced Brand Analysis with Provider-Native Search
 // ============================================
 export async function analyzeBrandWithProviderSearch(
-  brandName: string,
-  competitors: string[],
-  prompt: string,
-  provider: 'openai' | 'anthropic' | 'google' | 'perplexity' = 'openai'
+  _brandName: string,
+  _competitors: string[],
+  _prompt: string,
+  _provider: 'openai' | 'anthropic' | 'google' | 'perplexity' = 'openai'
 ) {
   // This function is now handled by ai-utils-enhanced.ts
   // which properly uses each provider's native search capabilities

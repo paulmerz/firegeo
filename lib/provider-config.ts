@@ -35,6 +35,10 @@ export interface ProviderCapabilities {
   maxRequestsPerMinute?: number;
 }
 
+export interface GetModelOptions {
+  useWebSearch?: boolean;
+}
+
 export interface ProviderConfig {
   id: string;
   name: string;
@@ -43,7 +47,7 @@ export interface ProviderConfig {
   models: ProviderModel[];
   defaultModel: string;
   capabilities: ProviderCapabilities;
-  getModel: (modelId?: string, options?: any) => LanguageModelV1 | null;
+  getModel: (modelId?: string, options?: GetModelOptions) => LanguageModelV1 | null;
   isConfigured: () => boolean;
   enabled: boolean; // New field to control provider availability
 }
@@ -105,11 +109,9 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       streamingResponse: true,
       maxRequestsPerMinute: 500,
     },
-    getModel: (modelId?: any, options?: any) => {
+    getModel: (modelId?: string, _options?: GetModelOptions) => {
       if (!process.env.OPENAI_API_KEY) return null;
-      const model = typeof modelId === 'string'
-        ? modelId
-        : (modelId?.id || PROVIDER_CONFIGS.openai.defaultModel);
+      const model = modelId || PROVIDER_CONFIGS.openai.defaultModel;
       
       // Note: Web search is now handled by the dedicated openai-web-search.ts module
       // This function returns the standard AI SDK model for non-web-search use cases
@@ -205,7 +207,7 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       streamingResponse: true,
       maxRequestsPerMinute: 60,
     },
-    getModel: (modelId?: string, options?: any) => {
+    getModel: (modelId?: string, options?: GetModelOptions) => {
       if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) return null;
       return google(modelId || PROVIDER_CONFIGS.google.defaultModel, {
         useSearchGrounding: options?.useWebSearch || false,
@@ -299,7 +301,7 @@ export function isProviderConfigured(providerId: string): boolean {
 export function getProviderModel(
   providerId: string,
   modelId?: string,
-  options?: any
+  options?: GetModelOptions
 ): LanguageModelV1 | null {
   const provider = getProviderConfig(providerId);
   if (!provider || !provider.enabled || !provider.isConfigured()) {

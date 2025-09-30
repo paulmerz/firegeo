@@ -157,7 +157,6 @@ export function BrandMonitor({
   hideSourcesTab = false,
   hideWebSearchSources = false,
 }: BrandMonitorProps = {}) {
-  const t = useTranslations('brandMonitor');
   const tErrors = useTranslations('brandMonitor.errors');
   const tAnalysis = useTranslations('brandMonitor.analysis');
   const [state, dispatch] = useReducer(brandMonitorReducer, initialBrandMonitorState);
@@ -537,7 +536,7 @@ export function BrandMonitor({
     // Show competitors on the same page with animation
     dispatch({ type: 'SET_SHOW_COMPETITORS', payload: true });
     dispatch({ type: 'SET_PREPARING_ANALYSIS', payload: false });
-  }, [company, useIntelliSearch, onCreditsUpdate, tErrors]);
+  }, [company, useIntelliSearch, onCreditsUpdate, tErrors, creditsAvailable]);
   
   const handleProceedToPrompts = useCallback(() => {
     // Add a fade-out class to the current view
@@ -657,10 +656,6 @@ export function BrandMonitor({
   
   const handleWebSearchToggle = useCallback((enabled: boolean) => {
     dispatch({ type: 'SET_USE_WEB_SEARCH', payload: enabled });
-  }, []);
-  
-  const handleIntelliSearchToggle = useCallback((enabled: boolean) => {
-    dispatch({ type: 'SET_USE_INTELLISEARCH', payload: enabled });
   }, []);
   
   const handleRefreshMatrix = useCallback(async () => {
@@ -814,7 +809,7 @@ export function BrandMonitor({
               </div>
               <p className="text-xs text-gray-500 mt-2 text-center">
                 {useWebSearch 
-                  ? "Les modèles d'IA effectueront des recherches en ligne pour des informations plus récentes et précises"
+                  ? "Les modèles d&apos;IA effectueront des recherches en ligne pour des informations plus récentes et précises"
                   : "Les modèles d'IA utiliseront uniquement leurs connaissances pré-entraînées"
                 }
               </p>

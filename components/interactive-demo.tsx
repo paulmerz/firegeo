@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import Image from 'next/image';
+import { useState, ElementType } from 'react';
+import Image, { StaticImageData } from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/card';
 import { Eye, Target, Heart } from 'lucide-react';
@@ -22,8 +22,8 @@ export default function InteractiveDemo() {
     id: DemoId;
     title: string;
     description: string;
-    icon: any;
-    image: any;
+    icon: ElementType;
+    image: StaticImageData;
   }> = [
     {
       id: 'visibility',

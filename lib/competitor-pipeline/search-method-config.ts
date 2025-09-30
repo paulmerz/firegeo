@@ -2,6 +2,8 @@
  * Configuration for testing different search methods
  */
 
+import type { Company } from '@/lib/types';
+
 export interface SearchMethodConfig {
   method: 'ai-web-search';
   useWebSearch?: boolean;
@@ -42,10 +44,10 @@ export function getApiEndpoint(method: SearchMethodConfig['method']): string {
  */
 export function buildRequestBody(
   config: SearchMethodConfig,
-  company: any,
+  company: Company,
   locale?: string,
   useIntelliSearch?: boolean
-): Record<string, any> {
+): Record<string, unknown> {
   switch (config.method) {
     case 'ai-web-search':
       return {

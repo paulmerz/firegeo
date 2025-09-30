@@ -1,4 +1,4 @@
-import { AIResponse, AnalysisProgressData, Company, PartialResultData, ProgressData, PromptGeneratedData, ScoringProgressData, SSEEvent, AnalysisSource } from './types';
+import { AIResponse, AnalysisProgressData, Company, PartialResultData, ProgressData, PromptGeneratedData, ScoringProgressData, SSEEvent, AnalysisSource, BrandPrompt, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ApiUsageSummaryData } from './types';
 import { generatePromptsForCompany, analyzePromptWithProvider, calculateBrandScores, analyzeCompetitors, identifyCompetitors, analyzeCompetitorsByProvider } from './ai-utils';
 import { analyzePromptWithProvider as analyzePromptWithProviderEnhanced } from './ai-utils-enhanced';
 import { canonicalizeBrandsWithOpenAI } from './openai-web-search';
@@ -19,16 +19,22 @@ export interface AnalysisConfig {
 export interface AnalysisResult {
   company: Company;
   knownCompetitors: string[];
-  prompts: any[];
+  prompts: BrandPrompt[];
   responses: AIResponse[];
-  scores: any;
-  competitors: any[];
-  providerRankings: any;
-  providerComparison: any;
+  scores: {
+    visibilityScore: number;
+    sentimentScore: number;
+    shareOfVoice: number;
+    overallScore: number;
+    averagePosition: number;
+  };
+  competitors: CompetitorRanking[];
+  providerRankings: ProviderSpecificRanking[];
+  providerComparison: ProviderComparisonData[];
   sources: AnalysisSource[];
   errors?: string[];
   webSearchUsed?: boolean;
-  apiUsageSummary?: any;
+  apiUsageSummary?: ApiUsageSummaryData;
 }
 
 /**
@@ -488,9 +494,9 @@ export async function performAnalysis({
   // force its visibility score to 0% to avoid discrepancies (e.g., 0 mentions showing ~6%).
   try {
     const zeroMentionBrands = new Set<string>();
-    providerComparison.forEach((row: any) => {
+    providerComparison.forEach((row) => {
       const providersData = row?.providers || {};
-      const totalMentions = Object.values(providersData).reduce((sum: number, p: any) => sum + (p?.mentions || 0), 0);
+      const totalMentions = Object.values(providersData).reduce((sum, p) => sum + (p?.mentions || 0), 0);
       if (totalMentions === 0) {
         zeroMentionBrands.add(row.competitor);
       }
@@ -516,7 +522,7 @@ export async function performAnalysis({
 
       // Calculate average visibility score across all providers
       const providerScores = Object.values(providerRow.providers)
-        .map((p: any) => p?.visibilityScore || 0)
+        .map((p) => p?.visibilityScore || 0)
         .filter(score => typeof score === 'number' && !isNaN(score));
       
       if (providerScores.length === 0) return r;
@@ -525,7 +531,7 @@ export async function performAnalysis({
       
       // Calculate total mentions across all providers for share of voice
       const totalMentions = Object.values(providerRow.providers)
-        .reduce((sum: number, p: any) => sum + (p?.mentions || 0), 0);
+        .reduce((sum, p) => sum + (p?.mentions || 0), 0);
 
       return {
         ...r,

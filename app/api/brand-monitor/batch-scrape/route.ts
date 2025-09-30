@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { handleApiError, AuthenticationError, ExternalServiceError } from '@/lib/api-errors';
+import { handleApiError, AuthenticationError } from '@/lib/api-errors';
 
 export async function POST(request: NextRequest) {
   try {

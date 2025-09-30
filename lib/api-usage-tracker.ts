@@ -18,7 +18,7 @@ export interface ApiCall {
   duration?: number;
   success: boolean;
   error?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ApiUsageSummary {
@@ -381,7 +381,13 @@ export function estimateCost(provider: string, model: string, inputTokens: numbe
 /**
  * Helper pour extraire les tokens des réponses AI SDK
  */
-export function extractTokensFromUsage(usage: any): { inputTokens: number; outputTokens: number } {
+interface AIUsage {
+  promptTokens?: number;
+  inputTokens?: number;
+  completionTokens?: number;
+  outputTokens?: number;
+}
+export function extractTokensFromUsage(usage: AIUsage | null): { inputTokens: number; outputTokens: number } {
   if (!usage) return { inputTokens: 0, outputTokens: 0 };
   
   return {

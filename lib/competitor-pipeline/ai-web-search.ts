@@ -448,8 +448,13 @@ ${scoreFilteringInstruction}`;
 /**
  * Convert research response to competitor format
  */
+interface ResearchResultForConversion {
+  response: string;
+  webSearchSources?: { url: string; domain: string; }[];
+}
+
 async function convertResearchToCompetitors(
-  researchResult: any,
+  researchResult: ResearchResultForConversion,
   maxResults: number,
   useIntelliSearch: boolean = false
 ): Promise<AISearchCompetitor[]> {
@@ -498,7 +503,7 @@ async function convertResearchToCompetitors(
           try {
             const url = new URL(domain);
             domain = url.hostname.replace(/^www\./, '');
-          } catch (e) {
+          } catch {
             // If URL parsing fails, try to extract domain manually
             domain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
           }
@@ -566,7 +571,7 @@ async function convertResearchToCompetitors(
               });
             }
           }
-        } catch (error) {
+        } catch {
           console.warn(`⚠️ [AIWebSearch] Invalid URL in source: ${source.url}`);
         }
       }

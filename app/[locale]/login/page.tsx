@@ -34,7 +34,7 @@ function LoginForm() {
     if (emailParam) {
       setEmail(emailParam);
     }
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,8 +57,9 @@ function LoginForm() {
       // Navigation après connexion (respecte la locale)
       const returnUrl = searchParams.get('from') || '/brand-monitor';
       router.push(returnUrl || '/brand-monitor');
-    } catch (err: any) {
-      setError(err?.message || t('auth.failedToLogin'));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t('auth.failedToLogin');
+      setError(message);
       setLoading(false);
     }
   };

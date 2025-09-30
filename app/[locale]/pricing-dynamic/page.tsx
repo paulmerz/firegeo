@@ -7,9 +7,10 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Check, Loader2 } from 'lucide-react';
 import ProductChangeDialog from '@/components/autumn/product-change-dialog';
+import type { Session } from 'better-auth';
 
 // Separate component that uses Autumn hooks
-function DynamicPricingContent({ session }: { session: any }) {
+function DynamicPricingContent({ session }: { session: Session | null }) {
   const { customer, attach } = useCustomer();
   const { products, isLoading, error } = usePricingTable();
   const router = useRouter();

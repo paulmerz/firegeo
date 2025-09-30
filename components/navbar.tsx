@@ -10,19 +10,12 @@ import { Link, useRouter } from '@/i18n/routing';
 // Separate component that only renders when Autumn is available
 function UserCredits() {
   const { data: session } = useSession();
-  
-  // Ne pas utiliser useCustomer si l'utilisateur n'est pas connecté
-  if (!session) {
-    return null;
-  }
-
-  const userId = (session as any)?.user?.id || (session as any)?.userId || (session as any)?.user?.email;
-  const storageKey = userId ? `autumn_credits_${userId}` : undefined;
-
   const { customer } = useCustomer();
   const t = useTranslations('common');
-
   const [displayCredits, setDisplayCredits] = useState<number | null>(null);
+
+  const userId = session?.user?.id || session?.userId || session?.user?.email;
+  const storageKey = userId ? `autumn_credits_${userId}` : undefined;
 
   // 1) Lecture initiale depuis le cache local si disponible
   useEffect(() => {
@@ -51,6 +44,10 @@ function UserCredits() {
       }
     }
   }, [customer, storageKey]);
+
+  if (!session) {
+    return null;
+  }
 
   // 3) Si aucune valeur (ni cache ni Autumn), masquer pour éviter clignotement à 0
   if (displayCredits == null) {

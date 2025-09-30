@@ -13,7 +13,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: process.env.NODE_ENV === 'production',
-    sendResetPassword: async ({ user, url }, request) => {
+    sendResetPassword: async ({ user, url }, _request) => {
       console.log('Password reset link:', url);
       
       await sendEmail({
@@ -56,7 +56,7 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: process.env.NODE_ENV === 'production',
     autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url }, request) => {
+    sendVerificationEmail: async ({ user, url }, _request) => {
       console.log('Verification link:', url);
       
       await sendEmail({

@@ -71,7 +71,7 @@ export interface Company {
     ogTitle?: string;
     ogDescription?: string;
     metaKeywords?: string[];
-    rawMetadata?: any;
+    rawMetadata?: Record<string, unknown>;
   };
   // Business profile
   businessProfile?: {
@@ -108,7 +108,7 @@ export interface AIResponse {
   sentiment: 'positive' | 'neutral' | 'negative';
   confidence: number;
   timestamp: Date;
-  webSearchSources?: any[]; // Sources from web search
+  webSearchSources?: { title: string, url: string, snippet: string }[]; // Sources from web search
   // Enhanced detection information
   detectionDetails?: {
     brandMatches?: {
@@ -324,4 +324,32 @@ export const PROMPT_TEMPLATES = {
     "What's the best {industry} solution for enterprise use?",
     "Which {industry} platform offers the best value?",
   ],
-}; 
+};
+
+export interface ApiUsageSummaryData {
+  totalCalls: number;
+  totalCost: number;
+  totalDuration: number;
+  byProvider: Record<string, {
+    calls: number;
+    cost: number;
+    tokens: { input: number; output: number };
+  }>;
+  byOperation: Record<string, {
+    calls: number;
+    cost: number;
+    providers: string[];
+  }>;
+  byPhase: Record<string, {
+    calls: number;
+    cost: number;
+    duration: number;
+    providers: string[];
+    averageCostPerCall?: number;
+    promptAnalysis?: {
+      totalPrompts: number;
+      averageCostPerPrompt: number;
+    };
+  }>;
+  errors: number;
+}

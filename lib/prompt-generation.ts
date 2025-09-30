@@ -60,7 +60,7 @@ function parsePromptsFromResponse(responseText: string): string[] {
   let parsed: unknown;
   try {
     parsed = JSON.parse(match[0]);
-  } catch (error) {
+  } catch {
     throw new Error('Failed to parse AI response as JSON');
   }
 

@@ -13,10 +13,10 @@ export function getLocaleFromRequest(request: NextRequest): string {
       const url = new URL(referrer);
       const pathSegments = url.pathname.split('/');
       const possibleLocale = pathSegments[1];
-      if (possibleLocale && routing.locales.includes(possibleLocale as any)) {
+      if (possibleLocale && routing.locales.some(l => l === possibleLocale)) {
         return possibleLocale;
       }
-    } catch (error) {
+    } catch {
       // Invalid URL, continue to fallback
     }
   }
@@ -32,7 +32,7 @@ export function getLocaleFromRequest(request: NextRequest): string {
 
     // Find first supported language
     for (const lang of languages) {
-      if (routing.locales.includes(lang as any)) {
+      if (routing.locales.some(l => l === lang)) {
         return lang;
       }
     }
@@ -47,14 +47,14 @@ export function getLocaleFromRequest(request: NextRequest): string {
  */
 export async function getMessages(locale: string) {
   // Ensure locale is supported
-  if (!routing.locales.includes(locale as any)) {
+  if (!routing.locales.some(l => l === locale)) {
     locale = routing.defaultLocale;
   }
 
   try {
     const messages = await import(`../messages/${locale}.json`);
     return messages.default;
-  } catch (error) {
+  } catch {
     console.warn(`Failed to load messages for locale ${locale}, falling back to ${routing.defaultLocale}`);
     const fallbackMessages = await import(`../messages/${routing.defaultLocale}.json`);
     return fallbackMessages.default;
@@ -121,13 +121,13 @@ export function getLanguageName(locale: string): string {
 /**
  * Get translated text from messages object using dot notation
  */
-export function getTranslation(messages: any, key: string, replacements?: Record<string, string>): string {
+export function getTranslation(messages: Record<string, unknown>, key: string, replacements?: Record<string, string>): string {
   const keys = key.split('.');
-  let value = messages;
+  let value: unknown = messages;
   
   for (const k of keys) {
     if (value && typeof value === 'object' && k in value) {
-      value = value[k];
+      value = (value as Record<string, unknown>)[k];
     } else {
       console.warn(`Translation key not found: ${key}`);
       return key; // Return key as fallback

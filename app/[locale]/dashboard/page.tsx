@@ -1,24 +1,24 @@
 'use client';
 
 import { useCustomer } from '@/hooks/useAutumnCustomer';
-import { usePricingTable } from 'autumn-js/react';
+import { usePricingTable, type Product, type ProductItem } from 'autumn-js/react';
 import { useSession } from '@/lib/auth-client';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Lock, CheckCircle, AlertCircle, Loader2, User, Mail, Phone, Edit2, Save, X } from 'lucide-react';
+import { Lock, CheckCircle, Loader2, User, Mail, Phone, Edit2, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProductChangeDialog from '@/components/autumn/product-change-dialog';
 import { useProfile, useUpdateProfile, useSettings, useUpdateSettings } from '@/hooks/useProfile';
+import type { Session } from 'better-auth';
 
 // Separate component that uses Autumn hooks
-function DashboardContent({ session }: { session: any }) {
+function DashboardContent({ session }: { session: Session }) {
   const { customer, attach } = useCustomer();
   const { products } = usePricingTable();
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const t = useTranslations();
-  const params = useParams();
-  const locale = params.locale as string;
+  useParams();
   
   // Profile and settings hooks
   const { data: profileData } = useProfile();
@@ -210,8 +210,8 @@ function DashboardContent({ session }: { session: any }) {
           ) : (
             <div className="space-y-4">
               {(() => {
-                const findProductDetails = (id?: string) => (products || []).find((p: any) => p.id === id);
-                const parseCreditsFromDisplay = (p: any): number => {
+                const findProductDetails = (id?: string) => (products || []).find((p: Product) => p.id === id);
+                const parseCreditsFromDisplay = (p: Product): number => {
                   const items = p?.items || [];
                   for (const it of items) {
                     const text: string | undefined = it?.display?.primary_text;
@@ -225,9 +225,9 @@ function DashboardContent({ session }: { session: any }) {
                   }
                   return 0;
                 };
-                const getIncludedCredits = (p: any) => {
+                const getIncludedCredits = (p: Product | undefined) => {
                   if (!p) return 0;
-                  const unitItem = p?.items?.find((it: any) => it.type === 'unit' && it.unit?.quantity !== undefined);
+                  const unitItem = p?.items?.find((it: ProductItem) => it.type === 'unit' && it.unit?.quantity !== undefined);
                   if (unitItem?.unit?.quantity !== undefined && unitItem.unit.quantity !== null) {
                     return unitItem.unit.quantity as number;
                   }

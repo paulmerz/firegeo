@@ -1,20 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { AIResponse } from './types';
-import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
+import { apiUsageTracker, estimateCost } from './api-usage-tracker';
 
 interface WebSearchResult {
   url: string;
   title: string;
   cited_text?: string;
-}
-
-interface AnalysisResult {
-  response: string;
-  brandMentioned: boolean;
-  brandPosition?: number;
-  sentiment: 'positive' | 'neutral' | 'negative';
-  confidence: number;
-  webSearchResults?: WebSearchResult[];
 }
 
 /**

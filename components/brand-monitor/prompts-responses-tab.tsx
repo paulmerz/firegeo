@@ -5,7 +5,6 @@
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { ChevronDown, ChevronsDown, ChevronsUp } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
 import { BrandPrompt, AIResponse } from '@/lib/types';
 import { HighlightedResponse } from './highlighted-response';
 import { useTranslations } from 'next-intl';
@@ -131,7 +130,7 @@ export function PromptsResponsesTab({
             </Badge>
           </div>
           <p className="text-xs text-blue-600 mt-1">
-            Les modèles d'IA ont effectué des recherches en ligne pour obtenir des informations plus récentes et précises
+            Les modèles d&apos;IA ont effectué des recherches en ligne pour obtenir des informations plus récentes et précises
           </p>
         </div>
       )}
@@ -381,7 +380,7 @@ export function PromptsResponsesTab({
                                 };
                                 const domains = Array.from(new Set(
                                   (response.webSearchSources || [])
-                                    .map((s: any) => toDomain(
+                                    .map((s: { domain?: string; url?: string }) => toDomain(
                                       typeof s?.domain === 'string' && s.domain.trim()
                                         ? s.domain
                                         : (typeof s?.url === 'string' ? s.url : '')
@@ -443,7 +442,7 @@ export function PromptsResponsesTab({
                       <span className="text-red-800 font-medium">Aucune réponse disponible</span>
                     </div>
                     <p className="text-red-700 text-sm mb-2">
-                      Aucun fournisseur d'IA n'a pu traiter ce prompt.
+                      Aucun fournisseur d&apos;IA n&apos;a pu traiter ce prompt.
                     </p>
                     <p className="text-red-600 text-xs">
                       Vérifiez que les clés API sont configurées (OpenAI, Anthropic, Google, ou Perplexity).
@@ -459,7 +458,7 @@ export function PromptsResponsesTab({
       {/* No results message */}
       {searchQuery && filteredPromptIndices.length === 0 && (
         <div className="text-center py-8 bg-gray-50 rounded-lg">
-          <p className="text-gray-600 mb-2">No results found for "{searchQuery}"</p>
+          <p className="text-gray-600 mb-2">No results found for &quot;{searchQuery}&quot;</p>
           <p className="text-gray-500 text-sm">Try searching for different keywords</p>
         </div>
       )}

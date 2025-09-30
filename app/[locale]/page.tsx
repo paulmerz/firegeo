@@ -10,8 +10,7 @@ import InteractiveDemo from '@/components/interactive-demo';
 export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const t = useTranslations();
-  const params = useParams();
-  const locale = params.locale as string;
+  useParams();
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);

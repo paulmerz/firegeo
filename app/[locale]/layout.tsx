@@ -6,17 +6,6 @@ import { Footer } from "@/components/footer";
 import { Providers } from "@/components/providers";
 import { NetworkStatusAlert } from "@/components/ui/network-status-alert";
 import { routing } from '@/i18n/routing';
-import { Geist, Geist_Mono } from "next/font/google";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 type Props = {
   children: React.ReactNode;
@@ -30,7 +19,7 @@ export default async function LocaleLayout({
   const { locale } = await params;
   
   // Valider que la locale est supportée
-  if (!routing.locales.includes(locale as any)) {
+  if (!routing.locales.some(l => l === locale)) {
     notFound();
   }
 

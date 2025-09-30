@@ -3,9 +3,10 @@
 import { useCustomer } from '@/hooks/useAutumnCustomer';
 import { useSession } from '@/lib/auth-client';
 import { useEffect } from 'react';
+import type { Session } from 'better-auth';
 
 // Separate component that uses Autumn hooks
-function AutumnVerifyContent({ session }: { session: any }) {
+function AutumnVerifyContent({ session }: { session: Session | null }) {
   const { customer, isLoading, error } = useCustomer();
 
   useEffect(() => {
@@ -73,7 +74,7 @@ function AutumnVerifyContent({ session }: { session: any }) {
           <div className="bg-blue-50 rounded-lg p-6">
             <h3 className="font-semibold mb-2">Next Steps:</h3>
             <ol className="list-decimal list-inside space-y-2 text-sm">
-              <li>Check the browser console for the logged "Autumn Customer" object</li>
+              <li>Check the browser console for the logged &quot;Autumn Customer&quot; object</li>
               <li>Verify in your Autumn dashboard at <a href="https://app.useautumn.com/sandbox/customers" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://app.useautumn.com/sandbox/customers</a> that the customer was created</li>
               <li>The customer ID in Autumn should match your auth user ID: <code className="bg-white px-2 py-1 rounded">{session?.user?.id || 'Not logged in'}</code></li>
             </ol>

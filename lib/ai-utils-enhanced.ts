@@ -1,12 +1,11 @@
-import { generateText, generateObject } from 'ai';
+import { generateText, generateObject, LanguageModelV1 } from 'ai';
 import { z } from 'zod';
-import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData } from './types';
-import { getProviderModel, normalizeProviderName, isProviderConfigured, getProviderConfig, PROVIDER_CONFIGS } from './provider-config';
-import { analyzeWithAnthropicWebSearch } from './anthropic-web-search';
+import { AIResponse } from './types';
+import { getProviderModel, normalizeProviderName, getProviderConfig } from './provider-config';
 import { analyzePromptWithOpenAIWebSearch, isOpenAIWebSearchAvailable } from './openai-web-search';
 import { getLanguageName } from './locale-utils';
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
-import { detectBrandMentions, detectMultipleBrands, BrandDetectionMatch } from './brand-detection-service';
+import { detectMultipleBrands, BrandDetectionMatch } from './brand-detection-service';
 
 /**
  * Extract brand name from complex brand strings
@@ -105,7 +104,7 @@ export async function analyzePromptWithProviderEnhanced(
   useMockMode: boolean = false,
   useWebSearch: boolean = true, // New parameter
   locale?: string // Locale parameter
-): Promise<AIResponse> {
+): Promise<AIResponse | null> {
   const trimmedPrompt = prompt.trim();
   // Mock mode for demo/testing without API keys
   if (useMockMode || provider === 'Mock') {
@@ -118,11 +117,11 @@ export async function analyzePromptWithProviderEnhanced(
   
   if (!providerConfig || !providerConfig.isConfigured()) {
     console.warn(`Provider ${provider} not configured, skipping provider`);
-    return null as any;
+    return null;
   }
   
-  let model;
-  const generateConfig: any = {};
+  let model: LanguageModelV1 | string | null = null;
+  const generateConfig: Record<string, unknown> = {};
   
   // Handle provider-specific web search configurations
   if (normalizedProvider === 'openai' && useWebSearch) {
@@ -141,7 +140,7 @@ export async function analyzePromptWithProviderEnhanced(
   
   if (!model) {
     console.warn(`Failed to get model for ${provider}`);
-    return null as any;
+    return null;
   }
 
   const languageName = locale ? getLanguageName(locale) : 'English';
@@ -186,7 +185,6 @@ Please search for recent information, current rankings, and up-to-date data to p
       // Apply the same robust detection logic as the non-web search version
       const text = openaiResult.response;
       const textLower = text.toLowerCase();
-      const brandNameLower = brandName.toLowerCase();
       
       // Enhanced brand detection with smart variations
       const brandVariations = await createSmartBrandVariations(brandName, locale);
@@ -218,6 +216,11 @@ Please search for recent information, current rankings, and up-to-date data to p
         competitors: relevantCompetitors,
       };
     } else {
+      if (typeof model === 'string') {
+        // This path should not be reachable due to the logic above.
+        // It's here to satisfy TypeScript's type checker.
+        throw new Error(`Unexpected string model for provider ${normalizedProvider}`);
+      }
       // Log web search configuration for debugging
       if (useWebSearch) {
         console.log(`[${provider}] Web search enabled with config:`, {
@@ -231,7 +234,7 @@ Please search for recent information, current rankings, and up-to-date data to p
       // Track API call for analysis
       const callId = apiUsageTracker.trackCall({
         provider: normalizedProvider,
-        model: (model as any).id || 'unknown',
+        model: (model as { id?: string }).id || 'unknown',
         operation: 'analysis',
         success: true,
         metadata: { 
@@ -262,7 +265,7 @@ Please search for recent information, current rankings, and up-to-date data to p
       apiUsageTracker.updateCall(callId, {
         inputTokens: tokens.inputTokens,
         outputTokens: tokens.outputTokens,
-        cost: estimateCost(normalizedProvider, (model as any).id || 'unknown', tokens.inputTokens, tokens.outputTokens),
+        cost: estimateCost(normalizedProvider, (model as { id?: string }).id || 'unknown', tokens.inputTokens, tokens.outputTokens),
         duration
       });
       
@@ -366,8 +369,6 @@ Be very thorough in detecting company names - they might appear in different con
 
     // Fallback: simple text-based mention detection 
     // This complements the AI analysis in case it misses obvious mentions
-    const textLower = text.toLowerCase();
-    const brandNameLower = brandName.toLowerCase();
     
     // Use centralized brand detection service for accurate detection
     let detectionResult;
@@ -436,7 +437,7 @@ Be very thorough in detecting company names - they might appear in different con
     
     if (isAuthError) {
       console.log(`Authentication error with ${provider} - returning null to skip this provider`);
-      return null as any; // Return null to indicate this provider should be skipped
+      return null; // Return null to indicate this provider should be skipped
     }
     
     // For other errors, log detailed information
@@ -494,8 +495,7 @@ function generateMockResponse(
 export async function detectBrandsInResponse(
   text: string,
   brandName: string,
-  competitors: string[],
-  locale?: string
+  competitors: string[]
 ): Promise<{
   brandMentioned: boolean;
   brandPosition?: number;

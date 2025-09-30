@@ -144,7 +144,7 @@ interface ErrorResponse {
     statusCode: number;
     timestamp: string;
     fields?: Record<string, string>;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   };
 }
 
@@ -195,7 +195,7 @@ export function handleApiError(error: unknown): NextResponse {
 
   // Handle Autumn/Stripe errors
   if (error && typeof error === 'object' && 'response' in error) {
-    const responseError = error as any;
+    const responseError = error as { response?: { data?: { error?: { message?: string } } } };
     if (responseError.response?.data?.error) {
       const message = responseError.response.data.error.message || 'External service error';
       const externalError = new ExternalServiceError(message, 'payment');
@@ -239,7 +239,7 @@ export function handleApiError(error: unknown): NextResponse {
 }
 
 // Utility function to wrap async route handlers
-export function withErrorHandler<T extends any[], R>(
+export function withErrorHandler<T extends unknown[], R>(
   handler: (...args: T) => Promise<R>
 ): (...args: T) => Promise<R | NextResponse> {
   return async (...args: T) => {

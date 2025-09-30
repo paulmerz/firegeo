@@ -28,7 +28,7 @@ const EnhancedCompanySchema = z.object({
   targetCustomers: z.string().describe('Target customer profile/ICP'),
   primaryMarkets: z.array(z.string()).describe('Main geographic markets/countries'),
   technologies: z.array(z.string()).describe('Key technologies used or related to business'),
-  businessModel: z.string().describe('Business model (B2B, B2C, SaaS, marketplace, etc.)'),
+  businessModel: z.string().describe('Business model (B2B, B2C, SaaS, marketplace, subscription, etc.)'),
   
   // Competitor search optimization
   competitorSearchKeywords: z.array(z.string()).describe('Keywords for finding competitors (8-12 specific terms)'),
@@ -38,6 +38,13 @@ const EnhancedCompanySchema = z.object({
   confidenceScore: z.number().min(0).max(1).describe('Confidence in analysis accuracy (0-1)'),
   estimatedNAICE: z.string().optional().describe('Estimated NACE/NAICS industry code')
 });
+
+interface FirecrawlScrapeResult {
+  success: boolean;
+  error?: string;
+  markdown?: string;
+  metadata?: Record<string, unknown>;
+}
 
 export async function scrapeCompanyInfo(url: string, maxAge?: number, locale?: string): Promise<Company> {
   try {
@@ -65,7 +72,7 @@ export async function scrapeCompanyInfo(url: string, maxAge?: number, locale?: s
     // Optimized Firecrawl scraping with enhanced parameters
     // Combines the best settings from both scrapeCompanyInfo and scrapeCompanyWithFirecrawl
     console.log(`🔍 [Scraper] Calling Firecrawl API...`);
-    const response = await firecrawl.scrapeUrl(normalizedUrl, {
+    const response: FirecrawlScrapeResult = await firecrawl.scrapeUrl(normalizedUrl, {
       formats: ['markdown'],
       maxAge: cacheAge,
       onlyMainContent: true, // Focus on main content to reduce complexity
@@ -76,18 +83,18 @@ export async function scrapeCompanyInfo(url: string, maxAge?: number, locale?: s
     });
     
     console.log(`🔍 [Scraper] Firecrawl response received:`, {
-      success: (response as any)?.success,
-      error: (response as any)?.error,
-      hasMarkdown: ('markdown' in (response as any)) && !!(response as any).markdown,
-      markdownLength: ('markdown' in (response as any)) && (response as any).markdown ? (response as any).markdown.length : 0
+      success: response?.success,
+      error: response?.error,
+      hasMarkdown: 'markdown' in response && !!response.markdown,
+      markdownLength: response.markdown ? response.markdown.length : 0
     });
-    if (!(response as any)?.success) {
+    if (!response?.success) {
       // Handle specific timeout errors more gracefully
       if (response.error && response.error.includes('timed out')) {
         console.warn(`⚠️ [Scraper] Timeout scraping ${normalizedUrl}, retrying with basic mode...`);
         
         // Retry with minimal, fast settings (fallback mode)
-        const retryResponse = await firecrawl.scrapeUrl(normalizedUrl, {
+        const retryResponse: FirecrawlScrapeResult = await firecrawl.scrapeUrl(normalizedUrl, {
           formats: ['markdown'],
           maxAge: cacheAge,
           onlyMainContent: true,
@@ -99,18 +106,41 @@ export async function scrapeCompanyInfo(url: string, maxAge?: number, locale?: s
           throw new Error(`Scraping failed after retry: ${retryResponse.error}`);
         }
         
-        const rr: any = retryResponse as any;
-        return processScrapedData(rr.markdown || '', rr.metadata, normalizedUrl, locale);
+        return processScrapedData(retryResponse.markdown || '', retryResponse.metadata, normalizedUrl, locale);
       }
       
-      throw new Error((response as any)?.error);
+      throw new Error(response?.error);
     }
-    const r: any = response as any;
-    return processScrapedData(r.markdown || '', r.metadata, normalizedUrl, locale);
+    return processScrapedData(response.markdown || '', response.metadata, normalizedUrl, locale);
   } catch (error) {
     console.error('Error scraping company info:', error);
     throw error;
   }
+}
+
+interface FirecrawlPage {
+  path?: string;
+  url?: string;
+  markdown?: string;
+  content?: string;
+  metadata?: Record<string, unknown>;
+}
+
+interface FirecrawlCrawlResult {
+  success?: boolean;
+  data?: FirecrawlPage[];
+  pages?: FirecrawlPage[];
+  jobId?: string;
+  id?: string;
+  error?: string;
+  completed?: boolean;
+  status?: string;
+}
+
+interface FirecrawlCrawlOptions {
+  maxDepth?: number;
+  limit?: number;
+  allowExternalLinks?: boolean;
 }
 
 /**
@@ -123,14 +153,13 @@ export async function crawlCompanyInfo(url: string, maxAge?: number, locale?: st
     if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
       normalizedUrl = `https://${normalizedUrl}`;
     }
-    const cacheAge = maxAge ? Math.floor(maxAge / 1000) : 604800;
     if (!process.env.FIRECRAWL_API_KEY) {
       console.error('❌ [Crawler] FIRECRAWL_API_KEY not configured');
       throw new Error('FIRECRAWL_API_KEY not configured');
     }
 
     // Crawl parameters tuned for business comprehension
-    const crawlOptions: any = {
+    const crawlOptions: FirecrawlCrawlOptions = {
       maxDepth: 2,
       limit: 20,
       allowExternalLinks: false,
@@ -138,20 +167,20 @@ export async function crawlCompanyInfo(url: string, maxAge?: number, locale?: st
     };
 
     console.log('🕷️ [Crawler] Calling Firecrawl crawlUrl with options:', crawlOptions);
-    const result: any = await (firecrawl as any).crawlUrl(normalizedUrl, crawlOptions);
+    const result: FirecrawlCrawlResult = await (firecrawl as any).crawlUrl(normalizedUrl, crawlOptions);
     if (!result) {
       throw new Error('Crawl returned empty result');
     }
 
     // Some SDK versions return a job id and require polling
-    let pages: any[] = [];
-    if (result?.success && (result as any).data && Array.isArray((result as any).data)) {
+    let pages: FirecrawlPage[] = [];
+    if (result?.success && result.data && Array.isArray(result.data)) {
       // Direct pages array
-      pages = ((result as any).data as any[]).filter(Boolean);
-    } else if (Array.isArray((result as any).pages)) {
-      pages = ((result as any).pages as any[]).filter(Boolean);
+      pages = result.data.filter(Boolean);
+    } else if (Array.isArray(result.pages)) {
+      pages = result.pages.filter(Boolean);
     } else {
-      const jobId = (result as any).jobId || (result as any).id || (result as any).data?.id;
+      const jobId = result.jobId || result.id || result.data?.id;
       if (!jobId && result?.error) {
         throw new Error(result.error);
       }
@@ -161,7 +190,7 @@ export async function crawlCompanyInfo(url: string, maxAge?: number, locale?: st
         const timeoutMs = 45000;
         while (Date.now() - startedAt < timeoutMs) {
           await new Promise(r => setTimeout(r, 1000));
-          let statusResp: any = null;
+          let statusResp: FirecrawlCrawlResult | null = null;
           try {
             // Try both method names for compatibility
             const checker = (firecrawl as any).checkCrawlStatus || (firecrawl as any).getCrawlStatus;
@@ -172,7 +201,7 @@ export async function crawlCompanyInfo(url: string, maxAge?: number, locale?: st
             console.warn('🕷️ [Crawler] Status polling error (non-fatal):', e);
           }
 
-          const statusObj: any = statusResp || {};
+          const statusObj: FirecrawlCrawlResult = statusResp || {};
           const isCompleted = statusObj?.status?.toLowerCase?.() === 'completed' || statusObj?.completed === true;
           const hasData = Array.isArray(statusObj?.data) || Array.isArray(statusObj?.pages);
           if (isCompleted || hasData) {
@@ -230,7 +259,7 @@ export async function crawlCompanyInfo(url: string, maxAge?: number, locale?: st
 /**
  * Process scraped data and extract structured information
  */
-async function processScrapedData(markdown: string, metadata: any, url: string, locale?: string): Promise<any> {
+async function processScrapedData(markdown: string, metadata: Record<string, unknown> | undefined, url: string, locale?: string): Promise<Company> {
   try {
     console.log(`🔍 [Processor] Processing scraped data for URL: ${url}`);
     // Log le markdown complet pour inspection
@@ -356,7 +385,7 @@ async function processScrapedData(markdown: string, metadata: any, url: string, 
     const domain = urlObj.hostname.replace('www.', '');
     
     // Try to get a high-quality favicon from various sources
-    const faviconUrl = metadata?.favicon || 
+    const faviconUrl = metadata?.favicon as string ||
                       `https://www.google.com/s2/favicons?domain=${domain}&sz=128` ||
                       `${urlObj.origin}/favicon.ico`;
     
@@ -366,7 +395,7 @@ async function processScrapedData(markdown: string, metadata: any, url: string, 
       name: object.name,
       description: object.description,
       industry: object.industry,
-      logo: metadata?.ogImage || undefined,
+      logo: metadata?.ogImage as string || undefined,
       favicon: faviconUrl,
       scraped: true,
       scrapedData: {
@@ -376,12 +405,12 @@ async function processScrapedData(markdown: string, metadata: any, url: string, 
         mainContent: html || '',
         mainProducts: object.mainProducts,
         competitors: object.competitors,
-        ogImage: metadata?.ogImage || undefined,
+        ogImage: metadata?.ogImage as string || undefined,
         favicon: faviconUrl,
         // Additional metadata from enhanced scraping
-        ogTitle: metadata?.ogTitle,
-        ogDescription: metadata?.ogDescription,
-        metaKeywords: metadata?.keywords,
+        ogTitle: metadata?.ogTitle as string,
+        ogDescription: metadata?.ogDescription as string,
+        metaKeywords: metadata?.keywords as string[],
         rawMetadata: metadata
       },
       // Enhanced business profile data (eliminating need for company-profiler)
@@ -392,10 +421,7 @@ async function processScrapedData(markdown: string, metadata: any, url: string, 
         primaryMarkets: object.primaryMarkets,
         technologies: object.technologies,
         businessModel: object.businessModel,
-        competitorSearchKeywords: object.competitorSearchKeywords,
-        alternativeSearchTerms: object.alternativeSearchTerms,
         confidenceScore: object.confidenceScore,
-        estimatedNAICE: object.estimatedNAICE
       },
     };
   } catch (error) {
@@ -416,4 +442,4 @@ async function processScrapedData(markdown: string, metadata: any, url: string, 
       scraped: false,
     };
   }
-} 
+}

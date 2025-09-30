@@ -11,7 +11,6 @@ const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 export function createRateLimit(config: RateLimitConfig) {
   return async (request: NextRequest, identifier: string) => {
     const now = Date.now();
-    const windowStart = now - config.windowMs;
     
     for (const [key, value] of rateLimitStore.entries()) {
       if (value.resetTime < now) {

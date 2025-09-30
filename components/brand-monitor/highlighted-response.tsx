@@ -26,13 +26,6 @@ interface HighlightedResponseProps {
   renderMarkdown?: boolean;
 }
 
-type DetectionMatch = {
-  text: string;
-  index: number;
-  confidence: number;
-  pattern?: string;
-};
-
 const TARGET_HIGHLIGHT_CLASS = 'bg-orange-100 text-orange-900 font-semibold px-1 rounded-sm border border-orange-200';
 const COMPETITOR_HIGHLIGHT_CLASS = 'bg-gray-200 text-gray-900 font-medium px-1 rounded-sm border border-gray-300';
 const DEFAULT_HIGHLIGHT_CLASS = 'bg-gray-100 text-gray-900 px-1 rounded-sm';
@@ -78,7 +71,7 @@ export function HighlightedResponse({
   renderMarkdown = true
 }: HighlightedResponseProps) {
   const cleanedResponse = cleanResponseText(response.response, response.provider);
-  const { detectMultipleBrands, isLoading: isDetectionLoading, error: detectionError, clearError } = useBrandDetection();
+  const { detectMultipleBrands, clearError } = useBrandDetection();
   
   // State for enhanced detection results
   const [enhancedDetectionResults, setEnhancedDetectionResults] = React.useState<Map<string, BrandDetectionResult>>(new Map());
@@ -167,10 +160,10 @@ export function HighlightedResponse({
     // - If provider supplied detection details AND competitor matches, skip
     const hasProviderDetails = Boolean(response.detectionDetails);
     const providerHasCompetitors = hasProviderDetails && Boolean(
-      (response.detectionDetails as any)?.competitorMatches &&
-      ((response.detectionDetails as any)?.competitorMatches instanceof Map
-        ? (response.detectionDetails as any)?.competitorMatches.size > 0
-        : Object.keys((response.detectionDetails as any)?.competitorMatches || {}).length > 0)
+      response.detectionDetails?.competitorMatches &&
+      (response.detectionDetails.competitorMatches instanceof Map
+        ? response.detectionDetails.competitorMatches.size > 0
+        : Object.keys(response.detectionDetails.competitorMatches).length > 0)
     );
 
     if (!showHighlighting || (hasProviderDetails && providerHasCompetitors)) {
@@ -212,7 +205,7 @@ export function HighlightedResponse({
     };
 
     performIntelligentDetection();
-  }, [cacheKey, cleanedResponse, allBrandCandidates, showHighlighting, response.detectionDetails]);
+  }, [cacheKey, cleanedResponse, allBrandCandidates, showHighlighting, response.detectionDetails, clearError, detectMultipleBrands, performFallbackDetection]);
 
   const detectionResults = React.useMemo(() => {
     if (!showHighlighting) return new Map();
@@ -236,41 +229,30 @@ export function HighlightedResponse({
         });
       }
 
-      const cm = (response.detectionDetails as any).competitorMatches;
+      const cm = response.detectionDetails?.competitorMatches;
       if (cm) {
+        const processMatches = (matches: { text: string; index: number; confidence: number }[], competitor: string) => {
+          if (Array.isArray(matches) && matches.length > 0) {
+            const convertedMatches: BrandDetectionMatch[] = matches.map((match) => ({
+              text: match.text,
+              index: match.index,
+              brandName: competitor,
+              variation: competitor, // legacy
+              confidence: match.confidence,
+            }));
+            results.set(competitor, {
+              mentioned: true,
+              matches: convertedMatches,
+              confidence: Math.max(...convertedMatches.map((m) => m.confidence)),
+            });
+          }
+        };
+
         if (cm instanceof Map) {
-          cm.forEach((matches: any[], competitor: string) => {
-            if (Array.isArray(matches) && matches.length > 0) {
-              const convertedMatches: BrandDetectionMatch[] = matches.map((match: any) => ({
-                text: match.text,
-                index: match.index,
-                brandName: competitor,
-                variation: competitor, // legacy
-                confidence: match.confidence
-              }));
-              results.set(competitor, {
-                mentioned: true,
-                matches: convertedMatches,
-                confidence: Math.max(...convertedMatches.map((m) => m.confidence))
-              });
-            }
-          });
+          cm.forEach(processMatches);
         } else {
-          Object.entries(cm as Record<string, any[]>).forEach(([competitor, matches]) => {
-            if (Array.isArray(matches) && matches.length > 0) {
-              const convertedMatches: BrandDetectionMatch[] = matches.map((match: any) => ({
-                text: match.text,
-                index: match.index,
-                brandName: competitor,
-                variation: competitor, // legacy
-                confidence: match.confidence
-              }));
-              results.set(competitor, {
-                mentioned: true,
-                matches: convertedMatches,
-                confidence: Math.max(...convertedMatches.map((m) => m.confidence))
-              });
-            }
+          Object.entries(cm).forEach(([competitor, matches]) => {
+            processMatches(matches, competitor);
           });
         }
       }
@@ -337,10 +319,6 @@ export function HighlightedResponse({
   }), [brandName, competitors, highlightClassName]);
 
   // Simplified highlighting functions using utilities
-  const highlightString = React.useCallback((text: string): React.ReactNode => {
-    return highlightTextWithBrands(text, detectionResults, highlightingConfig, showHighlighting);
-  }, [detectionResults, highlightingConfig, showHighlighting]);
-
   const highlightMarkdownChildren = React.useCallback((children: React.ReactNode): React.ReactNode => {
     return highlightMarkdownChildrenUtil(children, detectionResults, highlightingConfig, showHighlighting);
   }, [detectionResults, highlightingConfig, showHighlighting]);
@@ -348,7 +326,7 @@ export function HighlightedResponse({
   // Indicateur de mode fallback
   const fallbackIndicator = useFallback && (
     <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-      <span className="font-medium">Mode de détection simplifiée :</span> La détection intelligente des marques n'est pas disponible. Utilisation d'une détection basique.
+      <span className="font-medium">Mode de détection simplifiée :</span> La détection intelligente des marques n&apos;est pas disponible. Utilisation d&apos;une détection basique.
     </div>
   );
 
@@ -544,7 +522,7 @@ export function HighlightedText({
     };
 
     performDetection();
-  }, [brandCandidates, text]);
+  }, [brandCandidates, text, detectMultipleBrands]);
 
   const segments = React.useMemo(() => highlightBrandMentions(text, detectionResults), [text, detectionResults]);
 

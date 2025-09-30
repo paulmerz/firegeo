@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { Pool } from 'pg';
 
 export async function GET() {
   const envCheck = {
@@ -11,16 +12,15 @@ export async function GET() {
   // Check if we can connect to the database
   let dbStatus = 'unknown';
   try {
-    const { Pool } = require('pg');
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL!,
     });
     
-    const result = await pool.query('SELECT 1');
+    await pool.query('SELECT 1');
     dbStatus = 'connected';
     await pool.end();
-  } catch (error: any) {
-    dbStatus = `error: ${error.message}`;
+  } catch (error) {
+    dbStatus = `error: ${error instanceof Error ? error.message : 'Unknown error'}`;
   }
 
   return NextResponse.json({

@@ -2,7 +2,7 @@
 import { generateText, generateObject } from 'ai';
 import { z } from 'zod';
 import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData } from './types';
-import { getProviderModel, normalizeProviderName, isProviderConfigured, getConfiguredProviders, PROVIDER_CONFIGS } from './provider-config';
+import { getProviderModel, normalizeProviderName, getConfiguredProviders } from './provider-config';
 import { detectBrandMentions, detectMultipleBrands } from './brand-detection-service';
 import { getMessages, getTranslation, getLanguageName } from './locale-utils';
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
@@ -188,7 +188,7 @@ export async function analyzePromptWithProvider(
   competitors: string[],
   useMockMode: boolean = false,
   locale?: string
-): Promise<AIResponse> {
+): Promise<AIResponse | null> {
   // Mock mode for demo/testing without API keys
   if (useMockMode || provider === 'Mock') {
     return generateMockResponse(prompt, provider, brandName, competitors);
@@ -203,7 +203,7 @@ export async function analyzePromptWithProvider(
   if (!model) {
     console.warn(`Provider ${provider} not configured, skipping provider`);
     // Return null to indicate this provider should be skipped
-    return null as any;
+    return null;
   }
   
   console.log(`${provider} model obtained successfully: ${typeof model}`);
@@ -227,7 +227,7 @@ When responding to prompts about tools, platforms, or services:
     // Track API call for analysis
     const callId = apiUsageTracker.trackCall({
       provider: normalizedProvider,
-      model: (model as any).id || 'unknown',
+      model: (model as { id?: string }).id || 'unknown',
       operation: 'analysis',
       success: true,
       metadata: { 
@@ -260,7 +260,7 @@ When responding to prompts about tools, platforms, or services:
     apiUsageTracker.updateCall(callId, {
       inputTokens: tokens.inputTokens,
       outputTokens: tokens.outputTokens,
-      cost: estimateCost(normalizedProvider, (model as any).id || 'unknown', tokens.inputTokens, tokens.outputTokens),
+      cost: estimateCost(normalizedProvider, (model as { id?: string }).id || 'unknown', tokens.inputTokens, tokens.outputTokens),
       duration
     });
     
@@ -324,12 +324,14 @@ Examples of mentions to catch:
       console.log(`[${provider}] Structured analysis successful:`, JSON.stringify(result.object, null, 2));
       object = result.object;
     } catch (error) {
-      console.error(`[${provider}] ERROR in structured analysis:`, (error as any).message);
-      console.error(`[${provider}] Error details:`, {
-        name: (error as any).name,
-        stack: (error as any).stack,
-        cause: (error as any).cause
-      });
+      console.error(`[${provider}] ERROR in structured analysis:`, error instanceof Error ? error.message : String(error));
+      if (error instanceof Error) {
+        console.error(`[${provider}] Error details:`, {
+          name: error.name,
+          stack: error.stack,
+          cause: (error as { cause?: unknown }).cause,
+        });
+      }
       
       // For Anthropic, try a simpler text-based approach
       if (provider === 'Anthropic') {
@@ -410,7 +412,7 @@ ${t('aiPrompts.analysisPrompt.returnAnalysis')}
             timestamp: new Date(),
           };
         } catch (fallbackError) {
-          console.error('Fallback analysis also failed:', (fallbackError as any).message);
+          console.error('Fallback analysis also failed:', fallbackError instanceof Error ? fallbackError.message : String(fallbackError));
         }
       }
       
@@ -476,7 +478,7 @@ Be concise and direct.`;
             timestamp: new Date(),
           };
         } catch (fallbackError) {
-          console.error(`[${provider}] Fallback analysis also failed:`, (fallbackError as any).message);
+          console.error(`[${provider}] Fallback analysis also failed:`, fallbackError instanceof Error ? fallbackError.message : String(fallbackError));
         }
       }
       
@@ -592,10 +594,10 @@ Be concise and direct.`;
         })),
         competitorMatches: new Map(
           Array.from(competitorDetectionResults.entries())
-            .filter(([_, result]) => result.mentioned)
+            .filter(([, result]) => result.mentioned)
             .map(([name, result]) => [
               name,
-              result.matches.map((m: any) => ({
+              result.matches.map((m) => ({
                 text: m.text,
                 index: m.index,
                 confidence: m.confidence
@@ -609,12 +611,14 @@ Be concise and direct.`;
     
     // Special handling for Google errors
     if (provider === 'Google' || provider === 'google') {
-      console.error('Google-specific error details:', {
-        message: (error as any).message,
-        stack: (error as any).stack,
-        name: (error as any).name,
-        cause: (error as any).cause
-      });
+      if (error instanceof Error) {
+        console.error('Google-specific error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+          cause: (error as { cause?: unknown })?.cause,
+        });
+      }
     }
     
     throw error;
@@ -823,7 +827,7 @@ export async function analyzeCompetitorsByProvider(
   company: Company,
   responses: AIResponse[],
   knownCompetitors: string[],
-  sendEvent?: (event: any) => Promise<void>
+  sendEvent?: (event: SSEEvent) => Promise<void>
 ): Promise<{
   providerRankings: ProviderSpecificRanking[];
   providerComparison: ProviderComparisonData[];
@@ -954,7 +958,6 @@ export async function analyzeCompetitorsByProvider(
     
     allBrands.forEach(brandName => {
       const detection = providerBrandDetections?.get(brandName);
-      const mentioned = detection?.mentioned || false;
       const mentionCount = detection?.mentionCount || 0;
       const totalResponses = detection?.totalResponses || providerResponses.length;
       const visibilityScore = detection?.percentage || 0; // Utiliser le pourcentage réel
@@ -1067,9 +1070,6 @@ function generateMockResponse(
   brandName: string,
   competitors: string[]
 ): AIResponse {
-  // Simulate some delay
-  const delay = Math.random() * 500 + 200;
-  
   // Create a realistic-looking ranking
   const allCompanies = [brandName, ...competitors].slice(0, 10);
   const shuffled = [...allCompanies].sort(() => Math.random() - 0.5);

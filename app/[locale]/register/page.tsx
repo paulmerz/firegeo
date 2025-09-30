@@ -39,20 +39,21 @@ export default function RegisterPage() {
       } else {
         throw response.error;
       }
-    } catch (err: any) {
-      const errorMessage = err.message || t('auth.failedToRegister');
+    } catch (err) {
+      const errorMessage = (err instanceof Error && err.message) || t('auth.failedToRegister');
+      const errorStatus = (err as { status?: number })?.status;
       
       // Check if the error is about existing account
       // Better Auth returns 422 status for existing accounts
       const isExistingAccountError = (
-        err.status === 422 ||
-        (typeof errorMessage === 'string' && (
+        errorStatus === 422 ||
+        (
           errorMessage.toLowerCase().includes('already exists') ||
           errorMessage.toLowerCase().includes('already registered') ||
           errorMessage.toLowerCase().includes('existing email') ||
           errorMessage.toLowerCase().includes('email already') ||
           errorMessage.toLowerCase().includes('user already exists')
-        ))
+        )
       );
 
       if (isExistingAccountError) {

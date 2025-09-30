@@ -20,7 +20,6 @@ export interface AttachDialogProps {
   open: boolean;
   setOpen: (open: boolean) => void;
   preview: CheckProductPreview;
-  onClick: (options?: any) => Promise<void>;
 }
 
 export default function AttachDialog(params?: AttachDialogProps) {
@@ -137,9 +136,8 @@ export default function AttachDialog(params?: AttachDialogProps) {
                 let errorMessage = 'An error occurred. Please try again or contact support.';
                 if (isNetworkError(error)) {
                   errorMessage = tErrors('connectionLost');
-                } else if (error && typeof error === 'object' && 'message' in error) {
-                  const apiError = error as any;
-                  if (apiError.message?.includes('internet') || apiError.message?.includes('connection')) {
+                } else if (error instanceof Error) {
+                  if (error.message.includes('internet') || error.message.includes('connection')) {
                     errorMessage = tErrors('noInternetConnection');
                   }
                 }
@@ -204,19 +202,16 @@ interface FeatureOptionWithRequiredPrice
 }
 
 export const OptionsInput = ({
-  className,
   option,
   optionsInput,
   setOptionsInput,
   index,
-  ...props
 }: {
-  className?: string;
   option: FeatureOptionWithRequiredPrice;
   optionsInput: FeatureOption[];
   setOptionsInput: (options: FeatureOption[]) => void;
   index: number;
-} & React.HTMLAttributes<HTMLDivElement>) => {
+}) => {
   const { feature_name, billing_units, quantity, price } = option;
   return (
     <PriceItem key={feature_name}>

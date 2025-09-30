@@ -55,23 +55,9 @@ export function ApiUsageSummary({ summary }: ApiUsageSummaryProps) {
   const formatDuration = (ms: number) => `${(ms / 1000).toFixed(2)}s`;
   const formatTokens = (tokens: number) => tokens.toLocaleString();
 
-  const getOperationName = (operation: string) => {
-    const names: Record<string, string> = {
-      'scrape': 'Scraping initial',
-      'competitor_search': 'Recherche de concurrents',
-      'prompt_generation': 'Génération de prompts',
-      'analysis': 'Analyse des résultats',
-      'brand_canonicalization': 'Normalisation des marques',
-      'brand_cleaning': 'Nettoyage des marques',
-      'brand_extraction': 'Extraction des marques',
-      'structured_analysis': 'Analyse structurée'
-    };
-    return names[operation] || operation;
-  };
-
   const getPhaseName = (phase: string) => {
     const names: Record<string, string> = {
-      'url_analysis': 'Analyse de l\'URL',
+      'url_analysis': "Analyse de l'URL",
       'competitor_search': 'Trouver concurrents',
       'prompt_generation': 'Génération de prompts',
       'prompt_analysis': 'Analyse des prompts',

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
+import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { CompetitorRanking } from '@/lib/types';
 import { IdentifiedCompetitor } from '@/lib/brand-monitor-reducer';
@@ -18,6 +18,7 @@ export function VisibilityScoreTab({
   identifiedCompetitors
 }: VisibilityScoreTabProps) {
   const t = useTranslations('brandMonitor.visibilityScore');
+  const [failedFavicons, setFailedFavicons] = useState<Set<string>>(new Set());
   const topCompetitor = competitors.filter(c => !c.isOwn)[0];
   const brandRank = competitors.findIndex(c => c.isOwn) + 1;
   const difference = topCompetitor ? brandData.visibilityScore - topCompetitor.visibilityScore : 0;
@@ -123,42 +124,44 @@ export function VisibilityScoreTab({
             {/* Right side - Legend */}
             <div className="w-80 space-y-2">
               {competitors.slice(0, 8).map((competitor, idx) => {
-                const competitorData = identifiedCompetitors.find(c => 
-                  c.name === competitor.name || 
+                const competitorData = identifiedCompetitors.find(c =>
+                  c.name === competitor.name ||
                   c.name.toLowerCase() === competitor.name.toLowerCase()
                 );
-                const faviconUrl = competitorData?.url ? 
+                const faviconUrl = competitorData?.url ?
                   `https://www.google.com/s2/favicons?domain=${competitorData.url}&sz=64` : null;
-                
-                const color = competitor.isOwn ? '#ea580c' : 
+
+                const color = competitor.isOwn ? '#ea580c' :
                   ['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#6366f1', '#14b8a6', '#f43f5e'][idx % 8];
                 
+                const hasError = faviconUrl ? failedFavicons.has(faviconUrl) : true;
+
                 return (
                   <div key={idx} className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full flex-shrink-0" 
+                    <div
+                      className="w-3 h-3 rounded-full flex-shrink-0"
                       style={{ backgroundColor: color }}
                     />
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-5 h-5 rounded flex items-center justify-center bg-gray-100 flex-shrink-0">
-                        {faviconUrl ? (
-                          <img 
+                        {faviconUrl && !hasError ? (
+                          <Image
                             src={faviconUrl}
                             alt={competitor.name}
+                            width={16}
+                            height={16}
                             className="w-4 h-4 object-contain"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                              const fallback = e.currentTarget.nextSibling as HTMLDivElement;
-                              if (fallback) fallback.style.display = 'flex';
+                            onError={() => {
+                              if (faviconUrl) setFailedFavicons(prev => new Set(prev).add(faviconUrl));
                             }}
                           />
-                        ) : null}
-                        <div className={`w-full h-full ${
-                          competitor.isOwn ? 'bg-orange-500' : 'bg-gray-300'
-                        } flex items-center justify-center text-white text-[8px] font-bold rounded`} 
-                        style={{ display: faviconUrl ? 'none' : 'flex' }}>
-                          {competitor.name.charAt(0)}
-                        </div>
+                        ) : (
+                          <div className={`w-full h-full ${
+                            competitor.isOwn ? 'bg-orange-500' : 'bg-gray-300'
+                          } flex items-center justify-center text-white text-[8px] font-bold rounded`}>
+                            {competitor.name.charAt(0)}
+                          </div>
+                        )}
                       </div>
                       <span className={`text-sm truncate ${
                         competitor.isOwn ? 'font-semibold text-orange-600' : 'text-gray-700'

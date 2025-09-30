@@ -1,26 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { Autumn } from 'autumn-js';
 import { scrapeCompanyInfo, crawlCompanyInfo } from '@/lib/scrape-utils';
 import { getLocaleFromRequest } from '@/lib/locale-utils';
 import { 
   handleApiError, 
   AuthenticationError, 
-  ValidationError,
-  InsufficientCreditsError,
-  ExternalServiceError 
+  ValidationError
 } from '@/lib/api-errors';
-import { FEATURE_ID_CREDITS } from '@/config/constants';
 import { logger } from '@/lib/logger';
 import { apiUsageTracker } from '@/lib/api-usage-tracker';
-
-function getAutumn() {
-  const secret = process.env.AUTUMN_SECRET_KEY;
-  if (!secret) {
-    throw new Error('Autumn secret key or publishable key is required');
-  }
-  return new Autumn({ secretKey: secret });
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -134,27 +122,51 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function buildComparison(single: any, deep: any) {
-  const field = (obj: any, path: string[]) => path.reduce((acc, k) => (acc && acc[k] !== undefined ? acc[k] : undefined), obj);
-  const pick = (obj: any) => ({
+interface CompanyData {
+  name?: string;
+  url?: string;
+  industry?: string;
+  description?: string;
+  scrapedData?: {
+    keywords?: string[];
+    mainProducts?: string[];
+  };
+  businessProfile?: {
+    businessType?: string;
+    marketSegment?: string;
+    primaryMarkets?: string[];
+    technologies?: string[];
+    businessModel?: string;
+  };
+}
+
+function buildComparison(single: CompanyData | null, deep: CompanyData | null) {
+  const field = (obj: CompanyData | null, path: string[]): unknown =>
+    path.reduce((acc: any, k) => (acc ? acc[k] : undefined), obj);
+
+  const pick = (obj: CompanyData | null) => ({
     name: obj?.name,
     url: obj?.url,
     industry: obj?.industry,
     description: obj?.description,
-    keywords: field(obj, ['scrapedData','keywords']),
-    mainProducts: field(obj, ['scrapedData','mainProducts']),
-    businessType: field(obj, ['businessProfile','businessType']),
-    marketSegment: field(obj, ['businessProfile','marketSegment']),
-    primaryMarkets: field(obj, ['businessProfile','primaryMarkets']),
-    technologies: field(obj, ['businessProfile','technologies']),
-    businessModel: field(obj, ['businessProfile','businessModel']),
+    keywords: field(obj, ['scrapedData', 'keywords']),
+    mainProducts: field(obj, ['scrapedData', 'mainProducts']),
+    businessType: field(obj, ['businessProfile', 'businessType']),
+    marketSegment: field(obj, ['businessProfile', 'marketSegment']),
+    primaryMarkets: field(obj, ['businessProfile', 'primaryMarkets']),
+    technologies: field(obj, ['businessProfile', 'technologies']),
+    businessModel: field(obj, ['businessProfile', 'businessModel']),
   });
-  const s = pick(single || {});
-  const d = pick(deep || {});
-  const diff: Record<string, { single: any; deep: any; improved?: boolean }> = {};
-  for (const key of Object.keys(s)) {
-    if (JSON.stringify((s as any)[key]) !== JSON.stringify((d as any)[key])) {
-      diff[key] = { single: (s as any)[key], deep: (d as any)[key], improved: !!(d as any)[key] && !(s as any)[key] };
+
+  const s = pick(single);
+  const d = pick(deep);
+
+  const diff: Record<string, { single: unknown; deep: unknown; improved?: boolean }> = {};
+  for (const key of Object.keys(s) as Array<keyof typeof s>) {
+    const sValue = s[key];
+    const dValue = d[key];
+    if (JSON.stringify(sValue) !== JSON.stringify(dValue)) {
+      diff[key] = { single: sValue, deep: dValue, improved: !!dValue && !sValue };
     }
   }
   return diff;

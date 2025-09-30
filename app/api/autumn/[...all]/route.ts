@@ -33,8 +33,10 @@ const originalHandler = autumnHandler({
   }
 });
 
+type AutumnApiHandler = (request: Request) => Promise<NextResponse>;
+
 // Enhanced error handling wrapper for Autumn routes
-async function handleAutumnRequest(handler: Function, request: Request) {
+async function handleAutumnRequest(handler: AutumnApiHandler, request: Request) {
   try {
     return await handler(request);
   } catch (error) {

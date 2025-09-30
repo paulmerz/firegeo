@@ -61,8 +61,6 @@ export async function generateIntelligentBrandVariations(
     };
   }
 
-  const languageName = locale === 'fr' ? 'French' : 'English';
-  
   const prompt = `You are a brand detection expert. Analyze this brand name and generate ONLY the variations that would be appropriate for brand detection in text.
 
 Brand: "${coreBrand}"

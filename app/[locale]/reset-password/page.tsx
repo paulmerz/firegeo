@@ -47,8 +47,9 @@ function ResetPasswordForm() {
       
       // Redirect to login with success message
       router.push('/login?reset=success');
-    } catch (err: any) {
-      setError(err.message || 'Failed to reset password');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to reset password';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -107,7 +108,7 @@ function ResetPasswordForm() {
         <div className="relative z-10 max-w-md text-white">
           <h1 className="text-4xl font-bold mb-4">Almost there!</h1>
           <p className="text-lg opacity-90">
-            Create a new password for your account. Make sure it's strong and unique.
+            Create a new password for your account. Make sure it&apos;s strong and unique.
           </p>
           <div className="mt-6 space-y-3">
             <div className="flex items-center text-white/80">

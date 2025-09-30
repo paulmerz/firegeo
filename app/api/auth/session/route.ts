@@ -12,9 +12,9 @@ export async function GET(request: Request) {
       cookies: request.headers.get('cookie'),
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json({
-      error: error.message,
+      error: error instanceof Error ? error.message : 'An unknown error occurred',
       session: null,
     });
   }

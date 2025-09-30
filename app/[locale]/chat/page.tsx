@@ -11,9 +11,10 @@ import { useConversations, useConversation, useDeleteConversation } from '@/hook
 import { useSendMessage } from '@/hooks/useMessages';
 import { format } from 'date-fns';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import type { Session } from 'better-auth';
 
 // Separate component that uses Autumn hooks
-function ChatContent({ session }: { session: any }) {
+function ChatContent({ session }: { session: Session }) {
   const router = useRouter();
   const params = useParams();
   const locale = params.locale as string;
@@ -62,7 +63,7 @@ function ChatContent({ session }: { session: any }) {
       
       // Refetch customer data to update credits in navbar
       await refetch();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to send message:', error);
     }
   };

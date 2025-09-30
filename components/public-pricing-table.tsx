@@ -27,7 +27,6 @@ interface Product {
 export function PublicPricingTable() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const t = useTranslations();
 
   useEffect(() => {
@@ -65,7 +64,7 @@ export function PublicPricingTable() {
   }
 
   // If we can't fetch products (user not logged in), show static pricing
-  if (error || products.length === 0) {
+  if (products.length === 0) {
     return (
       <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
         {/* Starter */}

@@ -67,10 +67,10 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(created);
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Feedback POST error:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { auth, type Session } from '@/lib/auth';
 import { AuthenticationError, handleApiError } from './api-errors';
 import { apiRateLimit } from './rate-limit';
 
@@ -9,7 +9,7 @@ interface ApiHandlerOptions {
 }
 
 export function withApiHandler(
-  handler: (request: NextRequest, session?: any) => Promise<NextResponse>,
+  handler: (request: NextRequest, session?: Session | null) => Promise<NextResponse>,
   options: ApiHandlerOptions = { requireAuth: true, rateLimit: true }
 ) {
   return async (request: NextRequest) => {
@@ -19,7 +19,7 @@ export function withApiHandler(
         await apiRateLimit(request, clientIP);
       }
 
-      let session = null;
+      let session: Session | null = null;
       if (options.requireAuth) {
         const sessionResponse = await auth.api.getSession({
           headers: request.headers,

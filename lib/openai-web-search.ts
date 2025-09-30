@@ -1,6 +1,58 @@
 import OpenAI from 'openai';
 import { AIResponse } from './types';
-import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
+import { apiUsageTracker, estimateCost } from './api-usage-tracker';
+import { getLanguageName } from './locale-utils';
+
+interface WebSearchSource {
+  url: string;
+  title?: string;
+  text?: string;
+  source?: string; // for annotations
+  domain?: string;
+  type?: string;
+}
+
+interface OpenAIWebSearchResponse {
+  output_text?: string;
+  web_search_call?: {
+    action?: {
+      sources?: WebSearchSource[];
+    };
+  };
+  sources?: WebSearchSource[];
+  search_results?: WebSearchSource[];
+  output?: {
+    sources?: WebSearchSource[];
+  };
+  annotations?: {
+    type?: string;
+    url?: string;
+    source?: string;
+    title?: string;
+    text?: string;
+  }[];
+  reasoning?: string;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+  };
+}
+
+interface AnalysisData {
+    rankings?: {
+        position: number;
+        company: string;
+        reason: string;
+        sentiment: 'positive' | 'neutral' | 'negative';
+    }[];
+    analysis?: {
+        brandMentioned?: boolean;
+        brandPosition?: number;
+        competitors?: string[];
+        overallSentiment?: 'positive' | 'neutral' | 'negative';
+        confidence?: number;
+    };
+}
 
 /**
  * Extract brand name from complex brand strings
@@ -71,8 +123,6 @@ export async function createAIBrandVariations(
     return createSimpleBrandVariations(brandString);
   }
   
-  const languageName = locale ? getLanguageName(locale) : 'English';
-  
   const prompt = `Analyze this brand name and generate search variations for brand detection.
 
 Brand: "${coreBrand}"
@@ -125,7 +175,7 @@ Return ONLY a JSON array of strings, no other text.`;
         console.log(`🤖 [AI Brand Variations] ${coreBrand} → [${filtered.join(', ')}]`);
         return filtered;
       }
-    } catch (parseError) {
+    } catch {
       console.warn('Failed to parse OpenAI brand variations JSON:', content);
     }
   } catch (error) {
@@ -151,7 +201,6 @@ async function createSmartBrandVariations(brandString: string, locale?: string):
   // For complex multi-word brands, use AI
   return createAIBrandVariations(brandString, locale);
 }
-import { getLanguageName } from './locale-utils';
 
 // Filtre les variantes génériques pour les marques multi-mots (ex: évite "Silence", "Mobility")
 function filterBrandVariations(coreBrand: string, variations: string[]): string[] {
@@ -296,7 +345,11 @@ export async function canonicalizeBrandsWithOpenAI(
     });
 
     const content = res.choices[0]?.message?.content || '{}';
-    const parsed: any = JSON.parse(content);
+    const parsed: {
+      canonicalNames?: string[];
+      mapping?: Record<string, string>;
+      alternatives?: Record<string, string[]>;
+    } = JSON.parse(content);
     const mapping: Record<string, string> = parsed?.mapping || {};
     const canonicalNames: string[] = parsed?.canonicalNames || [];
     const alternatives: Record<string, string[]> = parsed?.alternatives || {};
@@ -348,7 +401,7 @@ export async function analyzePromptWithOpenAIWebSearch(
   competitors: string[],
   locale?: string,
   model: string = 'gpt-4o-mini'
-): Promise<AIResponse> {
+): Promise<AIResponse | null> {
   const client = getOpenAIClient();
   const languageName = locale ? getLanguageName(locale) : 'English';
 
@@ -398,6 +451,7 @@ Return the content in ${languageName} language.`;
       temperature: 0.7,
       max_output_tokens: 800,
     });
+    const webSearchResponse = response as OpenAIWebSearchResponse;
     const duration = Date.now() - startTime;
 
     // Update API call with duration (tokens not available from responses API)
@@ -405,39 +459,39 @@ Return the content in ${languageName} language.`;
       duration,
       // Estimate tokens based on response length
       inputTokens: Math.ceil(enhancedPrompt.length / 4), // Rough estimation
-      outputTokens: Math.ceil((response.output_text?.length || 0) / 4),
-      cost: estimateCost('openai', model, Math.ceil(enhancedPrompt.length / 4), Math.ceil((response.output_text?.length || 0) / 4))
+      outputTokens: Math.ceil((webSearchResponse.output_text?.length || 0) / 4),
+      cost: estimateCost('openai', model, Math.ceil(enhancedPrompt.length / 4), Math.ceil((webSearchResponse.output_text?.length || 0) / 4))
     });
 
-    console.log(`[OpenAI Web Search] Response received. Length: ${response.output_text?.length || 0}`);
+    console.log(`[OpenAI Web Search] Response received. Length: ${webSearchResponse.output_text?.length || 0}`);
     
-    if (!response.output_text || response.output_text.length === 0) {
+    if (!webSearchResponse.output_text || webSearchResponse.output_text.length === 0) {
       console.error(`[OpenAI Web Search] ERROR: Empty response for prompt: "${originalPrompt}"`);
       throw new Error('OpenAI returned empty response');
     }
 
     // Extract web search sources from multiple possible locations
-    const webSearchSources: any[] = [];
+    const webSearchSources: WebSearchSource[] = [];
     
     // Method 1: Check standard API response paths
-    if ((response as any).web_search_call?.action?.sources) {
-      webSearchSources.push(...(response as any).web_search_call.action.sources);
-    } else if ((response as any).sources) {
-      webSearchSources.push(...(response as any).sources);
-    } else if ((response as any).search_results) {
-      webSearchSources.push(...(response as any).search_results);
-    } else if ((response as any).output?.sources) {
-      webSearchSources.push(...(response as any).output.sources);
+    if (webSearchResponse.web_search_call?.action?.sources) {
+      webSearchSources.push(...webSearchResponse.web_search_call.action.sources);
+    } else if (webSearchResponse.sources) {
+      webSearchSources.push(...webSearchResponse.sources);
+    } else if (webSearchResponse.search_results) {
+      webSearchSources.push(...webSearchResponse.search_results);
+    } else if (webSearchResponse.output?.sources) {
+      webSearchSources.push(...webSearchResponse.output.sources);
     }
     
     // Method 2: Check annotations field
-    if ((response as any).annotations) {
-      const annotations = (response as any).annotations;
+    if (webSearchResponse.annotations) {
+      const annotations = webSearchResponse.annotations;
       if (Array.isArray(annotations)) {
-        annotations.forEach((annotation: any) => {
+        annotations.forEach((annotation) => {
           if (annotation.type === 'citation' || annotation.url) {
             webSearchSources.push({
-              url: annotation.url || annotation.source,
+              url: annotation.url || annotation.source || '',
               title: annotation.title || annotation.text || 'Citation',
               type: 'annotation'
             });
@@ -447,7 +501,7 @@ Return the content in ${languageName} language.`;
     }
     
     // Method 3: Extract sources from the response text itself
-    const responseText = response.output_text;
+    const responseText = webSearchResponse.output_text;
     // Clean any inline sources section so it won't render in UI
     const cleanedText = responseText.replace(/\n?Sources consultées?:[\s\S]*$/i, '').trim();
     
@@ -457,17 +511,6 @@ Return the content in ${languageName} language.`;
       if (allUrls) {
         allUrls.forEach((url: string) => {
           const cleanUrl = url.replace(/[.,;)]+$/, '');
-          
-          // Try to extract context around the URL
-          const urlIndex = cleanedText.indexOf(url);
-          const contextStart = Math.max(0, urlIndex - 100);
-          const contextEnd = Math.min(cleanedText.length, urlIndex + url.length + 100);
-          const context = cleanedText.substring(contextStart, contextEnd);
-          
-          // Extract a meaningful snippet (clean, not mid-word)
-          const sentences = context.split(/[.!?]+/);
-          const relevantSentence = sentences.find(s => s.includes(url)) || sentences[0];
-          const snippet = relevantSentence ? trimAtWord(relevantSentence.trim(), 200) : 'Source trouvée dans la réponse';
           
           webSearchSources.push({ 
             url: cleanUrl, 
@@ -479,8 +522,8 @@ Return the content in ${languageName} language.`;
     }
     
     // Method 5: Check reasoning field for sources
-    if ((response as any).reasoning && webSearchSources.length === 0) {
-      const reasoningText = (response as any).reasoning;
+    if (webSearchResponse.reasoning && webSearchSources.length === 0) {
+      const reasoningText = webSearchResponse.reasoning;
       if (typeof reasoningText === 'string') {
         const urlMatches = reasoningText.match(/https?:\/\/[^\s)]+/g);
         if (urlMatches) {
@@ -501,7 +544,7 @@ Return the content in ${languageName} language.`;
     }
     
     // For debugging, show if web search was actually used
-    const reasoningText = (response as any).reasoning;
+    const reasoningText = webSearchResponse.reasoning;
     const webSearchUsed = responseText.includes('recherche') || 
                          responseText.includes('récent') ||
                          responseText.includes('2024') ||
@@ -548,7 +591,7 @@ Return the content in ${languageName} language.`;
     
     if (isAuthError) {
       console.log('[OpenAI Web Search] Authentication error - returning null to skip this provider');
-      return null as any;
+      return null;
     }
     
     // For other errors, log but don't return null - let the error bubble up
@@ -573,7 +616,7 @@ async function analyzeResponseContent(
   client: OpenAI,
   locale?: string
 ): Promise<{
-  rankings: any[];
+  rankings: { position: number; company: string; reason: string; sentiment: 'positive' | 'neutral' | 'negative' }[];
   competitors: string[];
   brandMentioned: boolean;
   brandPosition?: number;
@@ -631,14 +674,13 @@ Please respond in JSON format with the following structure:
       throw new Error('No analysis response received');
     }
 
-    const analysisData = JSON.parse(analysisText);
+    const analysisData: AnalysisData = JSON.parse(analysisText);
     
     console.log('[OpenAI Web Search] Structured analysis successful');
     
     // Enhanced brand detection fallback (same as ai-utils-enhanced.ts)
     // Apply robust detection logic even after successful structured analysis
     const textLower = text.toLowerCase();
-    const brandNameLower = brandName.toLowerCase();
     
     // Enhanced brand detection with smart variations
     const brandVariations = await createSmartBrandVariations(brandName, locale);
@@ -679,7 +721,7 @@ Please respond in JSON format with the following structure:
     }
     
     return {
-      rankings: (analysisData.rankings || []) as any[],
+      rankings: (analysisData.rankings || []),
       competitors: relevantCompetitors,
       brandMentioned: enhancedBrandMentioned,
       brandPosition: analysisData.analysis?.brandPosition || undefined,
@@ -692,7 +734,6 @@ Please respond in JSON format with the following structure:
     
     // Fallback to basic text analysis
     const textLower = text.toLowerCase();
-    const brandNameLower = brandName.toLowerCase();
     
     // Enhanced brand detection with smart variations (fallback)
     const brandVariations = await createSmartBrandVariations(brandName, locale);

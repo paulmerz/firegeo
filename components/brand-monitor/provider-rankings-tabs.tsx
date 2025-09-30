@@ -126,8 +126,7 @@ export function ProviderRankingsTabs({
   brandName,
   shareOfVoice,
   averagePosition,
-  sentimentScore,
-  weeklyChange
+  sentimentScore
 }: ProviderRankingsTabsProps) {
   const t = useTranslations('brandMonitor.providerRankings');
   const [selectedProvider, setSelectedProvider] = useState(

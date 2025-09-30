@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import type { ReactElement } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Sparkles, Menu, X, Plus, Trash2, Loader2 } from 'lucide-react';
+import { Menu, X, Plus, Trash2, Loader2 } from 'lucide-react';
 import { useCustomer, useRefreshCustomer } from '@/hooks/useAutumnCustomer';
 import { useBrandAnalyses, useBrandAnalysis, useDeleteBrandAnalysis } from '@/hooks/useBrandAnalyses';
 import { Button } from '@/components/ui/button';
@@ -14,13 +14,14 @@ import { format } from 'date-fns';
 import { useSession } from '@/lib/auth-client';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
+import type { Product } from 'autumn-js';
+
 // Separate component that uses Autumn hooks
-function BrandMonitorContent({ session }: { session: any }) {
+function BrandMonitorContent() {
   const router = useRouter();
-  const params = useParams();
-  const locale = params.locale as string;
+  useParams();
   const t = useTranslations();
-  const { customer, isLoading, error } = useCustomer();
+  const { customer, error } = useCustomer();
   const refreshCustomer = useRefreshCustomer();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedAnalysisId, setSelectedAnalysisId] = useState<string | null>(null);
@@ -34,9 +35,7 @@ function BrandMonitorContent({ session }: { session: any }) {
   const deleteAnalysis = useDeleteBrandAnalysis();
   const analysesList: BrandAnalysisWithSources[] = analyses ?? [];
   const renderAnalysisItem = (
-    item: BrandAnalysisWithSources,
-    _index?: number,
-    _array?: BrandAnalysisWithSources[]
+    item: BrandAnalysisWithSources
   ): ReactElement => {
     return (
       <div
@@ -78,7 +77,7 @@ function BrandMonitorContent({ session }: { session: any }) {
   const credits = messageUsage ? (messageUsage.balance || 0) : 0;
 
   // Determine active plan name/id
-  const activeProduct = customer?.products?.find((p: any) => 
+  const activeProduct = customer?.products?.find((p: Product) =>
     p?.status === 'active' || p?.status === 'trialing' || p?.status === 'past_due'
   );
   // DEV-only plan override via footer select
@@ -244,5 +243,5 @@ export default function BrandMonitorPage() {
     );
   }
 
-  return <BrandMonitorContent session={session} />;
+  return <BrandMonitorContent />;
 }

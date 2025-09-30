@@ -93,9 +93,8 @@ export async function POST(request: NextRequest) {
     await getAutumn().track({
       customer_id: sessionResponse.user.id,
       feature_id: FEATURE_ID_CREDITS,
-      value,
-      // metadata optional; SDK may ignore unknown fields
-    } as any);
+      count: value,
+    });
 
     // Return new balance
     const updated = await getAutumn().check({

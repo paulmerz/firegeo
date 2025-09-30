@@ -8,13 +8,11 @@ import {
   AuthenticationError, 
   InsufficientCreditsError, 
   ValidationError, 
-  ExternalServiceError, 
-  handleApiError 
+  ExternalServiceError
 } from '@/lib/api-errors';
 import { 
   FEATURE_ID_CREDITS, 
-  ERROR_MESSAGES,
-  SSE_MAX_DURATION
+  ERROR_MESSAGES
 } from '@/config/constants';
 import { apiUsageTracker } from '@/lib/api-usage-tracker';
 import { logger } from '@/lib/logger';

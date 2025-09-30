@@ -129,16 +129,20 @@ export function highlightMarkdownChildren(
 
     // Process React elements
     if (React.isValidElement(child)) {
+      const props = child.props as {
+        children?: React.ReactNode;
+        'data-brand-highlight'?: boolean;
+      };
       // Skip already processed elements
-      if ((child.props as any)?.['data-brand-highlight']) {
+      if (props['data-brand-highlight']) {
         return child;
       }
 
       // Recursively process children
-      if ((child.props as any)?.children) {
-        return React.cloneElement(child as any, {
+      if (props.children) {
+        return React.cloneElement(child, {
           children: highlightMarkdownChildren(
-            (child.props as any).children,
+            props.children,
             detectionResults,
             config,
             showHighlighting

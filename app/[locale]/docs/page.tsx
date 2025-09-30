@@ -22,7 +22,7 @@ export default function DocsPage() {
 
   useEffect(() => {
     const l = window.location.pathname.split('/')[1] || 'fr';
-    setLocale((['fr','en'] as const).includes(l as any) ? (l as 'fr'|'en') : 'fr');
+    setLocale(l === 'en' ? 'en' : 'fr');
   }, []);
 
   useEffect(() => {
@@ -46,8 +46,11 @@ export default function DocsPage() {
           for (const [k,v] of entries) map[k] = v;
           setHtmlById(map);
         }
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message || 'Failed to load docs');
+      } catch (e) {
+        if (!cancelled) {
+          const message = e instanceof Error ? e.message : 'Failed to load docs';
+          setError(message);
+        }
       }
     }
     loadAll();

@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     
     // Run Perplexity competitor search
     const competitors = await findCompetitorsWithAIWebSearch(
-      company as any, 
+      company,
       maxResults, 
       useWebSearch, 
       company.name, 

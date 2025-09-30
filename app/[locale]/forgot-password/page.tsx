@@ -1,9 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from '@/i18n/routing';
 import { Link } from '@/i18n/routing';
-import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { authClient } from '@/lib/auth-client';
 import { ArrowLeft } from 'lucide-react';
@@ -13,8 +11,6 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  const router = useRouter();
-  const t = useTranslations();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,8 +23,9 @@ export default function ForgotPasswordPage() {
         redirectTo: '/reset-password',
       });
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message || 'Failed to send reset email');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to send reset email';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -43,7 +40,7 @@ export default function ForgotPasswordPage() {
           <div className="relative z-10 max-w-md text-white">
             <h1 className="text-4xl font-bold mb-4">Check your inbox!</h1>
             <p className="text-lg opacity-90">
-              We've sent you instructions to reset your password. Check your email to continue.
+              We&apos;ve sent you instructions to reset your password. Check your email to continue.
             </p>
           </div>
           {/* Decorative elements */}
@@ -64,11 +61,11 @@ export default function ForgotPasswordPage() {
                 Check your email
               </h2>
               <p className="mt-2 text-gray-600">
-                We've sent a password reset link to
+                We&apos;ve sent a password reset link to
               </p>
               <p className="mt-1 text-lg font-medium text-gray-900">{email}</p>
               <p className="mt-4 text-sm text-gray-500">
-                Didn't receive the email? Check your spam folder or try again.
+                Didn&apos;t receive the email? Check your spam folder or try again.
               </p>
               <Link 
                 href="/login" 
@@ -92,7 +89,7 @@ export default function ForgotPasswordPage() {
         <div className="relative z-10 max-w-md text-white">
           <h1 className="text-4xl font-bold mb-4">Forgot your password?</h1>
           <p className="text-lg opacity-90">
-            No worries! We'll help you reset it and get back to building amazing things.
+            No worries! We&apos;ll help you reset it and get back to building amazing things.
           </p>
         </div>
         {/* Decorative elements */}
@@ -117,7 +114,7 @@ export default function ForgotPasswordPage() {
               Reset your password
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
-              Enter your email and we'll send you a reset link
+              Enter your email and we&apos;ll send you a reset link
             </p>
           </div>
           

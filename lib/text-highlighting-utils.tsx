@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { BrandDetectionResult, BrandDetectionMatch } from './brand-detection-service';
+import { BrandDetectionResult } from './brand-detection-service';
 
 export interface HighlightedSegment {
   text: string;

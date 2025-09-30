@@ -8,7 +8,6 @@ import {
   AuthenticationError, 
   InsufficientCreditsError, 
   ValidationError, 
-  DatabaseError,
   ExternalServiceError,
   handleApiError 
 } from '@/lib/api-errors';
@@ -126,7 +125,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Store user message
-    const [userMessage] = await db
+    await db
       .insert(messages)
       .values({
         conversationId: currentConversation.id,
@@ -178,7 +177,7 @@ export async function POST(request: NextRequest) {
       conversationId: currentConversation.id,
       messageId: aiMessage.id,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Chat API error:', error);
     return handleApiError(error);
   }
@@ -232,7 +231,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json(userConversations);
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Chat GET error:', error);
     return handleApiError(error);
   }

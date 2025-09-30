@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Globe, X } from 'lucide-react';
+import { Globe } from 'lucide-react';
 import { CREDIT_COST_PER_PROMPT_ANALYSIS_WEB, CREDIT_COST_PER_PROMPT_ANALYSIS_NO_WEB } from '@/config/constants';
 
 interface WebSearchToggleProps {

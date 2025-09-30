@@ -16,7 +16,7 @@ import { useTranslations } from "next-intl";
 export default function PricingTable({
   productDetails,
 }: {
-  productDetails?: any;
+  productDetails?: Product[];
 }) {
   const { attach } = useCustomer();
   const [isAnnual, setIsAnnual] = useState(false);
@@ -49,7 +49,7 @@ export default function PricingTable({
 
   const multiInterval = intervals.length > 1;
 
-  const intervalFilter = (product: any) => {
+  const intervalFilter = (product: Product) => {
     if (!product.properties?.interval_group) {
       return true;
     }
@@ -69,7 +69,7 @@ export default function PricingTable({
     <div className={cn("root")}>
       {visibleProducts && visibleProducts.length > 0 && (
         <PricingTableContainer
-          products={visibleProducts as any}
+          products={visibleProducts}
           isAnnualToggle={isAnnual}
           setIsAnnualToggle={setIsAnnual}
           multiInterval={multiInterval}
@@ -209,7 +209,7 @@ export const PricingCard = ({
     throw new Error(`Product with id ${productId} not found`);
   }
 
-  const { name, display: productDisplay, items } = product;
+  const { name, display: productDisplay } = product;
 
   const { buttonText } = getPricingTableContent(product);
   const isRecommended = productDisplay?.recommend_text ? true : false;
