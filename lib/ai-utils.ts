@@ -2,8 +2,8 @@
 import { generateText, generateObject } from 'ai';
 import { z } from 'zod';
 import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData } from './types';
-import { getProviderModel, normalizeProviderName, getConfiguredProviders, PROVIDER_CONFIGS } from './provider-config';
-import { detectBrandMentions, detectMultipleBrands } from './brand-detection-service';
+import { getProviderModel, normalizeProviderName, isProviderConfigured, getConfiguredProviders, PROVIDER_CONFIGS } from './provider-config';
+import { detectBrandMentions, detectMultipleBrands, ensureBrandVariationsForBrand } from './brand-detection-service';
 import type { BrandVariation } from './types';
 import { getMessages, getTranslation, getLanguageName } from './locale-utils';
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
@@ -42,7 +42,21 @@ const CompetitorSchema = z.object({
 
 const PROMPT_CATEGORY_SEQUENCE: BrandPrompt['category'][] = ['ranking', 'comparison', 'alternatives', 'recommendations'];
 
-// Removed unused function
+/**
+ * Helper function to use pre-generated brand variations or fallback to generation
+ */
+async function getBrandVariationsForDetection(
+  brandName: string,
+  locale?: string,
+  brandVariations?: Record<string, BrandVariation>
+): Promise<string[]> {
+  if (brandVariations && brandVariations[brandName]) {
+    return brandVariations[brandName].variations;
+  }
+
+  const variation = await ensureBrandVariationsForBrand(brandName, locale);
+  return variation.variations;
+}
 
 export async function identifyCompetitors(company: Company, progressCallback?: ProgressCallback): Promise<string[]> {
   try {
@@ -192,7 +206,7 @@ export async function analyzePromptWithProvider(
   competitors: string[],
   useMockMode: boolean = false,
   locale?: string,
-  _brandVariations?: Record<string, BrandVariation> // eslint-disable-line @typescript-eslint/no-unused-vars
+  brandVariations?: Record<string, BrandVariation>
 ): Promise<AIResponse> {
   const trimmedPrompt = (prompt || '').trim();
   // Mock mode for demo/testing without API keys
@@ -244,7 +258,7 @@ export async function analyzePromptWithProvider(
     
     const startTime = Date.now();
     const { text, usage } = await generateText({
-      model: model as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      model,
       prompt: trimmedPrompt,
       // GPT-5: ne pas envoyer temperature/top_p/logprobs
       maxTokens: 800,

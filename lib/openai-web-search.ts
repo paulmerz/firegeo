@@ -3,7 +3,7 @@ import { AIResponse, type BrandVariation } from './types';
 import { ensureBrandVariationsForBrand } from './brand-detection-service';
 import { apiUsageTracker, estimateCost } from './api-usage-tracker';
 import { getLanguageName } from './locale-utils';
-// Removed unused import
+import { logger } from './logger';
 
 const ensureBrandVariations = ensureBrandVariationsForBrand;
 
@@ -354,29 +354,11 @@ Please respond in JSON format with the following structure:
     // Apply robust detection logic even after successful structured analysis
     const textLower = text.toLowerCase();
     
-    // Build consolidated variations map ONCE to avoid multiple lookups/generations
-    const allBrands = [brandName, ...competitors];
-    const variationsMap = new Map<string, BrandVariation>();
-    
-    for (const brand of allBrands) {
-      if (precomputedVariations instanceof Map) {
-        if (precomputedVariations.has(brand)) {
-          variationsMap.set(brand, precomputedVariations.get(brand)!);
-        } else {
-          const variations = await ensureBrandVariations(brand, locale);
-          variationsMap.set(brand, variations);
-        }
-      } else if (precomputedVariations && brand in precomputedVariations) {
-        variationsMap.set(brand, precomputedVariations[brand]);
-      } else {
-        // Only generate if not in precomputed - should be rare if analyze-common did its job
-        const variations = await ensureBrandVariations(brand, locale);
-        variationsMap.set(brand, variations);
-      }
-    }
-    
     // Enhanced brand detection with smart variations
-    const resolvedBrandVariations = variationsMap.get(brandName)!;
+    const brandVariationsRecord = precomputedVariations instanceof Map
+      ? precomputedVariations.get(brandName)
+      : (precomputedVariations?.[brandName] ?? undefined);
+    const resolvedBrandVariations = brandVariationsRecord ?? await ensureBrandVariations(brandName, locale);
     const enhancedBrandMentioned = analysisData.analysis?.brandMentioned ||
       textIncludesAnyVariation(textLower, resolvedBrandVariations.variations);
       
@@ -385,12 +367,14 @@ Please respond in JSON format with the following structure:
     const allMentionedCompetitors = new Set<string>([...aiCompetitors]);
     
     for (const competitor of competitors) {
-      const competitorVariations = variationsMap.get(competitor);
-      if (competitorVariations) {
-        const found = textIncludesAnyVariation(textLower, competitorVariations.variations);
-        if (found) {
-          allMentionedCompetitors.add(competitor);
-        }
+      const competitorVariationsRecord = precomputedVariations instanceof Map
+        ? precomputedVariations.get(competitor)
+        : (precomputedVariations?.[competitor] ?? undefined);
+      const competitorVariations = competitorVariationsRecord ?? await ensureBrandVariations(competitor, locale);
+      const found = textIncludesAnyVariation(textLower, competitorVariations.variations);
+      
+      if (found) {
+        allMentionedCompetitors.add(competitor);
       }
     }
 
@@ -403,10 +387,11 @@ Please respond in JSON format with the following structure:
       const brandTerms = resolvedBrandVariations.variations;
       const competitorTermsMap: Record<string, string[]> = {};
       for (const c of competitors) {
-        const competitorVariations = variationsMap.get(c);
-        if (competitorVariations) {
-          competitorTermsMap[c] = competitorVariations.variations;
-        }
+        const competitorVariationsRecord = precomputedVariations instanceof Map
+          ? precomputedVariations.get(c)
+          : (precomputedVariations?.[c] ?? undefined);
+        const competitorVariations = competitorVariationsRecord ?? await ensureBrandVariations(c, locale);
+        competitorTermsMap[c] = competitorVariations.variations;
       }
       console.log('🔎 [OpenAI Web Search Detection] Terms used:');
       console.log('  • Brand:', brandName, '→', brandTerms);
@@ -432,35 +417,21 @@ Please respond in JSON format with the following structure:
     // Fallback to basic text analysis
     const textLower = text.toLowerCase();
     
-    // Build consolidated variations map ONCE (fallback path)
-    const allBrands = [brandName, ...competitors];
-    const fallbackVariationsMap = new Map<string, BrandVariation>();
-    
-    for (const brand of allBrands) {
-      if (precomputedVariations instanceof Map) {
-        if (precomputedVariations.has(brand)) {
-          fallbackVariationsMap.set(brand, precomputedVariations.get(brand)!);
-        } else {
-          const variations = await ensureBrandVariations(brand, locale);
-          fallbackVariationsMap.set(brand, variations);
-        }
-      } else if (precomputedVariations && brand in precomputedVariations) {
-        fallbackVariationsMap.set(brand, precomputedVariations[brand]);
-      } else {
-        const variations = await ensureBrandVariations(brand, locale);
-        fallbackVariationsMap.set(brand, variations);
-      }
-    }
-    
     // Enhanced brand detection with smart variations (fallback)
-    const fallbackBrandVariations = fallbackVariationsMap.get(brandName)!;
+    const fallbackBrandVariationRecord = precomputedVariations instanceof Map
+      ? precomputedVariations.get(brandName)
+      : (precomputedVariations?.[brandName] ?? undefined);
+    const fallbackBrandVariations = fallbackBrandVariationRecord ?? await ensureBrandVariations(brandName, locale);
     const mentioned = textIncludesAnyVariation(textLower, fallbackBrandVariations.variations);
       
     // Enhanced competitor detection with smart variations (fallback)
     const detectedCompetitors: string[] = [];
     for (const c of competitors) {
-      const competitorVariations = fallbackVariationsMap.get(c);
-      if (competitorVariations && textIncludesAnyVariation(textLower, competitorVariations.variations)) {
+      const competitorRecord = precomputedVariations instanceof Map
+        ? precomputedVariations.get(c)
+        : (precomputedVariations?.[c] ?? undefined);
+      const competitorVariations = competitorRecord ?? await ensureBrandVariations(c, locale);
+      if (textIncludesAnyVariation(textLower, competitorVariations.variations)) {
         detectedCompetitors.push(c);
       }
     }

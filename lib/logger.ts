@@ -66,7 +66,7 @@ function sanitizeForConsole(input: unknown): string {
   return sanitized;
 }
 
-function sanitizeArgs(args: any[]): any[] { // eslint-disable-line @typescript-eslint/no-explicit-any
+function sanitizeArgs(args: any[]): any[] {
   return args.map((arg) => (typeof arg === 'string' ? sanitizeForConsole(arg) : arg));
 }
 

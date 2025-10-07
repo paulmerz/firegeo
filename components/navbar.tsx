@@ -11,59 +11,23 @@ import { Link, useRouter } from '@/i18n/routing';
 // Separate component that only renders when user is logged in
 function UserCredits() {
   const { data: session } = useSession();
-  const { customer } = useCustomer();
-  const [displayCredits, setDisplayCredits] = useState<number | null>(null);
-  const t = useTranslations('common');
-  const { data: creditsData, isLoading } = useCredits();
-
-  // Calculer les valeurs nécessaires
-  const userId = session?.user?.id ?? session?.user?.email ?? null;
-  const storageKey = userId ? `autumn_credits_${userId}` : null;
-
-  // Lecture initiale depuis le cache local si disponible
-  useEffect(() => {
-    if (!storageKey) return;
-    try {
-      const cached = localStorage.getItem(storageKey);
-      if (cached != null) {
-        const parsed = Number(cached);
-        if (!Number.isNaN(parsed)) {
-          setDisplayCredits(parsed);
-        }
-      }
-    } catch {}
-  }, [storageKey]);
-
-  // Quand Autumn répond, on met à jour l'état et le cache
-  useEffect(() => {
-    const balance = customer?.features?.credits?.balance;
-    if (typeof balance === 'number' && balance >= 0) {
-      setDisplayCredits(balance);
-      if (storageKey) {
-        try {
-          localStorage.setItem(storageKey, String(balance));
-        } catch {}
-      }
-    }
-  }, [customer, storageKey]);
-
-  // Vérifier si la session existe après tous les hooks
+  
+  // Ne pas afficher si l'utilisateur n'est pas connecté
   if (!session) {
     return null;
   }
 
-  if (isLoading) {
-    return null;
-  }
+  const { data: creditsData, isLoading } = useCredits();
+  const t = useTranslations('common');
 
-  const balance = creditsData?.balance ?? displayCredits;
-  if (balance == null) {
+  // Afficher un indicateur de chargement ou masquer si pas de données
+  if (isLoading || !creditsData) {
     return null;
   }
 
   return (
     <div className="flex items-center text-sm font-medium text-gray-700">
-      <span>{balance}</span>
+      <span>{creditsData.balance}</span>
       <span className="ml-1">{t('credits')}</span>
     </div>
   );

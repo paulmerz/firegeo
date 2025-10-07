@@ -108,7 +108,7 @@ export interface AIResponse {
   sentiment: 'positive' | 'neutral' | 'negative';
   confidence: number;
   timestamp: Date;
-  webSearchSources?: Array<{url: string; title?: string; text?: string; source?: string; domain?: string; type?: string}>; // Sources from web search
+  webSearchSources?: any[]; // Sources from web search
   brandVariations?: Record<string, BrandVariation>;
   // Enhanced detection information
   detectionDetails?: {
@@ -337,4 +337,4 @@ export interface BrandVariation {
   original: string;
   variations: string[];
   confidence: number;
-}
+} 

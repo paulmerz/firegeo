@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { ChevronDown, ChevronsDown, ChevronsUp } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { BrandPrompt, AIResponse, BrandVariation } from '@/lib/types';
 import { HighlightedResponse } from './highlighted-response';
 import { useTranslations } from 'next-intl';
@@ -143,7 +144,7 @@ export function PromptsResponsesTab({
     return () => {
       cancelled = true;
     };
-      }, [responses, brandName, competitors, brandVariations, detectionCache]);
+      }, [responses, brandName, competitors, brandVariations]);
   
   const handleExpandAll = () => {
     if (allExpanded) {

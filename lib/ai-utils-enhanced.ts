@@ -45,6 +45,19 @@ async function resolveBrandVariations(
   if (precomputed && precomputed[brandName]) {
     return precomputed[brandName];
   }
+  
+  const list = Array.from(variations).filter(v => v.length > 1);
+  return filterBrandVariations(coreBrand, list);
+}
+
+async function resolveBrandVariations(
+  brandName: string,
+  locale?: string,
+  precomputed?: Record<string, BrandVariation>
+): Promise<BrandVariation> {
+  if (precomputed && precomputed[brandName]) {
+    return precomputed[brandName];
+  }
 
   return ensureBrandVariationsForBrand(brandName, locale);
 }
@@ -138,20 +151,15 @@ export async function analyzePromptWithProviderEnhanced(
         competitors,
         locale,
         undefined, // model (use default gpt-4o-mini)
-        brandVariations as Record<string, BrandVariation> // Pass precomputed variations to avoid regeneration
+        brandVariations as any // Pass precomputed variations to avoid regeneration
       );
-      
-      // Guard against null result to satisfy strict null checks
-      if (!openaiResult) {
-        console.warn('OpenAI web search returned null; skipping provider result.');
-        throw new Error('OpenAI web search returned null');
-      }
       
       // Enhanced brand detection fallback for web search results
       // Apply the same robust detection logic as the non-web search version
       const rawResponseText = openaiResult.response;
       const cleanedResponseText = cleanProviderResponse(rawResponseText, { providerName: provider });
       const textLower = cleanedResponseText.toLowerCase();
+      const brandNameLower = brandName.toLowerCase();
       
       // Enhanced brand detection with pre-generated variations or fallback to generation
       const brandVariationData = await resolveBrandVariations(brandName, locale, brandVariations);
@@ -208,7 +216,7 @@ export async function analyzePromptWithProviderEnhanced(
       const startTime = Date.now();
       // First, get the response en envoyant le prompt BRUT (sans system ni instructions)
       const result = await generateText({
-        model: model as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+        model,
         prompt: rawPrompt,
         maxTokens: 800,
         ...generateConfig,

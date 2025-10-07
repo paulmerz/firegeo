@@ -35,7 +35,7 @@ export interface AnalysisResult {
   sources: AnalysisSource[];
   errors?: string[];
   webSearchUsed?: boolean;
-  apiUsageSummary?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  apiUsageSummary?: any;
   brandVariations?: Record<string, BrandVariation>;
 }
 

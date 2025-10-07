@@ -135,7 +135,7 @@ export function ProviderRankingsTabs({
     });
   };
   const brandRank = selectedCompetitors.findIndex(c => c.isOwn) + 1;
-  // const brandVisibility = selectedCompetitors.find(c => c.isOwn)?.visibilityScore || 0;
+  const brandVisibility = selectedCompetitors.find(c => c.isOwn)?.visibilityScore || 0;
 
   return (
     <Card className="p-2 bg-card text-card-foreground gap-6 rounded-xl border py-6 shadow-sm border-gray-200 h-full flex flex-col">

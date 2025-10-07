@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useReducer, useCallback, useState, useEffect, useRef, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import type { Company, ProviderSpecificRanking } from '@/lib/types';
 import type { BrandAnalysisWithSources } from '@/lib/db/schema';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,7 +40,7 @@ import { WebSearchToggle } from './web-search-toggle';
 import { logger } from '@/lib/logger';
 import { extractAnalysisSources } from '@/lib/brand-monitor-sources';
 import { ApiUsageSummary, ApiUsageSummaryData } from './api-usage-summary';
-// Removed unused import
+import type { BrandVariation } from '@/lib/brand-detection-service';
 import {
   CREDIT_COST_URL_ANALYSIS,
   CREDIT_COST_COMPETITOR_ANALYSIS,
@@ -296,7 +296,7 @@ export function BrandMonitor({
 
     // Restore identified competitors with their URLs from saved analysis
     if (selectedAnalysis.competitors && Array.isArray(selectedAnalysis.competitors)) {
-      const restoredCompetitors = selectedAnalysis.competitors.map((comp: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+      const restoredCompetitors = selectedAnalysis.competitors.map((comp: any) => ({
         name: comp.name || '',
         url: comp.url,
         metadata: comp.metadata

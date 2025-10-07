@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         feature_id: FEATURE_ID_CREDITS,
         value: CREDITS_PER_MESSAGE,
       });
-    } catch {
+    } catch (err) {
       throw new ExternalServiceError('Unable to process credit usage. Please try again', 'autumn');
     }
 
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
         feature_id: FEATURE_ID_CREDITS,
       });
       remainingCredits = usage.data?.balance || 0;
-    } catch {
+    } catch (err) {
       // Silently fail if we can't get remaining credits
     }
 
