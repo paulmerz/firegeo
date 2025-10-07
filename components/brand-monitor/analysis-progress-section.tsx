@@ -13,6 +13,7 @@ import { useTranslations } from 'next-intl';
 import { getDisplayPrompts, getDefaultPromptIndex } from '@/lib/prompt-utils';
 import { CREDIT_COST_PROMPT_GENERATION } from '@/config/constants';
 import { logger } from '@/lib/logger';
+import { useCreditsInvalidation } from '@/hooks/useCreditsInvalidation';
 
 interface AnalysisProgressSectionProps {
   company: Company;
@@ -41,7 +42,7 @@ const getProviderIcon = (provider: string) => {
     case 'OpenAI':
       return (
         <img 
-          src="https://cdn.brandfetch.io/idR3duQxYl/theme/dark/symbol.svg?c=1dxbfHSJFAPEGdCLU4o5B" 
+          src="https://cdn.brandfetch.io/idR3duQxYl/theme/dark/symbol.svg?c=1bxid64Mup7aczewSAYMX&t=1749527471692" 
           alt="OpenAI" 
           className="w-7 h-7"
         />
@@ -68,7 +69,7 @@ const getProviderIcon = (provider: string) => {
     case 'Perplexity':
       return (
         <img 
-          src="https://cdn.brandfetch.io/idNdawywEZ/w/800/h/800/theme/dark/icon.png?c=1dxbfHSJFAPEGdCLU4o5B" 
+          src="https://cdn.brandfetch.io/idNdawywEZ/w/800/h/800/theme/dark/idgTrPQ4JH.png?c=1bxid64Mup7aczewSAYMX&t=1754453397133" 
           alt="Perplexity" 
           className="w-5 h-5"
         />
@@ -99,6 +100,7 @@ export function AnalysisProgressSection({
   const [loadingPrompts, setLoadingPrompts] = useState(false);
   const [promptsGenerated, setPromptsGenerated] = useState(false);
   const isGeneratingPromptsRef = useRef(false);
+  const { invalidateCredits } = useCreditsInvalidation();
   
   // Load prompts asynchronously - only on initial load
   useEffect(() => {
@@ -137,8 +139,12 @@ export function AnalysisProgressSection({
           if (!res.ok) {
             const err = (await res.json().catch(() => null)) as { error?: string } | null;
             logger.warn('[Credits] Debit on prompts_display failed:', err?.error || res.statusText);
-          } else if (onCreditsUpdate) {
-            onCreditsUpdate();
+          } else {
+            // Invalidate credits cache
+            await invalidateCredits();
+            if (onCreditsUpdate) {
+              onCreditsUpdate();
+            }
           }
         } catch (e) {
           logger.warn('[Credits] Debit on prompts_display error:', e);

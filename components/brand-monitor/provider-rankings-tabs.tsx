@@ -7,9 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { ProviderSpecificRanking } from '@/lib/types';
+import { IdentifiedCompetitor } from '@/lib/brand-monitor-reducer';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import Image from 'next/image';
 import { useTranslations } from 'next-intl';
+import { CompetitorCell } from './competitor-cell';
 
 // Provider icon mapping
 const getProviderIcon = (provider: string) => {
@@ -17,7 +18,7 @@ const getProviderIcon = (provider: string) => {
     case 'OpenAI':
       return (
         <img 
-          src="https://cdn.brandfetch.io/idR3duQxYl/theme/dark/symbol.svg?c=1dxbfHSJFAPEGdCLU4o5B" 
+          src="https://cdn.brandfetch.io/idR3duQxYl/theme/dark/symbol.svg?c=1bxid64Mup7aczewSAYMX&t=1749527471692" 
           alt="OpenAI" 
           className="w-7 h-7"
         />
@@ -44,7 +45,7 @@ const getProviderIcon = (provider: string) => {
     case 'Perplexity':
       return (
         <img 
-          src="https://cdn.brandfetch.io/idNdawywEZ/w/800/h/800/theme/dark/icon.png?c=1dxbfHSJFAPEGdCLU4o5B" 
+          src="https://cdn.brandfetch.io/idNdawywEZ/w/800/h/800/theme/dark/idgTrPQ4JH.png?c=1bxid64Mup7aczewSAYMX&t=1754453397133" 
           alt="Perplexity" 
           className="w-6 h-6"
         />
@@ -61,57 +62,17 @@ interface ProviderRankingsTabsProps {
   averagePosition?: number;
   sentimentScore?: number;
   weeklyChange?: number;
+  identifiedCompetitors?: IdentifiedCompetitor[];
 }
-
-// Company cell component with favicon support
-const CompanyCell = ({ 
-  name, 
-  isOwn, 
-  url 
-}: { 
-  name: string; 
-  isOwn?: boolean; 
-  url?: string;
-}) => {
-  const [faviconError, setFaviconError] = useState(false);
-  
-  // Generate favicon URL using Google's favicon service
-  const faviconUrl = url ? `https://www.google.com/s2/favicons?domain=${url}&sz=64` : null;
-  
-  return (
-    <div className="flex items-center gap-2">
-      <div className="w-5 h-5 flex items-center justify-center rounded overflow-hidden flex-shrink-0">
-        {faviconUrl && !faviconError ? (
-          <Image
-            src={faviconUrl}
-            alt={`${name} logo`}
-            width={20}
-            height={20}
-            className="object-contain"
-            onError={() => setFaviconError(true)}
-          />
-        ) : (
-          <div className="w-5 h-5 bg-gray-200 rounded flex items-center justify-center">
-            <span className="text-gray-600 font-semibold text-[10px]">
-              {name.charAt(0).toUpperCase()}
-            </span>
-          </div>
-        )}
-      </div>
-      <span className={`text-sm ${
-        isOwn ? 'font-semibold text-black' : 'text-black'
-      }`}>
-        {name}
-      </span>
-    </div>
-  );
-};
 
 // Generate a fallback URL from competitor name
 const generateFallbackUrl = (competitorName: string): string | undefined => {
+  // Clean the name for URL generation - preserve hyphens as they're common in domain names
   const cleanName = competitorName.toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
-    .replace(/\s+/g, '')
+    .replace(/[^a-z0-9\s-]/g, '') // Keep hyphens along with alphanumeric and spaces
+    .replace(/\s+/g, '-') // Replace spaces with hyphens for URL
+    .replace(/-+/g, '-') // Replace multiple consecutive hyphens with single hyphen
+    .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
     .trim();
   
   if (cleanName.length < 3 || ['inc', 'llc', 'corp', 'company', 'the'].includes(cleanName)) {
@@ -126,7 +87,13 @@ export function ProviderRankingsTabs({
   brandName,
   shareOfVoice,
   averagePosition,
+<<<<<<< Updated upstream
   sentimentScore
+=======
+  sentimentScore,
+  weeklyChange,
+  identifiedCompetitors
+>>>>>>> Stashed changes
 }: ProviderRankingsTabsProps) {
   const t = useTranslations('brandMonitor.providerRankings');
   const [selectedProvider, setSelectedProvider] = useState(
@@ -154,9 +121,25 @@ export function ProviderRankingsTabs({
 
   // Get the selected provider's data
   const selectedProviderData = providerRankings.find(p => p.provider === selectedProvider);
-  const competitors = selectedProviderData?.competitors || [];
-  const brandRank = competitors.findIndex(c => c.isOwn) + 1;
-  const brandVisibility = competitors.find(c => c.isOwn)?.visibilityScore || 0;
+  const selectedCompetitors = selectedProviderData?.competitors || [];
+  const competitorList = identifiedCompetitors ?? [];
+
+  const findCompetitorData = (name: string): IdentifiedCompetitor | undefined => {
+    const normalized = name.trim().toLowerCase();
+    const simplified = normalized.replace(/[^a-z0-9]/g, '');
+
+    return competitorList.find((competitor) => {
+      const candidate = competitor.name.trim().toLowerCase();
+      if (candidate === normalized) {
+        return true;
+      }
+
+      const candidateSimplified = candidate.replace(/[^a-z0-9]/g, '');
+      return Boolean(candidateSimplified) && candidateSimplified === simplified;
+    });
+  };
+  const brandRank = selectedCompetitors.findIndex(c => c.isOwn) + 1;
+  const brandVisibility = selectedCompetitors.find(c => c.isOwn)?.visibilityScore || 0;
 
   return (
     <Card className="p-2 bg-card text-card-foreground gap-6 rounded-xl border py-6 shadow-sm border-gray-200 h-full flex flex-col">
@@ -192,7 +175,7 @@ export function ProviderRankingsTabs({
             })}
           </TabsList>
 
-          {providerRankings.map(({ provider, competitors }) => (
+          {providerRankings.map(({ provider, competitors: providerCompetitors }) => (
             <TabsContent key={provider} value={provider} className="mt-0">
               <div className="overflow-x-auto rounded-lg border border-gray-200">
                 <table className="w-full border-collapse">
@@ -206,8 +189,9 @@ export function ProviderRankingsTabs({
                     </tr>
                   </thead>
                   <tbody>
-                    {competitors.map((competitor, idx) => {
-                      const competitorUrl = generateFallbackUrl(competitor.name);
+                    {providerCompetitors.map((competitor, idx) => {
+                      const competitorData = findCompetitorData(competitor.name);
+                      const competitorUrl = competitorData?.url || generateFallbackUrl(competitor.name);
                       
                       return (
                         <tr 
@@ -224,9 +208,11 @@ export function ProviderRankingsTabs({
                             {idx + 1}
                           </td>
                           <td className="border-r border-gray-200 p-3">
-                            <CompanyCell 
+                            <CompetitorCell 
                               name={competitor.name}
                               isOwn={competitor.isOwn}
+                              favicon={competitorData?.metadata?.favicon}
+                              description={competitorData?.metadata?.description}
                               url={competitorUrl}
                             />
                           </td>
@@ -257,38 +243,6 @@ export function ProviderRankingsTabs({
             </TabsContent>
           ))}
         </Tabs>
-        
-        {/* Metrics Row at Bottom */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-6 pt-6 border-t">
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-xs text-gray-500 mb-1">{t('competitors')}</p>
-            <p className="text-lg font-semibold text-black">{competitors.length}</p>
-          </div>
-          <div className="bg-orange-50 rounded-lg p-4 text-center">
-            <p className="text-xs text-gray-500 mb-1">{brandName} {t('rank')}</p>
-            <p className="text-lg font-semibold text-black">
-              #{brandRank}
-            </p>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-xs text-gray-500 mb-1">{brandName} {t('visibility')}</p>
-            <p className="text-lg font-semibold text-black">
-              {brandVisibility}%
-            </p>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-xs text-gray-500 mb-1">{t('shareOfVoice')}</p>
-            <p className="text-lg font-semibold text-black">{shareOfVoice}%</p>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-xs text-gray-500 mb-1">{t('averagePosition')}</p>
-            <p className="text-lg font-semibold text-black">#{averagePosition}</p>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-xs text-gray-500 mb-1">{t('sentimentScore')}</p>
-            <p className="text-lg font-semibold text-black">{sentimentScore}%</p>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );

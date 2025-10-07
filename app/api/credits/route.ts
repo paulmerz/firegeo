@@ -56,6 +56,8 @@ export async function POST(request: NextRequest) {
     }
 
     const { value, reason } = await request.json();
+    console.log('🔍 [Credits API POST] User:', sessionResponse.user.id, 'Value:', value, 'Reason:', reason);
+    
     if (!value || typeof value !== 'number' || value <= 0) {
       return NextResponse.json({ error: 'Invalid value' }, { status: 400 });
     }
@@ -90,6 +92,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Track usage
+    console.log('🔍 [Credits API POST] Tracking usage...');
     await getAutumn().track({
       customer_id: sessionResponse.user.id,
       feature_id: FEATURE_ID_CREDITS,
@@ -97,10 +100,13 @@ export async function POST(request: NextRequest) {
     });
 
     // Return new balance
+    console.log('🔍 [Credits API POST] Getting updated balance...');
     const updated = await getAutumn().check({
       customer_id: sessionResponse.user.id,
       feature_id: FEATURE_ID_CREDITS,
     });
+
+    console.log('🔍 [Credits API POST] Updated balance:', updated.data?.balance);
 
     return NextResponse.json({ success: true, balance: updated.data?.balance || 0 });
   } catch (error) {

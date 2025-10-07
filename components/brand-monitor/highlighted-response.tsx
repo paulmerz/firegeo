@@ -3,14 +3,21 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { AIResponse } from '@/lib/types';
-import { useBrandDetection } from '@/hooks/useBrandDetection';
+import { AIResponse, type BrandVariation } from '@/lib/types';
 import type { BrandDetectionResult, BrandDetectionMatch } from '@/lib/brand-detection-service';
 import { highlightBrandMentions, segmentsToReactElements, type HighlightedSegment } from '@/lib/text-highlighting-utils';
+<<<<<<< Updated upstream
 import { 
+=======
+import {
+  highlightTextWithBrands,
+>>>>>>> Stashed changes
   highlightMarkdownChildren as highlightMarkdownChildrenUtil,
-  type BrandHighlightingConfig 
+  type BrandHighlightingConfig
 } from '@/lib/brand-highlighting-utils';
+import { cleanProviderResponse } from '@/lib/provider-response-utils';
+import { detectBrandsInResponse } from '@/lib/brand-detection-service';
+import { useBrandDetection } from '@/hooks/useBrandDetection';
 
 // Simple in-memory cache to avoid redundant brand detection calls
 // Keyed by JSON.stringify of { text, brands }
@@ -23,43 +30,12 @@ interface HighlightedResponseProps {
   showHighlighting?: boolean;
   highlightClassName?: string;
   renderMarkdown?: boolean;
+  brandVariations?: Record<string, BrandVariation>;
 }
 
 const TARGET_HIGHLIGHT_CLASS = 'bg-orange-100 text-orange-900 font-semibold px-1 rounded-sm border border-orange-200';
 const COMPETITOR_HIGHLIGHT_CLASS = 'bg-gray-200 text-gray-900 font-medium px-1 rounded-sm border border-gray-300';
 const DEFAULT_HIGHLIGHT_CLASS = 'bg-gray-100 text-gray-900 px-1 rounded-sm';
-
-// Clean up response text by removing artifacts
-function cleanResponseText(text: string, providerName?: string): string {
-  let cleaned = text;
-  
-  // Remove standalone numbers at the beginning of lines (like "0\n")
-  cleaned = cleaned.replace(/^\d+\n/gm, '');
-  
-  // Remove provider name at the beginning if it exists
-  if (providerName) {
-    const providerPattern = new RegExp(`^${providerName}\\s*\n?`, 'i');
-    cleaned = cleaned.replace(providerPattern, '');
-  }
-  
-  // Remove common provider names at the beginning
-  const commonProviders = ['OpenAI', 'Anthropic', 'Google', 'Perplexity'];
-  commonProviders.forEach(provider => {
-    const pattern = new RegExp(`^${provider}\\s*\n?`, 'i');
-    cleaned = cleaned.replace(pattern, '');
-  });
-  
-  // Remove HTML tags but preserve the content
-  cleaned = cleaned.replace(/<[^>]*>/g, '');
-  
-  // Remove inline "Sources consultées" section if present
-  cleaned = cleaned.replace(/\n?Sources consultées?:[\s\S]*$/i, '').trim();
-
-  // Clean up extra whitespace
-  cleaned = cleaned.replace(/\n\s*\n\s*\n/g, '\n\n');
-  
-  return cleaned.trim();
-}
 
 export function HighlightedResponse({
   response,
@@ -67,17 +43,18 @@ export function HighlightedResponse({
   competitors,
   showHighlighting = true,
   highlightClassName = DEFAULT_HIGHLIGHT_CLASS,
-  renderMarkdown = true
+  renderMarkdown = true,
+  brandVariations
 }: HighlightedResponseProps) {
+<<<<<<< Updated upstream
   const cleanedResponse = cleanResponseText(response.response, response.provider);
   const { detectMultipleBrands, clearError } = useBrandDetection();
   
   // State for enhanced detection results
+=======
+  const cleanedResponse = cleanProviderResponse(response.response, { providerName: response.provider });
+>>>>>>> Stashed changes
   const [enhancedDetectionResults, setEnhancedDetectionResults] = React.useState<Map<string, BrandDetectionResult>>(new Map());
-  
-  // State for fallback detection (simple text matching)
-  const [fallbackDetectionResults, setFallbackDetectionResults] = React.useState<Map<string, BrandDetectionResult>>(new Map());
-  const [useFallback, setUseFallback] = React.useState(false);
 
   const normalizedTargetBrand = React.useMemo(() => brandName.trim().toLowerCase(), [brandName]);
 
@@ -108,45 +85,6 @@ export function HighlightedResponse({
       });
   }, [brandName, competitors]);
 
-  // Fonction de fallback simple pour la détection de marques
-  const performFallbackDetection = React.useCallback((text: string, brands: string[]): Map<string, BrandDetectionResult> => {
-    const results = new Map<string, BrandDetectionResult>();
-    
-    brands.forEach(brand => {
-      const matches: BrandDetectionMatch[] = [];
-      const brandLower = brand.toLowerCase();
-      const textLower = text.toLowerCase();
-      
-      // Recherche simple insensible à la casse
-      let index = 0;
-      while ((index = textLower.indexOf(brandLower, index)) !== -1) {
-        // Vérifier que c'est un mot complet (pas une partie d'un autre mot)
-        const before = index > 0 ? textLower[index - 1] : ' ';
-        const after = index + brandLower.length < textLower.length ? textLower[index + brandLower.length] : ' ';
-        
-        if (!/[a-zA-Z0-9]/.test(before) && !/[a-zA-Z0-9]/.test(after)) {
-          matches.push({
-            text: text.substring(index, index + brandLower.length),
-            index,
-            brandName: brand,
-            variation: brand,
-            confidence: 0.5 // Confiance plus faible pour le fallback
-          });
-        }
-        index += brandLower.length;
-      }
-      
-      results.set(brand, {
-        mentioned: matches.length > 0,
-        matches,
-        confidence: matches.length > 0 ? 0.5 : 0
-      });
-    });
-    
-    console.log(`[Fallback Detection] Détection simple pour ${brands.length} marques: ${results.size} résultats`);
-    return results;
-  }, []);
-
   // Enhanced detection with intelligent AI variations
   const cacheKey = React.useMemo(() => {
     // Stable cache key for this response + candidates
@@ -158,6 +96,13 @@ export function HighlightedResponse({
     // - No highlighting → skip
     // - If provider supplied detection details AND competitor matches, skip
     const hasProviderDetails = Boolean(response.detectionDetails);
+
+    // Impossible d'exécuter la détection locale sans variations pré-calculées (pas de clé API côté client)
+    if (!brandVariations || Object.keys(brandVariations).length === 0) {
+      detectionResultsCache.delete(cacheKey);
+      setEnhancedDetectionResults(new Map());
+      return;
+    }
     const providerHasCompetitors = hasProviderDetails && Boolean(
       response.detectionDetails?.competitorMatches &&
       (response.detectionDetails.competitorMatches instanceof Map
@@ -170,41 +115,57 @@ export function HighlightedResponse({
       return;
     }
 
-    const performIntelligentDetection = async () => {
+    const performDetection = async () => {
       try {
-        // Use cache if available
         const cached = detectionResultsCache.get(cacheKey);
         if (cached) {
           setEnhancedDetectionResults(cached);
-          setUseFallback(false);
           return;
         }
 
-        const results = await detectMultipleBrands(cleanedResponse, allBrandCandidates, {
-          caseSensitive: false,
-          excludeNegativeContext: false,
-          minConfidence: 0.3
+        const detection = await detectBrandsInResponse(
+          cleanedResponse,
+          brandName,
+          competitors,
+          {
+            caseSensitive: false,
+            excludeNegativeContext: false,
+            minConfidence: 0.3
+          },
+          undefined,
+          brandVariations
+        );
+
+        const results = new Map<string, BrandDetectionResult>();
+        results.set(brandName, {
+          mentioned: detection.brandMentioned,
+          matches: detection.detectionDetails.brandMatches || [],
+          confidence: detection.confidence
         });
-        
-        setEnhancedDetectionResults(results);
-        setUseFallback(false);
+
+        detection.detectionDetails.competitorMatches.forEach((matches, competitor) => {
+          results.set(competitor, {
+            mentioned: matches.length > 0,
+            matches,
+            confidence: matches.length > 0 ? Math.max(...matches.map(m => m.confidence)) : 0
+          });
+        });
+
         detectionResultsCache.set(cacheKey, results);
+        setEnhancedDetectionResults(results);
       } catch (error) {
-        console.error('Intelligent brand detection failed, using fallback:', error);
-        
-        // Utiliser le fallback en cas d'erreur
-        const fallbackResults = performFallbackDetection(cleanedResponse, allBrandCandidates);
-        setFallbackDetectionResults(fallbackResults);
-        setUseFallback(true);
+        console.error('Shared brand detection failed:', error);
         setEnhancedDetectionResults(new Map());
-        
-        // Effacer l'erreur après avoir activé le fallback
-        clearError();
       }
     };
 
+<<<<<<< Updated upstream
     performIntelligentDetection();
   }, [cacheKey, cleanedResponse, allBrandCandidates, showHighlighting, response.detectionDetails, clearError, detectMultipleBrands, performFallbackDetection]);
+=======
+    performDetection();
+  }, [cacheKey, cleanedResponse, showHighlighting, brandName, competitors, response.detectionDetails, brandVariations]);
+>>>>>>> Stashed changes
 
   const detectionResults = React.useMemo(() => {
     if (!showHighlighting) return new Map();
@@ -267,18 +228,8 @@ export function HighlightedResponse({
       });
     }
 
-    // Si on utilise le fallback, fusionner les résultats de fallback
-    if (useFallback && fallbackDetectionResults.size > 0) {
-      fallbackDetectionResults.forEach((fallback, name) => {
-        const existing = results.get(name);
-        if (!existing || existing.matches.length === 0) {
-          results.set(name, fallback);
-        }
-      });
-    }
-
     return results;
-  }, [brandName, response, showHighlighting, enhancedDetectionResults, useFallback, fallbackDetectionResults]);
+  }, [brandName, response, showHighlighting, enhancedDetectionResults]);
 
   const segments = React.useMemo(() => {
     if (!showHighlighting || renderMarkdown) return [];
@@ -305,9 +256,6 @@ export function HighlightedResponse({
     return segmentsToReactElements(segments, highlightClassResolver);
   }, [segments, showHighlighting, highlightClassResolver, renderMarkdown]);
 
-  const uniqueKeyRef = React.useRef(0);
-  uniqueKeyRef.current = 0;
-
   // Configuration for brand highlighting
   const highlightingConfig: BrandHighlightingConfig = React.useMemo(() => ({
     targetBrand: brandName,
@@ -322,6 +270,7 @@ export function HighlightedResponse({
     return highlightMarkdownChildrenUtil(children, detectionResults, highlightingConfig, showHighlighting);
   }, [detectionResults, highlightingConfig, showHighlighting]);
 
+<<<<<<< Updated upstream
   // Indicateur de mode fallback
   const fallbackIndicator = useFallback && (
     <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
@@ -329,11 +278,12 @@ export function HighlightedResponse({
     </div>
   );
 
+=======
+>>>>>>> Stashed changes
   if (!showHighlighting) {
     if (renderMarkdown) {
       return (
         <div>
-          {fallbackIndicator}
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
@@ -372,17 +322,13 @@ export function HighlightedResponse({
     }
 
     return (
-      <div>
-        {fallbackIndicator}
-        {cleanedResponse}
-      </div>
+      <div>{cleanedResponse}</div>
     );
   }
 
   if (renderMarkdown) {
     return (
       <div className="prose prose-sm max-w-full prose-slate overflow-hidden">
-        {fallbackIndicator}
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
@@ -439,10 +385,7 @@ export function HighlightedResponse({
   }
 
   return (
-    <div>
-      {fallbackIndicator}
-      <div className="whitespace-pre-wrap">{highlightedElements}</div>
-    </div>
+    <div className="whitespace-pre-wrap">{highlightedElements}</div>
   );
 }
 
@@ -451,12 +394,14 @@ export function HighlightedText({
   text,
   brandName,
   competitors = [],
-  highlightClassName = DEFAULT_HIGHLIGHT_CLASS
+  highlightClassName = DEFAULT_HIGHLIGHT_CLASS,
+  brandVariations
 }: {
   text: string;
   brandName: string;
   competitors?: string[];
   highlightClassName?: string;
+  brandVariations?: Record<string, BrandVariation>;
 }) {
   const { detectMultipleBrands } = useBrandDetection();
   const normalizedTargetBrand = React.useMemo(() => brandName.trim().toLowerCase(), [brandName]);
@@ -508,12 +453,48 @@ export function HighlightedText({
   React.useEffect(() => {
     const performDetection = async () => {
       try {
-        const results = await detectMultipleBrands(text, brandCandidates, {
-          caseSensitive: false,
-          excludeNegativeContext: false,
-          minConfidence: 0.3
-        });
-        setDetectionResults(results);
+        // If brand variations are provided, use them for more efficient detection
+        if (brandVariations && Object.keys(brandVariations).length > 0) {
+          const results = new Map<string, BrandDetectionResult>();
+          
+          for (const brandName of brandCandidates) {
+            const variation = brandVariations[brandName];
+            if (variation) {
+              const textLower = text.toLowerCase();
+              const matches: BrandDetectionMatch[] = [];
+              
+              // Simple text matching with pre-generated variations
+              variation.variations.forEach((variationText: string) => {
+                const index = textLower.indexOf(variationText.toLowerCase());
+                if (index !== -1) {
+                  matches.push({
+                    text: text.substring(index, index + variationText.length),
+                    index,
+                    brandName,
+                    variation: variationText,
+                    confidence: variation.confidence
+                  });
+                }
+              });
+              
+              results.set(brandName, {
+                mentioned: matches.length > 0,
+                matches,
+                confidence: matches.length > 0 ? variation.confidence : 0
+              });
+            }
+          }
+          
+          setDetectionResults(results);
+        } else {
+          // Fallback to full AI detection
+          const results = await detectMultipleBrands(text, brandCandidates, {
+            caseSensitive: false,
+            excludeNegativeContext: false,
+            minConfidence: 0.3
+          });
+          setDetectionResults(results);
+        }
       } catch (error) {
         console.error('Brand detection failed:', error);
         setDetectionResults(new Map());
@@ -521,7 +502,11 @@ export function HighlightedText({
     };
 
     performDetection();
+<<<<<<< Updated upstream
   }, [brandCandidates, text, detectMultipleBrands]);
+=======
+  }, [brandCandidates, text, brandVariations]);
+>>>>>>> Stashed changes
 
   const segments = React.useMemo(() => highlightBrandMentions(text, detectionResults), [text, detectionResults]);
 

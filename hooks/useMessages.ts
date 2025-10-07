@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/lib/auth-client';
-import { API_ENDPOINTS, HTTP_METHODS, CONTENT_TYPES, ONE_MINUTE, CACHE_KEYS } from '@/config/constants';
+import { API_ENDPOINTS, HTTP_METHODS, CONTENT_TYPES, CACHE_KEYS } from '@/config/constants';
 import { parseApiResponse, ClientApiError } from '@/lib/client-errors';
+import { useCreditsInvalidation } from './useCreditsInvalidation';
 
 interface SendMessageData {
   message: string;
@@ -19,6 +20,7 @@ interface MessageResponse {
 export function useSendMessage() {
   const queryClient = useQueryClient();
   const { data: session } = useSession();
+  const { invalidateCredits } = useCreditsInvalidation();
   
   return useMutation({
     mutationFn: async ({ message, conversationId }: SendMessageData) => {
@@ -32,7 +34,7 @@ export function useSendMessage() {
       
       return parseApiResponse<MessageResponse>(res);
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       // Invalidate conversations list to update last message
       queryClient.invalidateQueries({ queryKey: [CACHE_KEYS.CONVERSATIONS, session?.user?.id] });
       
@@ -40,6 +42,9 @@ export function useSendMessage() {
       if (data.conversationId) {
         queryClient.invalidateQueries({ queryKey: ['conversation', data.conversationId] });
       }
+      
+      // Invalidate credits to update navbar
+      await invalidateCredits();
     },
   });
 }
@@ -70,6 +75,5 @@ export function useCredits() {
       return parseApiResponse<{ allowed: boolean; balance: number }>(res);
     },
     enabled: !!session?.user?.id,
-    refetchInterval: ONE_MINUTE,
   });
 }

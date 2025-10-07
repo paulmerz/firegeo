@@ -22,10 +22,10 @@ function getHostname(url?: string): string | undefined {
 function getProviderLogo(provider?: string): { url?: string; alt: string } {
   const name = (provider || '').toLowerCase();
   if (name.includes('openai')) {
-    return { url: 'https://cdn.brandfetch.io/openai.com/w/64/h/64', alt: 'OpenAI' };
+    return { url: 'https://cdn.brandfetch.io/idR3duQxYl/theme/dark/symbol.svg?c=1bxid64Mup7aczewSAYMX&t=1749527471692', alt: 'OpenAI' };
   }
   if (name.includes('perplexity')) {
-    return { url: 'https://cdn.brandfetch.io/perplexity.ai/w/64/h/64', alt: 'Perplexity' };
+    return { url: 'https://cdn.brandfetch.io/idNdawywEZ/w/800/h/800/theme/dark/idgTrPQ4JH.png?c=1bxid64Mup7aczewSAYMX&t=1754453397133', alt: 'Perplexity' };
   }
   return { url: undefined, alt: provider || '—' };
 }

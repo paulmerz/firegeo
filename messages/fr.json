@@ -698,6 +698,7 @@
       "insufficientCreditsPromptGen": "Crédits insuffisants. Vous avez besoin d'au moins {credits} crédits pour générer les prompts.",
       "insufficientCreditsAddPrompt": "Crédits insuffisants. Vous avez besoin d'au moins {credits} crédits pour ajouter un prompt.",
       "insufficientCreditsAnalysis": "Crédits insuffisants. Vous avez besoin de {credits} crédits ({perPrompt} par prompt) pour effectuer cette analyse.",
+      "buyCreditsLink": "Acheter des crédits",
       "failedToScrape": "Échec du scraping",
       "noCompanyData": "Aucune donnée d'entreprise reçue",
       "failedToExtractCompany": "Échec de l'extraction des informations de l'entreprise",

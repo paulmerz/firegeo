@@ -94,11 +94,16 @@ class ApiUsageTracker {
       ...call,
       id,
       timestamp: new Date(),
-      phase: this.getPhaseFromCall(call as ApiCall)
+      phase: this.getPhaseFromCall(call as ApiCall) as (
+        | "competitor_search"
+        | "prompt_generation"
+        | "url_analysis"
+        | "prompt_analysis"
+        | "result_analysis"
+      )
     };
     
     this.calls.push(apiCall);
-    
     logger.debug(`[ApiUsageTracker] Appel enregistré:`, {
       id,
       provider: call.provider,
@@ -354,22 +359,42 @@ export function estimateCost(provider: string, model: string, inputTokens: numbe
   // Prix réels par 1M tokens (input/output) - mis à jour avec les vrais prix
   const pricing: Record<string, Record<string, { input: number; output: number }>> = {
     'openai': {
+      'gpt-5': { input: 1.25, output: 10.0 }, // $1.25 input, $10.00 output
       'gpt-4o': { input: 2.50, output: 10.0 }, // $2.50 input, $10.00 output
       'gpt-4o-mini': { input: 0.15, output: 0.6 }, // $0.15 input, $0.60 output
-      'gpt-4-turbo': { input: 10.0, output: 30.0 }
+      // Aliases & siblings
+      'gpt-4o-mini-2024-07-18': { input: 0.15, output: 0.6 },
+      'gpt-4o-realtime-preview': { input: 5.0, output: 15.0 },
+      'gpt-4-turbo': { input: 10.0, output: 30.0 },
+      'o4-mini': { input: 0.30, output: 1.20 },
+      'o4': { input: 5.00, output: 15.00 },
     },
     'anthropic': {
       'claude-3-5-sonnet-20241022': { input: 3.0, output: 15.0 }, // $3 input, $15 output
       'claude-3-5-haiku-20241022': { input: 0.8, output: 4.0 },
-      'claude-3-5-sonnet-latest': { input: 3.0, output: 15.0 } // $3 input, $15 output
+      'claude-3-5-sonnet-latest': { input: 3.0, output: 15.0 }, // $3 input, $15 output
+      // Aliases & siblings
+      'claude-3-5-sonnet': { input: 3.0, output: 15.0 },
+      'claude-3-5-haiku': { input: 0.8, output: 4.0 },
+      'claude-3-opus': { input: 15.0, output: 75.0 },
     },
     'perplexity': {
       'sonar': { input: 1.0, output: 1.0 }, // $1 input, $1 output
       'sonar-pro': { input: 3.0, output: 15.0 }, // $3 input, $15 output
-      'sonar-reasoning': { input: 3.0, output: 15.0 } // Même prix que Sonar Pro
+      'sonar-reasoning': { input: 3.0, output: 15.0 }, // Même prix que Sonar Pro
+      // Aliases & siblings
+      'sonar-small': { input: 1.0, output: 1.0 },
+      'sonar-medium': { input: 3.0, output: 15.0 },
+      'sonar-large': { input: 3.0, output: 15.0 },
+      'r1': { input: 3.0, output: 15.0 },
+      'r1-reasoning': { input: 3.0, output: 15.0 },
     },
     'google': {
-      'gemini-1.5-flash': { input: 0.075, output: 0.3 }
+      'gemini-1.5-flash': { input: 0.075, output: 0.3 },
+      // Aliases & siblings
+      'gemini-1.5-flash-latest': { input: 0.075, output: 0.3 },
+      'gemini-1.5-pro': { input: 3.50, output: 10.50 },
+      'gemini-1.5-pro-latest': { input: 3.50, output: 10.50 },
     }
   };
 

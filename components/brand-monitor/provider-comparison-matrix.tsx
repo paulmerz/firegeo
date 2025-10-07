@@ -30,7 +30,7 @@ const getProviderIcon = (provider: string) => {
     case 'OpenAI':
       return (
         <img 
-          src="https://cdn.brandfetch.io/idR3duQxYl/theme/dark/symbol.svg?c=1dxbfHSJFAPEGdCLU4o5B" 
+          src="https://cdn.brandfetch.io/idR3duQxYl/theme/dark/symbol.svg?c=1bxid64Mup7aczewSAYMX&t=1749527471692" 
           alt="OpenAI" 
           className="w-7 h-7"
         />
@@ -57,7 +57,7 @@ const getProviderIcon = (provider: string) => {
     case 'Perplexity':
       return (
         <img 
-          src="https://cdn.brandfetch.io/idNdawywEZ/w/800/h/800/theme/dark/icon.png?c=1dxbfHSJFAPEGdCLU4o5B" 
+          src="https://cdn.brandfetch.io/idNdawywEZ/w/800/h/800/theme/dark/idgTrPQ4JH.png?c=1bxid64Mup7aczewSAYMX&t=1754453397133" 
           alt="Perplexity" 
           className="w-5 h-5"
         />
@@ -69,10 +69,12 @@ const getProviderIcon = (provider: string) => {
 
 // Generate a fallback URL from competitor name
 const generateFallbackUrl = (competitorName: string): string | undefined => {
-  // Clean the name for URL generation
+  // Clean the name for URL generation - preserve hyphens as they're common in domain names
   const cleanName = competitorName.toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '') // Remove special characters
-    .replace(/\s+/g, '') // Remove spaces
+    .replace(/[^a-z0-9\s-]/g, '') // Keep hyphens along with alphanumeric and spaces
+    .replace(/\s+/g, '-') // Replace spaces with hyphens for URL
+    .replace(/-+/g, '-') // Replace multiple consecutive hyphens with single hyphen
+    .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
     .trim();
   
   // Skip if name is too generic or short

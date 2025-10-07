@@ -1,11 +1,12 @@
 import { AIResponse, AnalysisProgressData, Company, PartialResultData, ProgressData, PromptGeneratedData, ScoringProgressData, SSEEvent, AnalysisSource, BrandPrompt, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ApiUsageSummaryData } from './types';
 import { generatePromptsForCompany, analyzePromptWithProvider, calculateBrandScores, analyzeCompetitors, identifyCompetitors, analyzeCompetitorsByProvider } from './ai-utils';
 import { analyzePromptWithProvider as analyzePromptWithProviderEnhanced } from './ai-utils-enhanced';
-import { canonicalizeBrandsWithOpenAI } from './openai-web-search';
 import { extractAnalysisSources } from './brand-monitor-sources';
 import { getConfiguredProviders } from './provider-config';
 import { apiUsageTracker } from './api-usage-tracker';
 import { logger } from './logger';
+import { ensureBrandVariationsForBrand } from './brand-detection-service';
+import type { BrandVariation } from './types';
 
 export interface AnalysisConfig {
   company: Company;
@@ -34,7 +35,12 @@ export interface AnalysisResult {
   sources: AnalysisSource[];
   errors?: string[];
   webSearchUsed?: boolean;
+<<<<<<< Updated upstream
   apiUsageSummary?: ApiUsageSummaryData;
+=======
+  apiUsageSummary?: any;
+  brandVariations?: Record<string, BrandVariation>;
+>>>>>>> Stashed changes
 }
 
 /**
@@ -93,15 +99,7 @@ export async function performAnalysis({
     competitors = await identifyCompetitors(company, sendEvent);
   }
 
-  // Canonicalize competitors once (single OpenAI call) and propagate
-  try {
-    const { canonicalNames, mapping } = await canonicalizeBrandsWithOpenAI(competitors, locale);
-    logger.debug('[Canonicalizer] Raw -> Canonical mapping:', mapping);
-    logger.debug('[Canonicalizer] Canonical competitors:', canonicalNames);
-    competitors = canonicalNames;
-  } catch (e) {
-    logger.warn('[Canonicalizer] Failed to canonicalize competitors, using raw list:', (e as Error)?.message);
-  }
+  // Keep competitor names as provided; brand variations will handle detection
 
   // Stage 2: Generate prompts
   // Skip the 100% progress for competitors and go straight to the next stage
@@ -160,6 +158,7 @@ export async function performAnalysis({
 
   const responses: AIResponse[] = [];
   const errors: string[] = [];
+  let brandVariations: Record<string, BrandVariation> | undefined;
   
   // Filter providers based on available API keys
   const availableProviders = getAvailableProviders();
@@ -281,7 +280,8 @@ export async function performAnalysis({
                 competitors,
                 useMockMode,
                 true, // useWebSearch parameter for enhanced version
-                locale
+                locale,
+                brandVariations // Pass pre-generated brand variations
               )
             : await analyzePromptWithProvider(
                 prompt.prompt, 
@@ -289,7 +289,8 @@ export async function performAnalysis({
                 company.name, 
                 competitors,
                 useMockMode,
-                locale
+                locale,
+                brandVariations // Pass pre-generated brand variations
               );
           
           logger.debug(`\n=== ANALYSIS COMPLETED ===`);
@@ -443,6 +444,52 @@ export async function performAnalysis({
     
     // Wait for all promises in this batch to complete
     await Promise.all(batchPromises);
+  }
+
+  // Generate brand variations once for all brands (target + competitors)
+  await sendEvent({
+    type: 'stage',
+    stage: 'generating-brand-variations',
+    data: {
+      stage: 'generating-brand-variations',
+      progress: 0,
+      message: 'Generating intelligent brand variations...'
+    } as ProgressData,
+    timestamp: new Date()
+  });
+
+  const allBrands = [company.name, ...competitors];
+
+  try {
+    const variationPromises = allBrands.map(async (brandName) => {
+      try {
+        const variations = await ensureBrandVariationsForBrand(brandName, locale);
+        return { brandName, variations };
+      } catch (error) {
+        logger.warn(`Failed to generate variations for brand "${brandName}":`, error);
+        return {
+          brandName,
+          variations: {
+            original: brandName,
+            variations: [brandName, brandName.toLowerCase()],
+            confidence: 0.5
+          }
+        };
+      }
+    });
+
+    const variationResults = await Promise.all(variationPromises);
+    const variationRecord: Record<string, BrandVariation> = {};
+
+    variationResults.forEach(({ brandName, variations }) => {
+      variationRecord[brandName] = variations;
+    });
+
+    brandVariations = variationRecord;
+
+    logger.info(`[Brand Variations] Generated variations for ${variationResults.length} brands`);
+  } catch (error) {
+    logger.error('[Brand Variations] Failed to generate brand variations:', error);
   }
 
   // Stage 4: Extract brands from responses (70-90% of total progress)
@@ -628,6 +675,7 @@ export async function performAnalysis({
     errors: errors.length > 0 ? errors : undefined,
     webSearchUsed: useWebSearch,
     apiUsageSummary: apiUsageTracker.getSummary(),
+    brandVariations,
   };
 
   analysisResult.sources = extractAnalysisSources(analysisResult);

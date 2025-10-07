@@ -6,6 +6,7 @@
 
 import OpenAI from 'openai';
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
+import { logger } from './logger';
 
 const getOpenAIClient = () => {
   if (!process.env.OPENAI_API_KEY) {
@@ -28,6 +29,7 @@ export interface BrandDetectionMatch {
   brandName: string;
   variation: string;
   confidence: number;
+  snippet?: string;
 }
 
 export interface BrandDetectionResult {
@@ -172,7 +174,8 @@ Return ONLY a JSON object with this exact structure:
     });
 
     console.log(`🤖 [AI Brand Variations] ${coreBrand} → [${result.variations.join(', ')}]`);
-    
+    cacheBrandVariations(brandName, locale, result);
+
     return result;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -210,7 +213,9 @@ Return ONLY a JSON object with this exact structure:
 export async function detectBrandMentions(
   text: string,
   brandName: string,
-  options: BrandDetectionOptions = {}
+  options: BrandDetectionOptions = {},
+  locale: string = 'en',
+  variationsMap?: Map<string, BrandVariation>
 ): Promise<BrandDetectionResult> {
   const {
     caseSensitive = false,
@@ -228,8 +233,21 @@ export async function detectBrandMentions(
   }
 
   try {
-    // Get intelligent variations
-    const brandVariation = await generateIntelligentBrandVariations(brandName);
+    if (variationsMap && !variationsMap.has(brandName)) {
+      return {
+        mentioned: false,
+        matches: [],
+        confidence: 0
+      };
+    }
+
+    let brandVariation: BrandVariation;
+
+    if (variationsMap && variationsMap.has(brandName)) {
+      brandVariation = variationsMap.get(brandName)!;
+    } else {
+      brandVariation = await ensureBrandVariationsForBrand(brandName, locale);
+    }
     
     if (brandVariation.confidence < minConfidence) {
       return {
@@ -316,12 +334,27 @@ export async function detectBrandMentions(
           confidence = Math.max(confidence - 0.1, 0.1);
         }
 
+        const snippetStart = Math.max(0, matchIndex - 120);
+        const snippetEnd = Math.min(text.length, matchIndex + matchText.length + 120);
+        const snippetContext = text.substring(snippetStart, snippetEnd);
+        const snippet = snippetContext.trim();
+
+        logger.debug('[Brand Detection] Match trouvé', {
+          brandName,
+          variation,
+          index: matchIndex,
+          matchText,
+          snippet,
+          confidence
+        });
+
         matches.push({
           text: matchText,
           index: matchIndex,
           brandName,
           variation,
-          confidence
+          confidence,
+          snippet
         });
       }
     });
@@ -371,7 +404,9 @@ export async function detectBrandMentions(
 export async function detectMultipleBrands(
   text: string,
   brandNames: string[],
-  options: BrandDetectionOptions = {}
+  options: BrandDetectionOptions = {},
+  locale: string = 'en',
+  variationsMap?: Map<string, BrandVariation>
 ): Promise<Map<string, BrandDetectionResult>> {
   // Validation des paramètres d'entrée
   if (!text || typeof text !== 'string' || text.trim().length === 0) {
@@ -392,7 +427,7 @@ export async function detectMultipleBrands(
   // Process brands in parallel for better performance
   const detectionPromises = brandNames.map(async (brandName) => {
     try {
-      const result = await detectBrandMentions(text, brandName, options);
+      const result = await detectBrandMentions(text, brandName, options, locale, variationsMap);
       return { brandName, result, error: null };
     } catch (error) {
       return { brandName, result: null, error };
@@ -434,6 +469,23 @@ export async function detectMultipleBrands(
  * Cache for brand variations to avoid repeated AI calls
  */
 const brandVariationCache = new Map<string, BrandVariation>();
+const pendingBrandVariationPromises = new Map<string, Promise<BrandVariation>>();
+
+const buildCacheKey = (brandName: string, locale: string): string => {
+  const normalizedBrand = (brandName || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/\s+/g, ' ');
+  const normalizedLocale = (locale || 'en').toLowerCase();
+
+  return `${normalizedBrand}_${normalizedLocale}`;
+};
+
+const cacheBrandVariations = (brandName: string, locale: string, variations: BrandVariation) => {
+  brandVariationCache.set(buildCacheKey(brandName, locale), variations);
+};
 
 /**
  * Get cached brand variations or generate new ones
@@ -442,16 +494,41 @@ export async function getCachedBrandVariations(
   brandName: string,
   locale: string = 'en'
 ): Promise<BrandVariation> {
-  const cacheKey = `${brandName.toLowerCase()}_${locale}`;
-  
+  const cacheKey = buildCacheKey(brandName, locale);
+
   if (brandVariationCache.has(cacheKey)) {
     return brandVariationCache.get(cacheKey)!;
   }
 
-  const variations = await generateIntelligentBrandVariations(brandName, locale);
-  brandVariationCache.set(cacheKey, variations);
-  
-  return variations;
+  throw new Error(`No cached brand variations for key ${cacheKey}`);
+}
+
+export async function ensureBrandVariationsForBrand(brandName: string, locale: string = 'en'): Promise<BrandVariation> {
+  const cacheKey = buildCacheKey(brandName, locale);
+
+  if (brandVariationCache.has(cacheKey)) {
+    return brandVariationCache.get(cacheKey)!;
+  }
+
+  if (pendingBrandVariationPromises.has(cacheKey)) {
+    return pendingBrandVariationPromises.get(cacheKey)!;
+  }
+
+  logger.debug(`Brand variations not cached yet for "${brandName}" (${locale}) - generating`);
+
+  const generationPromise = (async () => {
+    try {
+      const generated = await generateIntelligentBrandVariations(brandName, locale);
+      cacheBrandVariations(brandName, locale, generated);
+      return generated;
+    } finally {
+      pendingBrandVariationPromises.delete(cacheKey);
+    }
+  })();
+
+  pendingBrandVariationPromises.set(cacheKey, generationPromise);
+
+  return generationPromise;
 }
 
 /**
@@ -477,7 +554,8 @@ export async function cleanBrandsWithAI(brands: string[]): Promise<Array<{
   
   for (const brand of brands) {
     try {
-      const variation = await generateIntelligentBrandVariations(brand);
+      // Use cache-backed retrieval to avoid duplicate OpenAI calls
+      const variation = await ensureBrandVariationsForBrand(brand);
       results.push({
         original: brand,
         cleaned: variation.original,
@@ -652,4 +730,72 @@ export function calculateBrandVisibilityByProvider(
   });
   
   return results;
+}
+
+/**
+ * Detect brand mentions in a response (migrated from brand-detection-enhanced)
+ * This function provides the same interface as the old enhanced version
+ */
+export async function detectBrandsInResponse(
+  text: string,
+  targetBrand: string,
+  competitors: string[],
+  options: BrandDetectionOptions = {},
+  locale: string = 'en',
+  precomputedVariations?: Record<string, BrandVariation>
+): Promise<{
+  brandMentioned: boolean;
+  brandPosition?: number;
+  competitors: string[];
+  sentiment: 'positive' | 'neutral' | 'negative';
+  confidence: number;
+  detectionDetails: {
+    brandMatches: BrandDetectionMatch[];
+    competitorMatches: Map<string, BrandDetectionMatch[]>;
+  };
+}> {
+  console.log(`[BrandDetection] 🔍 Détection des marques dans la réponse (${text.length} chars)`);
+
+  try {
+    const variationsMap = precomputedVariations
+      ? new Map<string, BrandVariation>(Object.entries(precomputedVariations))
+      : undefined;
+
+    const detectionResults = await detectMultipleBrands(
+      text,
+      [targetBrand, ...competitors],
+      options,
+      locale,
+      variationsMap
+    );
+
+    const targetResult = detectionResults.get(targetBrand);
+    const brandMentioned = targetResult?.mentioned ?? false;
+    const brandMatches = targetResult?.matches ?? [];
+
+    const competitorMatches = new Map<string, BrandDetectionMatch[]>();
+    competitors.forEach((competitor) => {
+      const result = detectionResults.get(competitor);
+      if (result?.mentioned) {
+        competitorMatches.set(competitor, result.matches);
+      }
+    });
+
+    const mentionedCompetitors = Array.from(competitorMatches.keys());
+
+    return {
+      brandMentioned,
+      brandPosition: brandMatches.length > 0 ? 1 : undefined,
+      competitors: mentionedCompetitors,
+      sentiment: 'neutral',
+      confidence: targetResult?.confidence ?? 0,
+      detectionDetails: {
+        brandMatches,
+        competitorMatches,
+      },
+    };
+  } catch (error) {
+    console.error('[BrandDetection] ❌ Échec de la détection des marques dans la réponse:', error);
+    throw error;
+  }
 }

@@ -39,7 +39,14 @@ const ProductChangeDialog = ({ open, setOpen, preview }: ProductChangeDialogProp
     
     setIsLoading(true);
     try {
-      await attach({ productId: preview.product_id });
+      await attach({
+        productId: preview.product_id,
+        checkoutSessionParams: {
+          return_url: window.location.origin + '/dashboard',
+          success_url: window.location.origin + '/dashboard',
+          cancel_url: window.location.origin + '/dashboard',
+        },
+      });
       // Refresh customer data to update credits in navbar
       await refetch();
       setOpen(false);

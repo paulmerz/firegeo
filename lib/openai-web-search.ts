@@ -1,4 +1,5 @@
 ﻿import OpenAI from 'openai';
+<<<<<<< Updated upstream
 import { AIResponse } from './types';
 import { apiUsageTracker, estimateCost } from './api-usage-tracker';
 import { getLanguageName } from './locale-utils';
@@ -201,46 +202,18 @@ async function createSmartBrandVariations(brandString: string, locale?: string):
   // For complex multi-word brands, use AI
   return createAIBrandVariations(brandString, locale);
 }
+=======
+import { AIResponse, type BrandVariation } from './types';
+import { ensureBrandVariationsForBrand } from './brand-detection-service';
+import { apiUsageTracker, estimateCost } from './api-usage-tracker';
+import { getLanguageName } from './locale-utils';
+import { logger } from './logger';
+>>>>>>> Stashed changes
 
-// Filtre les variantes génériques pour les marques multi-mots (ex: évite "Silence", "Mobility")
-function filterBrandVariations(coreBrand: string, variations: string[]): string[] {
-  const coreWords = coreBrand.trim().split(/\s+/).filter(Boolean);
-  const isMultiWord = coreWords.length >= 2;
-  const coreLower = coreBrand.toLowerCase();
-  const genericSingles = new Set<string>([
-    'the','and','of','for','group','international','global','worldwide','inc','llc','corp','corporation','ltd','limited','sa','sas','gmbh','plc','bv','ag',
-    'urban','mobility','ecomobility','systems','solutions','technologies','technology'
-  ]);
+const ensureBrandVariations = ensureBrandVariationsForBrand;
 
-  const keep = new Set<string>();
-  for (const v of (variations || [])) {
-    if (!v || typeof v !== 'string') continue;
-    const vv = v.trim();
-    if (vv.length <= 1) continue;
-
-    const vvLower = vv.toLowerCase();
-    // Toujours garder le nom complet
-    if (vvLower === coreLower) { keep.add(vv); continue; }
-
-    const wordCount = vv.split(/\s+/).filter(Boolean).length;
-    if (isMultiWord) {
-      // Interdit les variantes mono-mot sauf acronyme plausible (MAJUSCULES, <=5)
-      if (wordCount === 1) {
-        const isAcronym = /^[A-Z0-9]{2,5}$/.test(vv);
-        if (!isAcronym) continue;
-        if (genericSingles.has(vvLower)) continue;
-      }
-    }
-
-    if (wordCount === 1 && genericSingles.has(vvLower)) continue;
-
-    keep.add(vv);
-  }
-
-  if (![...keep].some(x => x.toLowerCase() === coreLower)) {
-    keep.add(coreBrand);
-  }
-  return Array.from(keep);
+function textIncludesAnyVariation(textLower: string, variations: string[]): boolean {
+  return variations.some((variation) => textLower.includes(variation.toLowerCase()));
 }
 
 // Utility: get hostname from URL (without www)
@@ -283,6 +256,7 @@ const WEB_SEARCH_SUPPORTED_MODELS = [
 ];
 
 /**
+<<<<<<< Updated upstream
  * Canonicalize a list of raw brand names using OpenAI.
  */
 export async function canonicalizeBrandsWithOpenAI(
@@ -385,6 +359,8 @@ export async function canonicalizeBrandsWithOpenAI(
 }
 
 /**
+=======
+>>>>>>> Stashed changes
  * Analyze prompt with OpenAI using web search
  */
 export async function analyzePromptWithOpenAIWebSearch(
@@ -392,8 +368,14 @@ export async function analyzePromptWithOpenAIWebSearch(
   brandName: string,
   competitors: string[],
   locale?: string,
+<<<<<<< Updated upstream
   model: string = 'gpt-4o-mini'
 ): Promise<AIResponse | null> {
+=======
+  model: string = 'gpt-4o-mini',
+  precomputedVariations?: Map<string, BrandVariation> | Record<string, BrandVariation>
+): Promise<AIResponse> {
+>>>>>>> Stashed changes
   const client = getOpenAIClient();
   const languageName = locale ? getLanguageName(locale) : 'English';
 
@@ -545,6 +527,13 @@ Return the content in ${languageName} language.`;
                          (typeof reasoningText === 'string' && reasoningText.includes('search'));
     console.log(`[OpenAI Web Search] Web search appears to have been used: ${webSearchUsed}`);
 
+    // Convert Record to Map if necessary
+    const variationsMap = precomputedVariations instanceof Map
+      ? precomputedVariations
+      : precomputedVariations
+        ? new Map(Object.entries(precomputedVariations))
+        : undefined;
+
     // Analyze the response for brand mentions and rankings
     const analysisResult = await analyzeResponseContent(
       cleanedText,
@@ -552,7 +541,8 @@ Return the content in ${languageName} language.`;
       competitors,
       languageName,
       client,
-      locale
+      locale,
+      variationsMap
     );
 
     return {
@@ -610,7 +600,8 @@ async function analyzeResponseContent(
   competitors: string[],
   languageName: string,
   client: OpenAI,
-  locale?: string
+  locale?: string,
+  precomputedVariations?: Map<string, BrandVariation>
 ): Promise<{
   rankings: { position: number; company: string; reason: string; sentiment: 'positive' | 'neutral' | 'negative' }[];
   competitors: string[];
@@ -679,17 +670,23 @@ Please respond in JSON format with the following structure:
     const textLower = text.toLowerCase();
     
     // Enhanced brand detection with smart variations
-    const brandVariations = await createSmartBrandVariations(brandName, locale);
-    const enhancedBrandMentioned = analysisData.analysis?.brandMentioned || 
-      brandVariations.some(variation => textLower.includes(variation));
+    const brandVariationsRecord = precomputedVariations instanceof Map
+      ? precomputedVariations.get(brandName)
+      : (precomputedVariations?.[brandName] ?? undefined);
+    const resolvedBrandVariations = brandVariationsRecord ?? await ensureBrandVariations(brandName, locale);
+    const enhancedBrandMentioned = analysisData.analysis?.brandMentioned ||
+      textIncludesAnyVariation(textLower, resolvedBrandVariations.variations);
       
     // Add any missed competitors from text search with smart variations
     const aiCompetitors = new Set<string>((analysisData.analysis?.competitors || []) as string[]);
     const allMentionedCompetitors = new Set<string>([...aiCompetitors]);
     
     for (const competitor of competitors) {
-      const competitorVariations = await createSmartBrandVariations(competitor, locale);
-      const found = competitorVariations.some(variation => textLower.includes(variation));
+      const competitorVariationsRecord = precomputedVariations instanceof Map
+        ? precomputedVariations.get(competitor)
+        : (precomputedVariations?.[competitor] ?? undefined);
+      const competitorVariations = competitorVariationsRecord ?? await ensureBrandVariations(competitor, locale);
+      const found = textIncludesAnyVariation(textLower, competitorVariations.variations);
       
       if (found) {
         allMentionedCompetitors.add(competitor);
@@ -702,18 +699,22 @@ Please respond in JSON format with the following structure:
     );
     
     try {
-      const brandTerms = await createSmartBrandVariations(brandName, locale);
+      const brandTerms = resolvedBrandVariations.variations;
       const competitorTermsMap: Record<string, string[]> = {};
       for (const c of competitors) {
-        competitorTermsMap[c] = await createSmartBrandVariations(c, locale);
+        const competitorVariationsRecord = precomputedVariations instanceof Map
+          ? precomputedVariations.get(c)
+          : (precomputedVariations?.[c] ?? undefined);
+        const competitorVariations = competitorVariationsRecord ?? await ensureBrandVariations(c, locale);
+        competitorTermsMap[c] = competitorVariations.variations;
       }
       console.log('🔎 [OpenAI Web Search Detection] Terms used:');
       console.log('  • Brand:', brandName, '→', brandTerms);
       console.log('  • Competitors:', competitorTermsMap);
       console.log('  • Found brandMentioned:', enhancedBrandMentioned);
       console.log('  • Found competitors:', Array.from(allMentionedCompetitors));
-    } catch (e) {
-      console.warn('🔎 [OpenAI Web Search Detection] Log terms failed:', e);
+    } catch (error) {
+      console.warn('🔎 [OpenAI Web Search Detection] Log terms failed:', error);
     }
     
     return {
@@ -732,14 +733,20 @@ Please respond in JSON format with the following structure:
     const textLower = text.toLowerCase();
     
     // Enhanced brand detection with smart variations (fallback)
-    const brandVariations = await createSmartBrandVariations(brandName, locale);
-    const mentioned = brandVariations.some(variation => textLower.includes(variation));
+    const fallbackBrandVariationRecord = precomputedVariations instanceof Map
+      ? precomputedVariations.get(brandName)
+      : (precomputedVariations?.[brandName] ?? undefined);
+    const fallbackBrandVariations = fallbackBrandVariationRecord ?? await ensureBrandVariations(brandName, locale);
+    const mentioned = textIncludesAnyVariation(textLower, fallbackBrandVariations.variations);
       
     // Enhanced competitor detection with smart variations (fallback)
     const detectedCompetitors: string[] = [];
     for (const c of competitors) {
-      const competitorVariations = await createSmartBrandVariations(c, locale);
-      if (competitorVariations.some(variation => textLower.includes(variation))) {
+      const competitorRecord = precomputedVariations instanceof Map
+        ? precomputedVariations.get(c)
+        : (precomputedVariations?.[c] ?? undefined);
+      const competitorVariations = competitorRecord ?? await ensureBrandVariations(c, locale);
+      if (textIncludesAnyVariation(textLower, competitorVariations.variations)) {
         detectedCompetitors.push(c);
       }
     }

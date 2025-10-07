@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 import { Menu, X, Plus, Trash2, Loader2 } from 'lucide-react';
 import { useCustomer, useRefreshCustomer } from '@/hooks/useAutumnCustomer';
 import { useBrandAnalyses, useBrandAnalysis, useDeleteBrandAnalysis } from '@/hooks/useBrandAnalyses';
+import { useCreditsInvalidation } from '@/hooks/useCreditsInvalidation';
 import { Button } from '@/components/ui/button';
 import type { BrandAnalysisWithSources } from '@/lib/db/schema';
 import { format } from 'date-fns';
@@ -23,6 +24,7 @@ function BrandMonitorContent() {
   const t = useTranslations();
   const { customer, error } = useCustomer();
   const refreshCustomer = useRefreshCustomer();
+  const { invalidateCredits } = useCreditsInvalidation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedAnalysisId, setSelectedAnalysisId] = useState<string | null>(null);
   const [resetCount, setResetCount] = useState(0);
@@ -131,6 +133,8 @@ function BrandMonitorContent() {
   const handleCreditsUpdate = async () => {
     // Use the global refresh to update customer data everywhere
     await refreshCustomer();
+    // Also invalidate React Query cache for credits
+    await invalidateCredits();
   };
   
   const handleDeleteAnalysis = async (analysisId: string) => {

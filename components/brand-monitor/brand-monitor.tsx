@@ -1,15 +1,15 @@
 'use client';
 
 import React, { useReducer, useCallback, useState, useEffect, useRef, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import type { Company, ProviderSpecificRanking } from '@/lib/types';
 import type { BrandAnalysisWithSources } from '@/lib/db/schema';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { ClientApiError } from '@/lib/client-errors';
-import { 
-  brandMonitorReducer, 
+import {
+  brandMonitorReducer,
   initialBrandMonitorState,
   IdentifiedCompetitor,
   PromptCompletionStatus,
@@ -40,6 +40,7 @@ import { WebSearchToggle } from './web-search-toggle';
 import { logger } from '@/lib/logger';
 import { extractAnalysisSources } from '@/lib/brand-monitor-sources';
 import { ApiUsageSummary, ApiUsageSummaryData } from './api-usage-summary';
+import type { BrandVariation } from '@/lib/brand-detection-service';
 import {
   CREDIT_COST_URL_ANALYSIS,
   CREDIT_COST_COMPETITOR_ANALYSIS,
@@ -47,6 +48,7 @@ import {
   CREDIT_COST_PER_PROMPT_ANALYSIS_NO_WEB,
   CREDIT_COST_PROMPT_GENERATION
 } from '@/config/constants';
+import { useCreditsInvalidation } from '@/hooks/useCreditsInvalidation';
 
 // Hooks
 import { useSSEHandler } from './hooks/use-sse-handler';
@@ -164,6 +166,7 @@ export function BrandMonitor({
   const hasSavedRef = useRef(false);
   const [isRefreshingMatrix, setIsRefreshingMatrix] = useState(false);
   const [apiUsageSummary, setApiUsageSummary] = useState<ApiUsageSummaryData | null>(null);
+  const { updateCreditsCache } = useCreditsInvalidation();
   
   const { startSSEConnection } = useSSEHandler({ 
     state, 
@@ -244,15 +247,15 @@ export function BrandMonitor({
     const persisted = selectedAnalysis?.sources ?? null;
 
     if (analysis) {
-      return extractAnalysisSources(analysis, persisted);
+      return extractAnalysisSources(analysis, persisted, selectedAnalysis?.id);
     }
 
     if (selectedAnalysis?.analysisData) {
-      return extractAnalysisSources(selectedAnalysis.analysisData, persisted);
+      return extractAnalysisSources(selectedAnalysis.analysisData, persisted, selectedAnalysis.id);
     }
 
     if (persisted) {
-      return extractAnalysisSources(undefined, persisted);
+      return extractAnalysisSources(undefined, persisted, selectedAnalysis?.id);
     }
 
     return [];
@@ -289,6 +292,20 @@ export function BrandMonitor({
     const restoredCompany = buildCompanyFromSelection(selectedAnalysis, analysisPayload);
     if (restoredCompany) {
       dispatch({ type: 'SCRAPE_SUCCESS', payload: restoredCompany });
+    }
+
+    // Restore identified competitors with their URLs from saved analysis
+    if (selectedAnalysis.competitors && Array.isArray(selectedAnalysis.competitors)) {
+      const restoredCompetitors = selectedAnalysis.competitors.map((comp: any) => ({
+        name: comp.name || '',
+        url: comp.url,
+        metadata: comp.metadata
+      })).filter((comp: IdentifiedCompetitor) => comp.name);
+      
+      if (restoredCompetitors.length > 0) {
+        logger.info('[BrandMonitor] Restoring identified competitors with URLs:', restoredCompetitors);
+        dispatch({ type: 'SET_IDENTIFIED_COMPETITORS', payload: restoredCompetitors });
+      }
     }
   }, [selectedAnalysis]);
   
@@ -371,25 +388,27 @@ export function BrandMonitor({
       const scrapedCompany = normalizeScrapedCompany(data.company);
       // Debit for URL analysis on successful scrape result
       try {
+        console.log('🔍 [BrandMonitor] Calling /api/credits POST for scrape_success');
         const debitRes = await fetch('/api/credits', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ value: CREDIT_COST_URL_ANALYSIS, reason: 'scrape_success' })
         });
+        console.log('🔍 [BrandMonitor] /api/credits POST response:', debitRes.status);
         if (!debitRes.ok) {
           const err = (await debitRes.json().catch(() => null)) as { error?: string } | null;
           logger.warn('[Credits] Debit on scrape_success failed:', err?.error || debitRes.statusText);
-        } else if (onCreditsUpdate) {
-          onCreditsUpdate();
+        } else {
+          const responseData = await debitRes.json();
+          console.log('🔍 [BrandMonitor] /api/credits POST response data:', responseData);
+          // Update cache directly with new balance
+          await updateCreditsCache(responseData.balance);
         }
       } catch (creditError) {
         logger.warn('[Credits] Debit on scrape_success error:', creditError);
       }
       
-      // Scrape was successful - credits have been deducted, refresh the navbar
-      if (onCreditsUpdate) {
-        onCreditsUpdate();
-      }
+      // Scrape was successful - credits have been deducted (cache already updated)
       
       // Start fade out transition
       dispatch({ type: 'SET_SHOW_INPUT', payload: false });
@@ -506,8 +525,9 @@ export function BrandMonitor({
         if (!debitRes.ok) {
           const err = (await debitRes.json().catch(() => null)) as { error?: string } | null;
           logger.warn('[Credits] Debit on identify_competitors_success failed:', err?.error || debitRes.statusText);
-        } else if (onCreditsUpdate) {
-          onCreditsUpdate();
+        } else {
+          const responseData = await debitRes.json();
+          await updateCreditsCache(responseData.balance);
         }
       } catch (creditError) {
         logger.warn('[Credits] Debit on identify_competitors_success error:', creditError);
@@ -572,10 +592,7 @@ export function BrandMonitor({
       return;
     }
 
-    // Immediately trigger credit update to reflect deduction in navbar
-    if (onCreditsUpdate) {
-      onCreditsUpdate();
-    }
+    // Credit deduction will update cache after POST succeeds below
 
     try {
       // Use the prompts that are already displayed in the UI instead of regenerating
@@ -633,8 +650,9 @@ export function BrandMonitor({
             if (!debitRes.ok) {
               const err = (await debitRes.json().catch(() => null)) as { error?: string } | null;
               logger.warn('[Credits] Debit for prompts failed:', err?.error || debitRes.statusText);
-            } else if (onCreditsUpdate) {
-              onCreditsUpdate();
+            } else {
+              const responseData = await debitRes.json();
+              await updateCreditsCache(responseData.balance);
             }
           } catch (creditError) {
             logger.warn('[Credits] Debit for prompts error:', creditError);
@@ -743,6 +761,7 @@ export function BrandMonitor({
       competitors: ranking.competitors.filter((competitor) => comparisonBrands.has(competitor.name))
     }));
   })();
+
   
   return (
     <div className="flex flex-col">
@@ -933,6 +952,7 @@ export function BrandMonitor({
                       averagePosition={Math.round(brandData.averagePosition)}
                       sentimentScore={brandData.sentimentScore}
                       weeklyChange={brandData.weeklyChange}
+                      identifiedCompetitors={identifiedCompetitors}
                     />
                   </div>
                 )}
@@ -967,6 +987,7 @@ export function BrandMonitor({
                         competitors={analysis.competitors?.map(c => c.name) || []}
                         webSearchUsed={analysis.webSearchUsed}
                         hideWebSearchSources={hideWebSearchSources}
+                        brandVariations={analysis.brandVariations}
                       />
                     </CardContent>
                   </Card>

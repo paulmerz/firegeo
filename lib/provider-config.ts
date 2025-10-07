@@ -77,6 +77,14 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     enabled: PROVIDER_ENABLED_CONFIG.openai,
     models: [
       {
+        id: 'gpt-5',
+        name: 'gpt-5',
+        maxTokens: 1000000,
+        supportsFunctionCalling: true,
+        supportsStructuredOutput: true,
+        supportsWebSearch: true,
+      },
+      {
         id: 'gpt-4o',
         name: 'GPT-4 Optimized',
         maxTokens: 128000,

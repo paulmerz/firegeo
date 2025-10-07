@@ -108,22 +108,30 @@ export interface AIResponse {
   sentiment: 'positive' | 'neutral' | 'negative';
   confidence: number;
   timestamp: Date;
+<<<<<<< Updated upstream
   webSearchSources?: { title: string, url: string, snippet: string }[]; // Sources from web search
+=======
+  webSearchSources?: any[]; // Sources from web search
+  brandVariations?: Record<string, BrandVariation>;
+>>>>>>> Stashed changes
   // Enhanced detection information
   detectionDetails?: {
     brandMatches?: {
       text: string;
       index: number;
       confidence: number;
+      snippet?: string;
     }[];
     competitorMatches?: Map<string, {
       text: string;
       index: number;
       confidence: number;
+      snippet?: string;
     }[]> | Record<string, {
       text: string;
       index: number;
       confidence: number;
+      snippet?: string;
     }[]>;
   };
 }
@@ -135,6 +143,7 @@ export interface AnalysisSource {
   prompt?: string;
   domain?: string;
   url?: string;
+  title?: string;
   sourceType?: string;
   metadata?: Record<string, unknown> | null;
   rank?: number;
@@ -153,6 +162,7 @@ export interface BrandAnalysis {
   company: Company;
   prompts: BrandPrompt[];
   responses: AIResponse[];
+  brandVariations?: Record<string, BrandVariation>;
   competitors: CompetitorRanking[];
   providerRankings?: ProviderSpecificRanking[];
   providerComparison?: ProviderComparisonData[];
@@ -199,6 +209,7 @@ export interface SSEEvent<T = unknown> {
 export type AnalysisStage = 
   | 'initializing'
   | 'identifying-competitors' // Legacy stage, kept for backward compatibility
+  | 'generating-brand-variations'
   | 'generating-prompts'
   | 'analyzing-prompts'
   | 'extracting-brands'
@@ -324,6 +335,7 @@ export const PROMPT_TEMPLATES = {
     "What's the best {industry} solution for enterprise use?",
     "Which {industry} platform offers the best value?",
   ],
+<<<<<<< Updated upstream
 };
 
 export interface ApiUsageSummaryData {
@@ -353,3 +365,12 @@ export interface ApiUsageSummaryData {
   }>;
   errors: number;
 }
+=======
+}; 
+
+export interface BrandVariation {
+  original: string;
+  variations: string[];
+  confidence: number;
+} 
+>>>>>>> Stashed changes

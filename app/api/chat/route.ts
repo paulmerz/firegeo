@@ -12,7 +12,7 @@ import {
   handleApiError 
 } from '@/lib/api-errors';
 import { 
-  FEATURE_ID_MESSAGES, 
+  FEATURE_ID_CREDITS, 
   CREDITS_PER_MESSAGE,
   ERROR_MESSAGES,
   ROLE_USER,
@@ -32,11 +32,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (!sessionResponse?.user) {
-      console.error('No session found in chat API');
       throw new AuthenticationError('Please log in to use the chat');
     }
-
-    console.log('Chat API - User:', sessionResponse.user.id);
 
     const { message, conversationId } = await request.json();
 
@@ -48,20 +45,13 @@ export async function POST(request: NextRequest) {
 
     // Check if user has access to use the chat
     try {
-      console.log('Checking access for:', {
-        userId: sessionResponse.user.id,
-        featureId: 'messages',
-      });
       
       const access = await autumn.check({
         customer_id: sessionResponse.user.id,
-        feature_id: FEATURE_ID_MESSAGES,
+        feature_id: FEATURE_ID_CREDITS,
       });
       
-      console.log('Access check result:', access);
-
       if (!access.data?.allowed) {
-        console.log('Access denied - no credits remaining');
         throw new InsufficientCreditsError(
           ERROR_MESSAGES.NO_CREDITS_REMAINING,
           CREDITS_PER_MESSAGE,
@@ -69,7 +59,6 @@ export async function POST(request: NextRequest) {
         );
       }
     } catch (err) {
-      console.error('Failed to check access:', err);
       if (err instanceof InsufficientCreditsError) {
         throw err; // Re-throw our custom errors
       }
@@ -80,11 +69,14 @@ export async function POST(request: NextRequest) {
     try {
       await autumn.track({
         customer_id: sessionResponse.user.id,
+<<<<<<< Updated upstream
         feature_id: FEATURE_ID_MESSAGES,
+=======
+        feature_id: FEATURE_ID_CREDITS,
+>>>>>>> Stashed changes
         value: CREDITS_PER_MESSAGE,
       });
     } catch (err) {
-      console.error('Failed to track usage:', err);
       throw new ExternalServiceError('Unable to process credit usage. Please try again', 'autumn');
     }
 
@@ -163,11 +155,11 @@ export async function POST(request: NextRequest) {
     try {
       const usage = await autumn.check({
         customer_id: sessionResponse.user.id,
-        feature_id: FEATURE_ID_MESSAGES,
+        feature_id: FEATURE_ID_CREDITS,
       });
       remainingCredits = usage.data?.balance || 0;
     } catch (err) {
-      console.error('Failed to get remaining credits:', err);
+      // Silently fail if we can't get remaining credits
     }
 
     return NextResponse.json({

@@ -1,14 +1,22 @@
 
 import { generateText, generateObject } from 'ai';
 import { z } from 'zod';
+<<<<<<< Updated upstream
 import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData, SSEEvent } from './types';
 import { getProviderModel, normalizeProviderName, getConfiguredProviders } from './provider-config';
 import { detectBrandMentions, detectMultipleBrands } from './brand-detection-service';
+=======
+import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData } from './types';
+import { getProviderModel, normalizeProviderName, isProviderConfigured, getConfiguredProviders, PROVIDER_CONFIGS } from './provider-config';
+import { detectBrandMentions, detectMultipleBrands, ensureBrandVariationsForBrand } from './brand-detection-service';
+import type { BrandVariation } from './types';
+>>>>>>> Stashed changes
 import { getMessages, getTranslation, getLanguageName } from './locale-utils';
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
 import { generateBrandQueryPrompts } from './prompt-generation';
 import { createFallbackBrandPrompts } from './prompt-fallbacks';
 import { logger } from './logger';
+import { cleanProviderResponse } from './provider-response-utils';
 
 
 const RankingSchema = z.object({
@@ -39,6 +47,22 @@ const CompetitorSchema = z.object({
 });
 
 const PROMPT_CATEGORY_SEQUENCE: BrandPrompt['category'][] = ['ranking', 'comparison', 'alternatives', 'recommendations'];
+
+/**
+ * Helper function to use pre-generated brand variations or fallback to generation
+ */
+async function getBrandVariationsForDetection(
+  brandName: string,
+  locale?: string,
+  brandVariations?: Record<string, BrandVariation>
+): Promise<string[]> {
+  if (brandVariations && brandVariations[brandName]) {
+    return brandVariations[brandName].variations;
+  }
+
+  const variation = await ensureBrandVariationsForBrand(brandName, locale);
+  return variation.variations;
+}
 
 export async function identifyCompetitors(company: Company, progressCallback?: ProgressCallback): Promise<string[]> {
   try {
@@ -187,11 +211,18 @@ export async function analyzePromptWithProvider(
   brandName: string,
   competitors: string[],
   useMockMode: boolean = false,
+<<<<<<< Updated upstream
   locale?: string
 ): Promise<AIResponse | null> {
+=======
+  locale?: string,
+  brandVariations?: Record<string, BrandVariation>
+): Promise<AIResponse> {
+  const trimmedPrompt = (prompt || '').trim();
+>>>>>>> Stashed changes
   // Mock mode for demo/testing without API keys
   if (useMockMode || provider === 'Mock') {
-    return generateMockResponse(prompt, provider, brandName, competitors);
+    return generateMockResponse(trimmedPrompt, provider, brandName, competitors);
   }
 
   // Normalize provider name for consistency
@@ -206,32 +237,30 @@ export async function analyzePromptWithProvider(
     return null;
   }
   
+  // Get the model ID from provider config instead of trying to extract from model object
+  const providerConfig = PROVIDER_CONFIGS[normalizedProvider];
+  const modelId = providerConfig?.defaultModel || 'unknown';
+  
   console.log(`${provider} model obtained successfully: ${typeof model}`);
   if (normalizedProvider === 'google') {
     console.log('Google model details:', model);
   }
 
   const languageName = locale ? getLanguageName(locale) : 'English';
-  
-  const systemPrompt = `You are an AI assistant analyzing brand visibility and rankings.
-When responding to prompts about tools, platforms, or services:
-1. Provide rankings with specific positions (1st, 2nd, etc.)
-2. Focus on the companies mentioned in the prompt
-3. Be objective and factual
-4. Explain briefly why each tool is ranked where it is
-5. If you don't have enough information about a specific company, you can mention that
-6. Return the content in ${languageName} language
-7. IMPORTANT: Keep your response concise and under 800 tokens. Prioritize the most important information and rankings.`;
 
   try {
     // Track API call for analysis
     const callId = apiUsageTracker.trackCall({
       provider: normalizedProvider,
+<<<<<<< Updated upstream
       model: (model as { id?: string }).id || 'unknown',
+=======
+      model: modelId,
+>>>>>>> Stashed changes
       operation: 'analysis',
       success: true,
       metadata: { 
-        prompt: prompt.substring(0, 100) + '...',
+        prompt: trimmedPrompt.substring(0, 100) + '...',
         brandName,
         competitorsCount: competitors.length,
         locale
@@ -239,16 +268,15 @@ When responding to prompts about tools, platforms, or services:
     });
 
     // First, get the response
-    console.log(`[${provider}] Calling with prompt: "${prompt.substring(0, 50)}..."`);
+    console.log(`[${provider}] Calling with RAW prompt: "${trimmedPrompt.substring(0, 50)}..."`);
     console.log(`[${provider}] Model type:`, typeof model);
     console.log(`[${provider}] Normalized provider:`, normalizedProvider);
     
     const startTime = Date.now();
     const { text, usage } = await generateText({
       model,
-      system: systemPrompt,
-      prompt,
-      temperature: 0.7,
+      prompt: trimmedPrompt,
+      // GPT-5: ne pas envoyer temperature/top_p/logprobs
       maxTokens: 800,
     });
     const duration = Date.now() - startTime;
@@ -260,7 +288,11 @@ When responding to prompts about tools, platforms, or services:
     apiUsageTracker.updateCall(callId, {
       inputTokens: tokens.inputTokens,
       outputTokens: tokens.outputTokens,
+<<<<<<< Updated upstream
       cost: estimateCost(normalizedProvider, (model as { id?: string }).id || 'unknown', tokens.inputTokens, tokens.outputTokens),
+=======
+      cost: estimateCost(normalizedProvider, modelId, tokens.inputTokens, tokens.outputTokens),
+>>>>>>> Stashed changes
       duration
     });
     
@@ -268,7 +300,7 @@ When responding to prompts about tools, platforms, or services:
     console.log(`[${provider}] First 200 chars: "${text.substring(0, 200)}"`);
     
     if (!text || text.length === 0) {
-      console.error(`[${provider}] ERROR: Empty response for prompt: "${prompt}"`);
+      console.error(`[${provider}] ERROR: Empty response for prompt: "${trimmedPrompt}"`);
       throw new Error(`${provider} returned empty response`);
     }
 
@@ -317,7 +349,6 @@ Examples of mentions to catch:
         model: structuredModel,
         schema: RankingSchema,
         prompt: analysisPrompt,
-        temperature: 0.3,
         maxRetries: 2,
       });
       
@@ -375,35 +406,40 @@ ${t('aiPrompts.analysisPrompt.returnAnalysis')}
           const { text: simpleResponse } = await generateText({
             model,
             prompt: simplePrompt,
-            temperature: 0.3,
           });
           
           // Parse the simple response with enhanced detection
           const lines = simpleResponse.toLowerCase().split('\n');
           const aiSaysBrandMentioned = lines.some(line => line.includes('yes'));
           
-          // Use enhanced detection as fallback
-          const brandDetection = await detectBrandMentions(text, brandName, {
+          // Use enhanced detection as fallback with pre-generated variations
+          const detectionText = cleanProviderResponse(text, { providerName: provider });
+
+          const brandDetection = await detectBrandMentions(detectionText, brandName, {
             caseSensitive: false,
             excludeNegativeContext: false,
             minConfidence: 0.3
           });
-          
-          const competitorDetections = await detectMultipleBrands(text, competitors, {
+
+          const competitorDetections = await detectMultipleBrands(detectionText, competitors, {
             caseSensitive: false,
             excludeNegativeContext: false,
             minConfidence: 0.3
           });
-          
+
           const competitors_mentioned = competitors.filter(c => 
             competitorDetections.get(c)?.mentioned || false
           );
-          
+
+          if (aiSaysBrandMentioned && !brandDetection.mentioned) {
+            console.log(`[${provider}] Ignoring AI-only brand mention for "${brandName}" - no matches found by detector.`);
+          }
+
           return {
             provider,
             prompt,
             response: text,
-            brandMentioned: aiSaysBrandMentioned || brandDetection.mentioned,
+            brandMentioned: brandDetection.mentioned,
             brandPosition: undefined,
             competitors: competitors_mentioned,
             rankings: [],
@@ -439,7 +475,6 @@ Be concise and direct.`;
           const { text: fallbackResponse } = await generateText({
             model,
             prompt: simpleFallbackPrompt,
-            temperature: 0.1,
             maxTokens: 200,
           });
           
@@ -451,25 +486,31 @@ Be concise and direct.`;
           const aiSaysBrandMentioned = brandMentionedLine?.includes('yes') || false;
           
           // Enhanced detection as backup
-          const brandDetection = await detectBrandMentions(text, brandName, {
+          const detectionText = cleanProviderResponse(text, { providerName: provider });
+
+          const brandDetection = await detectBrandMentions(detectionText, brandName, {
             caseSensitive: false,
             excludeNegativeContext: false,
             minConfidence: 0.3
           });
-          
-          const competitorDetections = await detectMultipleBrands(text, competitors, {
+
+          const competitorDetections = await detectMultipleBrands(detectionText, competitors, {
             caseSensitive: false,
             excludeNegativeContext: false,
             minConfidence: 0.3
           });
-          
+
           console.log(`[${provider}] Fallback analysis - AI says mentioned: ${aiSaysBrandMentioned}, Detection says: ${brandDetection.mentioned}`);
-          
+
+          if (aiSaysBrandMentioned && !brandDetection.mentioned) {
+            console.log(`[${provider}] Ignoring AI-only brand mention for "${brandName}" - detector found no evidence.`);
+          }
+
           return {
             provider,
-            prompt,
+            prompt: trimmedPrompt,
             response: text,
-            brandMentioned: aiSaysBrandMentioned || brandDetection.mentioned,
+            brandMentioned: brandDetection.mentioned,
             brandPosition: undefined,
             competitors: competitors.filter(c => competitorDetections.get(c)?.mentioned || false),
             rankings: [],
@@ -483,13 +524,15 @@ Be concise and direct.`;
       }
       
       // Final fallback with enhanced detection
-      const brandDetection = await detectBrandMentions(text, brandName, {
+      const detectionText = cleanProviderResponse(text, { providerName: provider });
+
+      const brandDetection = await detectBrandMentions(detectionText, brandName, {
         caseSensitive: false,
         excludeNegativeContext: false,
         minConfidence: 0.3
       });
-      
-      const competitorDetections = await detectMultipleBrands(text, competitors, {
+
+      const competitorDetections = await detectMultipleBrands(detectionText, competitors, {
         caseSensitive: false,
         excludeNegativeContext: false,
         minConfidence: 0.3
@@ -497,7 +540,7 @@ Be concise and direct.`;
       
       return {
         provider,
-        prompt,
+        prompt: trimmedPrompt,
         response: text,
         brandMentioned: brandDetection.mentioned,
         brandPosition: undefined,
@@ -517,35 +560,40 @@ Be concise and direct.`;
     }));
 
     // Enhanced fallback with proper brand detection using centralized service
-    const brandDetectionResult = await detectBrandMentions(text, brandName, {
+    const detectionText = cleanProviderResponse(text, { providerName: provider });
+
+    const brandDetectionResult = await detectBrandMentions(detectionText, brandName, {
       caseSensitive: false,
       excludeNegativeContext: false,
       minConfidence: 0.3
     });
-    const brandMentioned = object.analysis.brandMentioned || brandDetectionResult.mentioned;
-    
+    const brandMentioned = brandDetectionResult.mentioned;
+
+    if (object.analysis.brandMentioned && !brandDetectionResult.mentioned) {
+      console.log(`[${provider}] Ignoring AI-only brand mention for "${brandName}" - detector found no evidence.`);
+    }
+
     // Detect all competitor mentions with centralized service
-    const competitorDetectionResults = await detectMultipleBrands(text, competitors, {
+    const competitorDetectionResults = await detectMultipleBrands(detectionText, competitors, {
       caseSensitive: false,
       excludeNegativeContext: false,
       minConfidence: 0.3
-    });
-    
-    // Combine AI-detected competitors with enhanced detection
-    const aiCompetitors = new Set(object.analysis.competitors);
-    const allMentionedCompetitors = new Set([...aiCompetitors]);
-    
-    // Add competitors found by enhanced detection
-    competitorDetectionResults.forEach((result, competitorName) => {
-      if (result.mentioned && competitorName !== brandName) {
-        allMentionedCompetitors.add(competitorName);
-      }
     });
 
-    // Filter competitors to only include the ones we're tracking
-    const relevantCompetitors = Array.from(allMentionedCompetitors).filter(c => 
-      competitors.includes(c) && c !== brandName
+    const relevantCompetitors = competitors.filter(competitorName => {
+      const detection = competitorDetectionResults.get(competitorName);
+      return detection?.mentioned && competitorName !== brandName;
+    });
+
+    // Surface AI-only competitors that we intentionally ignore
+    const aiOnlyCompetitors = new Set(
+      object.analysis.competitors.filter(c => competitors.includes(c) && c !== brandName)
     );
+    relevantCompetitors.forEach(c => aiOnlyCompetitors.delete(c));
+
+    if (aiOnlyCompetitors.size > 0) {
+      console.log(`[${provider}] Ignoring AI-only competitors without detector evidence: [${Array.from(aiOnlyCompetitors).join(', ')}]`);
+    }
     
     // Log detection details for debugging
     if (brandDetectionResult.mentioned && !object.analysis.brandMentioned) {

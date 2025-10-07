@@ -4,7 +4,6 @@
 // ============================================
 // Feature IDs and Identifiers
 // ============================================
-export const FEATURE_ID_MESSAGES = 'messages';
 export const FEATURE_ID_CREDITS = 'credits';
 
 // ============================================
@@ -76,6 +75,7 @@ export const MODEL_MAX_TOKENS = {
   'gemini-1.5-pro': 1000000,
   'gemini-1.5-flash': 1000000,
   'gemini-2.0-flash-exp': 1000000,
+  'gpt-5': 1000000,
   'gpt-4': 127000,
   'gpt-4o': 127000,
   'gpt-4o-mini': 127000,
@@ -90,6 +90,7 @@ export const MODEL_RATE_LIMITS = {
   'gemini-1.5-pro': 60,
   'gemini-1.5-flash': 120,
   'gemini-2.0-flash-exp': 120,
+  'gpt-5': 60,
   'gpt-4': 50,
   'gpt-4o': 60,
   'gpt-4o-mini': 60,
@@ -228,6 +229,7 @@ export const AI_MODELS = {
   CLAUDE_HAIKU: 'claude-3-5-haiku-latest',
   GEMINI_FLASH: 'gemini-2.0-flash-exp',
   GPT_4O_MINI: 'gpt-4o-mini',
+  GPT_5: 'gpt-5',
   PERPLEXITY_SONAR: 'sonar',
 } as const;
 

@@ -112,7 +112,8 @@ async function checkFirecrawlConnection(): Promise<{ connected: boolean; error?:
   }
   
   try {
-    const { FirecrawlApp } = await import('@mendable/firecrawl-js');
+    const firecrawlModule = await import('@mendable/firecrawl-js');
+    const FirecrawlApp = (firecrawlModule as any).FirecrawlApp ?? (firecrawlModule as any).default;
     const firecrawl = new FirecrawlApp({ apiKey: process.env.FIRECRAWL_API_KEY });
     
     // Test simple avec une URL rapide
@@ -132,7 +133,7 @@ async function checkFirecrawlConnection(): Promise<{ connected: boolean; error?:
 }
 
 async function main() {
-  console.log('🔍 Diagnostic de configuration FireGEO\n');
+  console.log('🔍 Diagnostic de configuration Voxum\n');
   
   // 1. Vérifier les variables d'environnement
   console.log('📋 Variables d\'environnement:');

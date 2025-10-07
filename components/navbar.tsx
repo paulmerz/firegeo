@@ -4,12 +4,14 @@ import Image from 'next/image';
 import { useSession, signOut } from '@/lib/auth-client';
 import { useEffect, useState } from 'react';
 import { useCustomer } from '@/hooks/useAutumnCustomer';
+import { useCredits } from '@/hooks/useMessages';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
 
-// Separate component that only renders when Autumn is available
+// Separate component that only renders when user is logged in
 function UserCredits() {
   const { data: session } = useSession();
+<<<<<<< Updated upstream
   const { customer } = useCustomer();
   const t = useTranslations('common');
   const [displayCredits, setDisplayCredits] = useState<number | null>(null);
@@ -51,12 +53,25 @@ function UserCredits() {
 
   // 3) Si aucune valeur (ni cache ni Autumn), masquer pour éviter clignotement à 0
   if (displayCredits == null) {
+=======
+  
+  // Ne pas afficher si l'utilisateur n'est pas connecté
+  if (!session) {
+    return null;
+  }
+
+  const { data: creditsData, isLoading } = useCredits();
+  const t = useTranslations('common');
+
+  // Afficher un indicateur de chargement ou masquer si pas de données
+  if (isLoading || !creditsData) {
+>>>>>>> Stashed changes
     return null;
   }
 
   return (
     <div className="flex items-center text-sm font-medium text-gray-700">
-      <span>{displayCredits}</span>
+      <span>{creditsData.balance}</span>
       <span className="ml-1">{t('credits')}</span>
     </div>
   );
@@ -69,6 +84,7 @@ export function Navbar() {
   const router = useRouter();
   const t = useTranslations();
   const locale = useLocale();
+  const isSessionLoading = !isClient || isPending;
 
   // Éviter l'erreur d'hydratation en s'assurant que le rendu côté client
   // correspond au rendu côté serveur
@@ -136,9 +152,9 @@ export function Navbar() {
             {isClient && session && (
               <UserCredits />
             )}
-            {isPending ? (
+            {isSessionLoading ? (
               <div className="text-sm text-gray-400">{t('common.loading')}</div>
-            ) : isClient && session ? (
+            ) : session ? (
               <>
                 <Link
                   href={`/dashboard`}

@@ -36,7 +36,7 @@ export async function GET(
       throw new NotFoundError('Analysis not found');
     }
 
-    const sources = extractAnalysisSources(analysis.analysisData, analysis.sources);
+    const sources = extractAnalysisSources(analysis.analysisData, analysis.sources, analysis.id);
     const baseData = analysis.analysisData && typeof analysis.analysisData === 'object'
       ? { ...analysis.analysisData }
       : {};

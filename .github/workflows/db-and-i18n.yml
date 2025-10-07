@@ -36,6 +36,10 @@ jobs:
         run: node setup.js
       - name: i18n check
         run: pnpm run i18n:check
+      - name: Brand detection tests
+        run: pnpm run test:brand-detection
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       - name: Trigger Vercel Deploy Hook
         if: ${{ success() }}
         run: curl -X POST "$VERCEL_DEPLOY_HOOK_URL"
@@ -69,6 +73,10 @@ jobs:
         run: node setup.js
       - name: i18n check
         run: pnpm run i18n:check
+      - name: Brand detection tests
+        run: pnpm run test:brand-detection
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       - name: Trigger Vercel Deploy Hook
         if: ${{ success() }}
         run: curl -X POST "$VERCEL_DEPLOY_HOOK_URL"

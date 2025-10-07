@@ -1,4 +1,4 @@
-# Guide de Dépannage - FireGEO
+# Guide de Dépannage - Voxum
 
 ## Problème : Divergence entre ordinateurs
 

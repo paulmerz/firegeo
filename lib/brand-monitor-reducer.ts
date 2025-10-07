@@ -1,4 +1,4 @@
-import { Company, CompetitorRanking, AnalysisStage, PartialResultData, AnalysisSource, BrandPrompt, AIResponse, ProviderSpecificRanking, ProviderComparisonData } from './types';
+import { Company, CompetitorRanking, AnalysisStage, PartialResultData, AnalysisSource, BrandPrompt, AIResponse, ProviderSpecificRanking, ProviderComparisonData, BrandVariation } from './types';
 
 // Action Types
 export type BrandMonitorAction =
@@ -9,6 +9,7 @@ export type BrandMonitorAction =
   | { type: 'SET_ANALYZING'; payload: boolean }
   | { type: 'SET_PREPARING_ANALYSIS'; payload: boolean }
   | { type: 'SET_COMPANY'; payload: Company | null }
+  | { type: 'SET_BRAND_VARIATIONS'; payload: Map<string, BrandVariation> }
   | { type: 'SET_SHOW_INPUT'; payload: boolean }
   | { type: 'SET_SHOW_COMPANY_CARD'; payload: boolean }
   | { type: 'SET_SHOW_PROMPTS_LIST'; payload: boolean }
@@ -88,6 +89,7 @@ export interface AnalysisTile {
 }
 
 export interface Analysis {
+  id?: string;
   company: Company;
   knownCompetitors: string[];
   prompts: BrandPrompt[];
@@ -102,6 +104,7 @@ export interface Analysis {
   competitors: CompetitorRanking[];
   providerRankings?: ProviderSpecificRanking[];
   providerComparison?: ProviderComparisonData[];
+  brandVariations?: Record<string, BrandVariation>;
   sources?: AnalysisSource[];
   errors?: string[];
   webSearchUsed?: boolean;
@@ -124,6 +127,7 @@ export interface BrandMonitorState {
   // Core data
   company: Company | null;
   analysis: Analysis | null;
+  brandVariations: Map<string, BrandVariation>;
   
   // UI state
   showInput: boolean;
@@ -174,6 +178,7 @@ export const initialBrandMonitorState: BrandMonitorState = {
   scrapingCompetitors: false,
   company: null,
   analysis: null,
+  brandVariations: new Map(),
   showInput: true,
   showCompanyCard: false,
   showPromptsList: false,
@@ -231,7 +236,15 @@ export function brandMonitorReducer(
       return { ...state, preparingAnalysis: action.payload };
       
     case 'SET_COMPANY':
-      return { ...state, company: action.payload };
+      return {
+        ...state,
+        company: action.payload,
+      };
+    case 'SET_BRAND_VARIATIONS':
+      return {
+        ...state,
+        brandVariations: action.payload
+      };
       
     case 'SET_SHOW_INPUT':
       return { ...state, showInput: action.payload };

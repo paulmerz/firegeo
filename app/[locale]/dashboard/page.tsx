@@ -82,6 +82,11 @@ function DashboardContent({ session }: { session: Session }) {
       await attach({
         productId,
         dialog: ProductChangeDialog,
+        checkoutSessionParams: {
+          return_url: window.location.origin + '/dashboard',
+          success_url: window.location.origin + '/dashboard',
+          cancel_url: window.location.origin + '/dashboard',
+        },
       });
     } finally {
       setLoadingProductId(null);

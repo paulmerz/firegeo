@@ -104,6 +104,10 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
         }
         break;
         
+      case 'start':
+        // Déjà géré par la logique d'initialisation du reducer
+        break;
+
       case 'progress': {
         const progressData = eventData.data as ProgressData;
         const globalProgress = calculateGlobalProgress(

@@ -94,13 +94,18 @@ function createDedupKey(source: AnalysisSource): string | undefined {
 
 export function extractAnalysisSources(
   analysisData?: unknown,
-  persistedSources?: unknown[] | null
+  persistedSources?: unknown[] | null,
+  currentAnalysisId?: string
 ): AnalysisSource[] {
   // Use a map so we can enrich duplicates (DB entries first, then enrich with runtime context)
   const collectedByKey = new Map<string, AnalysisSource>();
 
   const registerSource = (maybeSource: AnalysisSource | undefined) => {
     if (!maybeSource) return;
+    if (currentAnalysisId && maybeSource.analysisId && maybeSource.analysisId !== currentAnalysisId) {
+      // Ignore sources that belong to a different analysis when an ID is provided
+      return;
+    }
     const key = createDedupKey(maybeSource);
     if (!key) return;
 
@@ -109,12 +114,7 @@ export function extractAnalysisSources(
       sourceType: maybeSource.sourceType || 'web_search',
     };
 
-    console.log('[Sources Debug] Registering source:', {
-      provider: normalized.provider,
-      prompt: normalized.prompt?.substring(0, 30) + '...',
-      url: normalized.url?.substring(0, 30) + '...',
-      domain: normalized.domain
-    });
+    // Debug logs removed to avoid console pollution
 
     const existing = collectedByKey.get(key);
     if (!existing) {
@@ -149,7 +149,7 @@ export function extractAnalysisSources(
         provider: context.provider,
         prompt: context.prompt,
         rank: index + 1,
-        analysisId: context.analysisId,
+        analysisId: context.analysisId ?? currentAnalysisId,
       });
       registerSource(normalized);
     });
@@ -167,7 +167,10 @@ export function extractAnalysisSources(
   }
 
   if (!analysisData || typeof analysisData !== 'object') {
+<<<<<<< Updated upstream
     // Return any sources collected from persistedSources
+=======
+>>>>>>> Stashed changes
     return Array.from(collectedByKey.values());
   }
 
@@ -181,6 +184,7 @@ export function extractAnalysisSources(
   const responses = analysisObject['responses'];
   if (Array.isArray(responses)) {
     (responses as AIResponse[]).forEach((response) => {
+<<<<<<< Updated upstream
       const provider = asTrimmedString(response.provider);
       const prompt = asTrimmedString(response.prompt);
       const webSearchSources = response.webSearchSources;
@@ -192,6 +196,15 @@ export function extractAnalysisSources(
       });
 
       addRawSources(webSearchSources, { provider, prompt });
+=======
+      const responseObj = response as unknown as UnknownObject;
+      const provider = asTrimmedString(responseObj['provider']);
+      const prompt = asTrimmedString(responseObj['prompt']);
+      const webSearchSources = responseObj['webSearchSources'];
+      
+      // Debug logs removed
+      addRawSources(webSearchSources, { provider, prompt, analysisId: currentAnalysisId });
+>>>>>>> Stashed changes
     });
   }
 

@@ -698,6 +698,7 @@
       "insufficientCreditsPromptGen": "Insufficient credits. You need at least {credits} credits to generate prompts.",
       "insufficientCreditsAddPrompt": "Insufficient credits. You need at least {credits} credits to add a prompt.",
       "insufficientCreditsAnalysis": "Insufficient credits. You need {credits} credits ({perPrompt} per prompt) to run this analysis.",
+      "buyCreditsLink": "Buy Credits",
       "failedToScrape": "Failed to scrape",
       "noCompanyData": "No company data received",
       "failedToExtractCompany": "Failed to extract company information",

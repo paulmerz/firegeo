@@ -2,13 +2,22 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { ChevronDown, ChevronsDown, ChevronsUp } from 'lucide-react';
+<<<<<<< Updated upstream
 import { BrandPrompt, AIResponse } from '@/lib/types';
+=======
+import ReactMarkdown from 'react-markdown';
+import { BrandPrompt, AIResponse, BrandVariation } from '@/lib/types';
+>>>>>>> Stashed changes
 import { HighlightedResponse } from './highlighted-response';
 import { useTranslations } from 'next-intl';
 import { logger } from '@/lib/logger';
+import { detectBrandsInResponse } from '@/lib/brand-detection-service';
+import { cleanProviderResponse } from '@/lib/provider-response-utils';
+
+type DetectionResult = Awaited<ReturnType<typeof detectBrandsInResponse>>;
 
 interface PromptsResponsesTabProps {
   prompts: BrandPrompt[];
@@ -19,6 +28,7 @@ interface PromptsResponsesTabProps {
   competitors: string[];
   webSearchUsed?: boolean;
   hideWebSearchSources?: boolean;
+  brandVariations?: Record<string, BrandVariation>;
 }
 
 // Provider icon mapping
@@ -27,7 +37,7 @@ const getProviderIcon = (provider: string) => {
     case 'OpenAI':
       return (
         <img 
-          src="https://cdn.brandfetch.io/idR3duQxYl/theme/dark/symbol.svg?c=1dxbfHSJFAPEGdCLU4o5B" 
+          src="https://cdn.brandfetch.io/idR3duQxYl/theme/dark/symbol.svg?c=1bxid64Mup7aczewSAYMX&t=1749527471692" 
           alt="OpenAI" 
           className="w-6 h-6"
         />
@@ -54,7 +64,7 @@ const getProviderIcon = (provider: string) => {
     case 'Perplexity':
       return (
         <img 
-          src="https://cdn.brandfetch.io/idNdawywEZ/w/800/h/800/theme/dark/icon.png?c=1dxbfHSJFAPEGdCLU4o5B" 
+          src="https://cdn.brandfetch.io/idNdawywEZ/w/800/h/800/theme/dark/idgTrPQ4JH.png?c=1bxid64Mup7aczewSAYMX&t=1754453397133" 
           alt="Perplexity" 
           className="w-6 h-6"
         />
@@ -72,13 +82,73 @@ export function PromptsResponsesTab({
   brandName,
   competitors,
   webSearchUsed = false,
-  hideWebSearchSources = false
+  hideWebSearchSources = false,
+  brandVariations,
 }: PromptsResponsesTabProps) {
   const t = useTranslations('brandMonitor');
   const [allExpanded, setAllExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   // Track which (prompt, provider) sources list is expanded beyond 3
   const [expandedSources, setExpandedSources] = useState<Record<string, boolean>>({});
+  const [detectionCache, setDetectionCache] = useState<Map<string, DetectionResult>>(new Map());
+
+  useEffect(() => {
+    if (!responses || responses.length === 0) return;
+
+    // Unable to detect without precomputed variations (client-side env has no API key)
+    if (!brandVariations || Object.keys(brandVariations).length === 0) {
+      detectionCache.clear();
+      return;
+    }
+
+    let cancelled = false;
+
+    const runDetection = async () => {
+      const updates: Array<[string, DetectionResult]> = [];
+
+      for (const response of responses) {
+        const cacheKey = `${response.provider}:${response.prompt}`;
+        if (detectionCache.has(cacheKey)) continue;
+
+        try {
+          const detection = await detectBrandsInResponse(
+            cleanProviderResponse(response.response, { providerName: response.provider }),
+            brandName,
+            competitors,
+            {
+              caseSensitive: false,
+              excludeNegativeContext: false,
+              minConfidence: 0.3
+            },
+            undefined,
+            brandVariations
+          );
+
+          updates.push([cacheKey, detection]);
+        } catch (error) {
+          logger.error('[PromptsResponsesTab] Shared detection failed:', error);
+        }
+      }
+
+      if (cancelled || updates.length === 0) return;
+
+      setDetectionCache((prev) => {
+        const next = new Map(prev);
+        updates.forEach(([key, detection]) => {
+          if (!next.has(key)) {
+            next.set(key, detection);
+          }
+        });
+        return next;
+      });
+    };
+
+    runDetection();
+
+    return () => {
+      cancelled = true;
+    };
+      }, [responses, brandName, competitors, brandVariations]);
   
   const handleExpandAll = () => {
     if (allExpanded) {
@@ -208,7 +278,7 @@ export function PromptsResponsesTab({
         const promptResponses = responses?.filter(response => 
           response.prompt === promptData.prompt
         ) || [];
-        
+
         // Debug logging to identify prompt matching issues
         logger.debug(`[PromptsResponsesTab] Prompt ${idx} - Expected: "${promptData.prompt?.substring(0, 50)}..."`);
         logger.debug(`[PromptsResponsesTab] Total responses available: ${responses?.length || 0}`);
@@ -224,7 +294,11 @@ export function PromptsResponsesTab({
         }
         
         // Check if any provider mentioned the brand
-        const hasBrandMention = promptResponses.some(r => r.brandMentioned);
+        const hasBrandMention = promptResponses.some(response => {
+          const cacheKey = `${response.provider}:${response.prompt}`;
+          const detection = detectionCache.get(cacheKey);
+          return detection?.brandMentioned ?? response.brandMentioned;
+        });
         
         // Check if this tile is expanded - auto-expand when searching
         const isExpanded = searchQuery 
@@ -274,6 +348,9 @@ export function PromptsResponsesTab({
                     
                     // Check if response failed (empty response text)
                     const isFailed = !providerResponse.response || providerResponse.response.trim().length === 0;
+                    const cacheKey = `${providerResponse.provider}:${providerResponse.prompt}`;
+                    const detection = detectionCache.get(cacheKey);
+                    const detectedMention = detection?.brandMentioned ?? providerResponse.brandMentioned;
                     
                     return (
                       <div key={providerName} className="relative flex items-center">
@@ -284,7 +361,7 @@ export function PromptsResponsesTab({
                           <div className="absolute -top-0.5 -right-0.5 w-3 h-3 flex items-center justify-center bg-red-500 rounded-full border border-white">
                             <span className="text-white text-xs font-bold leading-none">×</span>
                           </div>
-                        ) : providerResponse.brandMentioned ? (
+                        ) : detectedMention ? (
                           <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-green-500 rounded-full border border-white" />
                         ) : null}
                       </div>
@@ -316,7 +393,10 @@ export function PromptsResponsesTab({
                       
                       // Check if response failed (empty response text)
                       const isFailed = !response.response || response.response.trim().length === 0;
-                      
+                      const cacheKey = `${response.provider}:${response.prompt}`;
+                      const detection = detectionCache.get(cacheKey);
+                      const detectedMention = detection?.brandMentioned ?? response.brandMentioned;
+
                       return (
                       <div key={providerName} className="space-y-1">
                         <div className="flex items-center gap-2">
@@ -328,7 +408,7 @@ export function PromptsResponsesTab({
                             <Badge variant="destructive" className="text-xs bg-red-100 text-red-800">
                               Failed ×
                             </Badge>
-                          ) : response.brandMentioned ? (
+                          ) : detectedMention ? (
                             <Badge variant="default" className="text-xs bg-green-100 text-green-800">
                               Brand Mentioned
                             </Badge>
@@ -349,6 +429,7 @@ export function PromptsResponsesTab({
                               response={response}
                               brandName={brandName}
                               competitors={competitors}
+                              brandVariations={brandVariations}
                               showHighlighting={true}
                               renderMarkdown={true}
                             />
