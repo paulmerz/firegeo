@@ -7,7 +7,12 @@ import { AIResponse, type BrandVariation } from '@/lib/types';
 import type { BrandDetectionResult, BrandDetectionMatch } from '@/lib/brand-detection-service';
 import { highlightBrandMentions, segmentsToReactElements, type HighlightedSegment } from '@/lib/text-highlighting-utils';
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 import { 
+=======
+import {
+  highlightTextWithBrands,
+>>>>>>> Stashed changes
 =======
 import {
   highlightTextWithBrands,
@@ -47,10 +52,14 @@ export function HighlightedResponse({
   brandVariations
 }: HighlightedResponseProps) {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   const cleanedResponse = cleanResponseText(response.response, response.provider);
   const { detectMultipleBrands, clearError } = useBrandDetection();
   
   // State for enhanced detection results
+=======
+  const cleanedResponse = cleanProviderResponse(response.response, { providerName: response.provider });
+>>>>>>> Stashed changes
 =======
   const cleanedResponse = cleanProviderResponse(response.response, { providerName: response.provider });
 >>>>>>> Stashed changes
@@ -160,8 +169,13 @@ export function HighlightedResponse({
     };
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     performIntelligentDetection();
   }, [cacheKey, cleanedResponse, allBrandCandidates, showHighlighting, response.detectionDetails, clearError, detectMultipleBrands, performFallbackDetection]);
+=======
+    performDetection();
+  }, [cacheKey, cleanedResponse, showHighlighting, brandName, competitors, response.detectionDetails, brandVariations]);
+>>>>>>> Stashed changes
 =======
     performDetection();
   }, [cacheKey, cleanedResponse, showHighlighting, brandName, competitors, response.detectionDetails, brandVariations]);
@@ -271,6 +285,7 @@ export function HighlightedResponse({
   }, [detectionResults, highlightingConfig, showHighlighting]);
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   // Indicateur de mode fallback
   const fallbackIndicator = useFallback && (
     <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
@@ -278,6 +293,8 @@ export function HighlightedResponse({
     </div>
   );
 
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
   if (!showHighlighting) {
@@ -503,7 +520,11 @@ export function HighlightedText({
 
     performDetection();
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   }, [brandCandidates, text, detectMultipleBrands]);
+=======
+  }, [brandCandidates, text, brandVariations]);
+>>>>>>> Stashed changes
 =======
   }, [brandCandidates, text, brandVariations]);
 >>>>>>> Stashed changes

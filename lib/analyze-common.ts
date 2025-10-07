@@ -40,6 +40,9 @@ export interface AnalysisResult {
 =======
   apiUsageSummary?: any;
   brandVariations?: Record<string, BrandVariation>;
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 }
 

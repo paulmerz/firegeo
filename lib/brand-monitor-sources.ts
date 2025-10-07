@@ -168,7 +168,10 @@ export function extractAnalysisSources(
 
   if (!analysisData || typeof analysisData !== 'object') {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     // Return any sources collected from persistedSources
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
     return Array.from(collectedByKey.values());
@@ -185,6 +188,7 @@ export function extractAnalysisSources(
   if (Array.isArray(responses)) {
     (responses as AIResponse[]).forEach((response) => {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       const provider = asTrimmedString(response.provider);
       const prompt = asTrimmedString(response.prompt);
       const webSearchSources = response.webSearchSources;
@@ -197,6 +201,8 @@ export function extractAnalysisSources(
 
       addRawSources(webSearchSources, { provider, prompt });
 =======
+=======
+>>>>>>> Stashed changes
       const responseObj = response as unknown as UnknownObject;
       const provider = asTrimmedString(responseObj['provider']);
       const prompt = asTrimmedString(responseObj['prompt']);
@@ -204,6 +210,9 @@ export function extractAnalysisSources(
       
       // Debug logs removed
       addRawSources(webSearchSources, { provider, prompt, analysisId: currentAnalysisId });
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     });
   }

@@ -113,6 +113,9 @@ export interface AIResponse {
 =======
   webSearchSources?: any[]; // Sources from web search
   brandVariations?: Record<string, BrandVariation>;
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   // Enhanced detection information
   detectionDetails?: {
@@ -336,6 +339,7 @@ export const PROMPT_TEMPLATES = {
     "Which {industry} platform offers the best value?",
   ],
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 };
 
 export interface ApiUsageSummaryData {
@@ -366,11 +370,17 @@ export interface ApiUsageSummaryData {
   errors: number;
 }
 =======
+=======
+>>>>>>> Stashed changes
 }; 
 
 export interface BrandVariation {
   original: string;
   variations: string[];
   confidence: number;
+<<<<<<< Updated upstream
+} 
+>>>>>>> Stashed changes
+=======
 } 
 >>>>>>> Stashed changes

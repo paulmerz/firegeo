@@ -1,6 +1,7 @@
 import { generateText, generateObject, LanguageModelV1 } from 'ai';
 import { z } from 'zod';
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 import { AIResponse } from './types';
 import { getProviderModel, normalizeProviderName, getProviderConfig } from './provider-config';
 import { analyzePromptWithOpenAIWebSearch, isOpenAIWebSearchAvailable } from './openai-web-search';
@@ -16,6 +17,15 @@ interface WebSearchSource {
   domain?: string;
   type?: string;
 }
+=======
+import { AIResponse, type BrandVariation } from './types';
+import { getProviderModel, normalizeProviderName, getProviderConfig, PROVIDER_CONFIGS } from './provider-config';
+import { isOpenAIWebSearchAvailable, analyzePromptWithOpenAIWebSearch } from './openai-web-search';
+import { getLanguageName } from './locale-utils';
+import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
+import { detectMultipleBrands, type BrandDetectionMatch, ensureBrandVariationsForBrand } from './brand-detection-service';
+import { cleanProviderResponse } from './provider-response-utils';
+>>>>>>> Stashed changes
 =======
 import { AIResponse, type BrandVariation } from './types';
 import { getProviderModel, normalizeProviderName, getProviderConfig, PROVIDER_CONFIGS } from './provider-config';
@@ -121,9 +131,12 @@ export async function analyzePromptWithProviderEnhanced(
   useMockMode: boolean = false,
   useWebSearch: boolean = true, // New parameter
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   locale?: string // Locale parameter
 ): Promise<AIResponse | null> {
 =======
+=======
+>>>>>>> Stashed changes
   locale?: string, // Locale parameter
   brandVariations?: Record<string, BrandVariation> // Pre-generated brand variations
 ): Promise<AIResponse> {
@@ -198,9 +211,12 @@ export async function analyzePromptWithProviderEnhanced(
       // Enhanced brand detection fallback for web search results
       // Apply the same robust detection logic as the non-web search version
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       const text = openaiResult.response;
       const textLower = text.toLowerCase();
 =======
+=======
+>>>>>>> Stashed changes
       const rawResponseText = openaiResult.response;
       const cleanedResponseText = cleanProviderResponse(rawResponseText, { providerName: provider });
       const textLower = cleanedResponseText.toLowerCase();
@@ -238,6 +254,7 @@ export async function analyzePromptWithProviderEnhanced(
       };
     } else {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       if (typeof model === 'string') {
         // This path should not be reachable due to the logic above.
         // It's here to satisfy TypeScript's type checker.
@@ -256,6 +273,10 @@ export async function analyzePromptWithProviderEnhanced(
       // Log basique (sans afficher d'instructions enrichies)
       console.log(`[${provider}] Analyzing with raw prompt${useWebSearch ? ' (web search requested but not supported by SDK ai for this provider)' : ''}`);
 >>>>>>> Stashed changes
+=======
+      // Log basique (sans afficher d'instructions enrichies)
+      console.log(`[${provider}] Analyzing with raw prompt${useWebSearch ? ' (web search requested but not supported by SDK ai for this provider)' : ''}`);
+>>>>>>> Stashed changes
       
       // Get the model ID from provider config instead of trying to extract from model object
       const providerConfig = PROVIDER_CONFIGS[normalizedProvider];
@@ -265,7 +286,11 @@ export async function analyzePromptWithProviderEnhanced(
       const callId = apiUsageTracker.trackCall({
         provider: normalizedProvider,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         model: (model as { id?: string }).id || 'unknown',
+=======
+        model: modelId,
+>>>>>>> Stashed changes
 =======
         model: modelId,
 >>>>>>> Stashed changes
@@ -298,7 +323,11 @@ export async function analyzePromptWithProviderEnhanced(
         inputTokens: tokens.inputTokens,
         outputTokens: tokens.outputTokens,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         cost: estimateCost(normalizedProvider, (model as { id?: string }).id || 'unknown', tokens.inputTokens, tokens.outputTokens),
+=======
+        cost: estimateCost(normalizedProvider, modelId, tokens.inputTokens, tokens.outputTokens),
+>>>>>>> Stashed changes
 =======
         cost: estimateCost(normalizedProvider, modelId, tokens.inputTokens, tokens.outputTokens),
 >>>>>>> Stashed changes
@@ -406,6 +435,7 @@ Be very thorough in detecting company names - they might appear in different con
     // Fallback: simple text-based mention detection 
     // This complements the AI analysis in case it misses obvious mentions
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     
     // Use centralized brand detection service for accurate detection
     let detectionResult;
@@ -425,6 +455,21 @@ Be very thorough in detecting company names - they might appear in different con
 
     let detectionResult: EnhancedDetectionResult;
     try {
+=======
+    type EnhancedDetectionResult = {
+      brandMentioned: boolean;
+      competitors: string[];
+      sentiment: 'neutral';
+      confidence: number;
+      detectionDetails: {
+        brandMatches: BrandDetectionMatch[];
+        competitorMatches: Map<string, BrandDetectionMatch[]>;
+      };
+    };
+
+    let detectionResult: EnhancedDetectionResult;
+    try {
+>>>>>>> Stashed changes
       const detectionText = cleanProviderResponse(text, { providerName: provider });
 
       const brandDetection = await detectMultipleBrands(detectionText, [brandName], {
@@ -460,6 +505,9 @@ Be very thorough in detecting company names - they might appear in different con
           competitorMatches
         }
       };
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     } catch (error) {
       console.error('Brand detection failed, using AI analysis only:', error);
@@ -596,6 +644,9 @@ export async function detectBrandsInResponse(
     locale?: string;
     providerName?: string;
   } = {}
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 ): Promise<{
   brandMentioned: boolean;

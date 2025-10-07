@@ -6,7 +6,12 @@ import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { ChevronDown, ChevronsDown, ChevronsUp } from 'lucide-react';
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 import { BrandPrompt, AIResponse } from '@/lib/types';
+=======
+import ReactMarkdown from 'react-markdown';
+import { BrandPrompt, AIResponse, BrandVariation } from '@/lib/types';
+>>>>>>> Stashed changes
 =======
 import ReactMarkdown from 'react-markdown';
 import { BrandPrompt, AIResponse, BrandVariation } from '@/lib/types';

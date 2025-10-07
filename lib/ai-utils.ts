@@ -10,6 +10,9 @@ import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, Pr
 import { getProviderModel, normalizeProviderName, isProviderConfigured, getConfiguredProviders, PROVIDER_CONFIGS } from './provider-config';
 import { detectBrandMentions, detectMultipleBrands, ensureBrandVariationsForBrand } from './brand-detection-service';
 import type { BrandVariation } from './types';
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 import { getMessages, getTranslation, getLanguageName } from './locale-utils';
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
@@ -212,13 +215,19 @@ export async function analyzePromptWithProvider(
   competitors: string[],
   useMockMode: boolean = false,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   locale?: string
 ): Promise<AIResponse | null> {
 =======
+=======
+>>>>>>> Stashed changes
   locale?: string,
   brandVariations?: Record<string, BrandVariation>
 ): Promise<AIResponse> {
   const trimmedPrompt = (prompt || '').trim();
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   // Mock mode for demo/testing without API keys
   if (useMockMode || provider === 'Mock') {
@@ -253,7 +262,11 @@ export async function analyzePromptWithProvider(
     const callId = apiUsageTracker.trackCall({
       provider: normalizedProvider,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       model: (model as { id?: string }).id || 'unknown',
+=======
+      model: modelId,
+>>>>>>> Stashed changes
 =======
       model: modelId,
 >>>>>>> Stashed changes
@@ -289,7 +302,11 @@ export async function analyzePromptWithProvider(
       inputTokens: tokens.inputTokens,
       outputTokens: tokens.outputTokens,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       cost: estimateCost(normalizedProvider, (model as { id?: string }).id || 'unknown', tokens.inputTokens, tokens.outputTokens),
+=======
+      cost: estimateCost(normalizedProvider, modelId, tokens.inputTokens, tokens.outputTokens),
+>>>>>>> Stashed changes
 =======
       cost: estimateCost(normalizedProvider, modelId, tokens.inputTokens, tokens.outputTokens),
 >>>>>>> Stashed changes

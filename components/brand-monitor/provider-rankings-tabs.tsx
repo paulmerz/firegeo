@@ -93,6 +93,9 @@ export function ProviderRankingsTabs({
   sentimentScore,
   weeklyChange,
   identifiedCompetitors
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 }: ProviderRankingsTabsProps) {
   const t = useTranslations('brandMonitor.providerRankings');

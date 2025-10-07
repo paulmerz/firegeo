@@ -46,8 +46,11 @@ export const logger: Logger = {
 // Export par défaut pour faciliter l'import
 <<<<<<< Updated upstream
 export default logger;
+<<<<<<< Updated upstream
 =======
 export default logger;
+=======
+>>>>>>> Stashed changes
 
 /**
  * Supprime les caractères hors BMP (ex: emojis) pour éviter le mojibake
@@ -90,4 +93,7 @@ function repairMojibakeIfNeeded(input: string): string {
     return input;
   }
 }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes

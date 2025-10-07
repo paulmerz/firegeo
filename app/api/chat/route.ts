@@ -70,7 +70,11 @@ export async function POST(request: NextRequest) {
       await autumn.track({
         customer_id: sessionResponse.user.id,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         feature_id: FEATURE_ID_MESSAGES,
+=======
+        feature_id: FEATURE_ID_CREDITS,
+>>>>>>> Stashed changes
 =======
         feature_id: FEATURE_ID_CREDITS,
 >>>>>>> Stashed changes

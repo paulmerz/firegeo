@@ -1,5 +1,6 @@
 ﻿import OpenAI from 'openai';
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 import { AIResponse } from './types';
 import { apiUsageTracker, estimateCost } from './api-usage-tracker';
 import { getLanguageName } from './locale-utils';
@@ -203,11 +204,16 @@ async function createSmartBrandVariations(brandString: string, locale?: string):
   return createAIBrandVariations(brandString, locale);
 }
 =======
+=======
+>>>>>>> Stashed changes
 import { AIResponse, type BrandVariation } from './types';
 import { ensureBrandVariationsForBrand } from './brand-detection-service';
 import { apiUsageTracker, estimateCost } from './api-usage-tracker';
 import { getLanguageName } from './locale-utils';
 import { logger } from './logger';
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
 const ensureBrandVariations = ensureBrandVariationsForBrand;
@@ -256,6 +262,7 @@ const WEB_SEARCH_SUPPORTED_MODELS = [
 ];
 
 /**
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
  * Canonicalize a list of raw brand names using OpenAI.
  */
@@ -361,6 +368,8 @@ export async function canonicalizeBrandsWithOpenAI(
 /**
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
  * Analyze prompt with OpenAI using web search
  */
 export async function analyzePromptWithOpenAIWebSearch(
@@ -369,9 +378,12 @@ export async function analyzePromptWithOpenAIWebSearch(
   competitors: string[],
   locale?: string,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   model: string = 'gpt-4o-mini'
 ): Promise<AIResponse | null> {
 =======
+=======
+>>>>>>> Stashed changes
   model: string = 'gpt-4o-mini',
   precomputedVariations?: Map<string, BrandVariation> | Record<string, BrandVariation>
 ): Promise<AIResponse> {
