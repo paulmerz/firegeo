@@ -142,7 +142,7 @@ interface CompanyData {
 
 function buildComparison(single: CompanyData | null, deep: CompanyData | null) {
   const field = (obj: CompanyData | null, path: string[]): unknown =>
-    path.reduce((acc: any, k) => (acc ? acc[k] : undefined), obj);
+    path.reduce((acc: CompanyData | null | Record<string, unknown>, k) => (acc && typeof acc === 'object' ? (acc as Record<string, unknown>)[k] : undefined), obj);
 
   const pick = (obj: CompanyData | null) => ({
     name: obj?.name,

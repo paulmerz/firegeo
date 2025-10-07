@@ -799,7 +799,7 @@ export function BrandMonitor({
             <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
               <div className="flex items-center gap-4">
                 <span className="text-sm font-medium text-gray-700">
-                  Recherche en ligne pour améliorer l'analyse
+                  Recherche en ligne pour améliorer l&apos;analyse
                 </span>
                 <WebSearchToggle
                   enabled={useWebSearch}
@@ -810,7 +810,7 @@ export function BrandMonitor({
               <p className="text-xs text-gray-500 mt-2 text-center">
                 {useWebSearch 
                   ? "Les modèles d&apos;IA effectueront des recherches en ligne pour des informations plus récentes et précises"
-                  : "Les modèles d'IA utiliseront uniquement leurs connaissances pré-entraînées"
+                  : "Les modèles d&apos;IA utiliseront uniquement leurs connaissances pré-entraînées"
                 }
               </p>
             </div>

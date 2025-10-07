@@ -7,6 +7,15 @@ import { getLanguageName } from './locale-utils';
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
 import { detectMultipleBrands, BrandDetectionMatch } from './brand-detection-service';
 
+interface WebSearchSource {
+  url: string;
+  title?: string;
+  text?: string;
+  source?: string;
+  domain?: string;
+  type?: string;
+}
+
 /**
  * Extract brand name from complex brand strings
  * Focus on the actual brand, not the product
@@ -167,7 +176,7 @@ Please search for recent information, current rankings, and up-to-date data to p
 
   try {
     let text: string;
-    let sources: any[] = [];
+    let sources: WebSearchSource[] = [];
 
     // Handle OpenAI web search separately using the new implementation
     if (normalizedProvider === 'openai' && useWebSearch && model === 'openai-web-search') {
@@ -180,6 +189,12 @@ Please search for recent information, current rankings, and up-to-date data to p
         competitors,
         locale
       );
+      
+      // Guard against null result to satisfy strict null checks
+      if (!openaiResult) {
+        console.warn('OpenAI web search returned null; skipping provider result.');
+        return null;
+      }
       
       // Enhanced brand detection fallback for web search results
       // Apply the same robust detection logic as the non-web search version
@@ -373,7 +388,7 @@ Be very thorough in detecting company names - they might appear in different con
     // Use centralized brand detection service for accurate detection
     let detectionResult;
     try {
-      detectionResult = await detectBrandsInResponse(text, brandName, competitors, locale);
+      detectionResult = await detectBrandsInResponse(text, brandName, competitors);
     } catch (error) {
       console.error('Brand detection failed, using AI analysis only:', error);
       // If brand detection fails, use only AI analysis
@@ -414,11 +429,13 @@ Be very thorough in detecting company names - they might appear in different con
       sentiment: object.analysis.overallSentiment,
       confidence: object.analysis.confidence,
       timestamp: new Date(),
-      webSearchSources: (sources || []).map(s => ({
-        ...s,
-        // Ensure prompt linkage is present for display
-        // snippet field removed from database schema
-      })),
+      webSearchSources: (sources || [])
+        .filter(s => Boolean(s.url))
+        .map(s => ({
+          title: s.title || s.domain || s.source || 'Source',
+          url: s.url,
+          snippet: s.text || '',
+        })),
       detectionDetails: detectionResult.detectionDetails,
     };
   } catch (error) {

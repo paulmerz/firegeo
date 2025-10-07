@@ -43,7 +43,6 @@ function normalizeSource(
       provider: context.provider,
       prompt: context.prompt,
       url: urlCandidate,
-      title: fallbackTitleFromUrl(urlCandidate),
       sourceType: 'web_search',
       rank: context.rank,
     };
@@ -168,7 +167,8 @@ export function extractAnalysisSources(
   }
 
   if (!analysisData || typeof analysisData !== 'object') {
-    return collected;
+    // Return any sources collected from persistedSources
+    return Array.from(collectedByKey.values());
   }
 
   const analysisObject = analysisData as Record<string, unknown>;
@@ -181,16 +181,16 @@ export function extractAnalysisSources(
   const responses = analysisObject['responses'];
   if (Array.isArray(responses)) {
     (responses as AIResponse[]).forEach((response) => {
-      const provider = asTrimmedString((response as UnknownObject)['provider']);
-      const prompt = asTrimmedString((response as UnknownObject)['prompt']);
-      const webSearchSources = (response as UnknownObject)['webSearchSources'];
-      
+      const provider = asTrimmedString(response.provider);
+      const prompt = asTrimmedString(response.prompt);
+      const webSearchSources = response.webSearchSources;
+
       console.log('[Sources Debug] Processing response:', {
         provider,
         prompt: prompt?.substring(0, 50) + '...',
         webSearchSourcesCount: Array.isArray(webSearchSources) ? webSearchSources.length : 0
       });
-      
+
       addRawSources(webSearchSources, { provider, prompt });
     });
   }

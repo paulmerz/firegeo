@@ -62,10 +62,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     if (!body.url || !body.analysisData) {
-      throw new ValidationError('Invalid request', {
-        url: body.url ? undefined : 'URL is required',
-        analysisData: body.analysisData ? undefined : 'Analysis data is required',
-      });
+      const fields: Record<string, string> = {};
+      if (!body.url) fields.url = 'URL is required';
+      if (!body.analysisData) fields.analysisData = 'Analysis data is required';
+      throw new ValidationError('Invalid request', fields);
     }
 
 

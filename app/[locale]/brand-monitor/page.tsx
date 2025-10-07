@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { useSession } from '@/lib/auth-client';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
-import type { Product } from 'autumn-js';
+// Removed direct Product typing to accommodate varying shapes from Autumn
 
 // Separate component that uses Autumn hooks
 function BrandMonitorContent() {
@@ -77,9 +77,28 @@ function BrandMonitorContent() {
   const credits = messageUsage ? (messageUsage.balance || 0) : 0;
 
   // Determine active plan name/id
-  const activeProduct = customer?.products?.find((p: Product) =>
-    p?.status === 'active' || p?.status === 'trialing' || p?.status === 'past_due'
-  );
+  // Autumn customer products can have different shapes; use safe accessors
+  const products = (customer?.products ?? []) as unknown[];
+  const getStatus = (p: unknown): string | undefined => {
+    if (p && typeof p === 'object' && 'status' in p) {
+      const s = (p as Record<string, unknown>).status;
+      return typeof s === 'string' ? s : undefined;
+    }
+    return undefined;
+  };
+  const getNameOrId = (p: unknown): string | undefined => {
+    if (p && typeof p === 'object') {
+      const obj = p as Record<string, unknown>;
+      const name = typeof obj.name === 'string' ? obj.name : undefined;
+      const id = typeof obj.id === 'string' ? obj.id : undefined;
+      return name ?? id;
+    }
+    return undefined;
+  };
+  const activeProduct = products.find((p) => {
+    const s = getStatus(p);
+    return s === 'active' || s === 'trialing' || s === 'past_due';
+  }) ?? products[0];
   // DEV-only plan override via footer select
   const [devPlanOverride, setDevPlanOverride] = useState<string | null>(null);
   useEffect(() => {
@@ -98,7 +117,7 @@ function BrandMonitorContent() {
 
   const effectivePlanName: string = ((devPlanOverride && process.env.NODE_ENV === 'development')
     ? devPlanOverride
-    : (activeProduct?.name || activeProduct?.id || '')) as string;
+    : (getNameOrId(activeProduct) || '')) as string;
   const activePlanName: string = effectivePlanName;
   const isStartPlan = activePlanName.toLowerCase().includes('start') || activePlanName.toLowerCase().includes('free');
 

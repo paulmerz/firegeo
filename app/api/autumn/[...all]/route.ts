@@ -1,7 +1,7 @@
 import { autumnHandler } from "autumn-js/next";
 import { auth } from "@/lib/auth";
 import { isNetworkError, createNetworkError } from "@/lib/network-utils";
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
 
 // Wrap the autumn handler to catch and handle network errors
@@ -33,10 +33,10 @@ const originalHandler = autumnHandler({
   }
 });
 
-type AutumnApiHandler = (request: Request) => Promise<NextResponse>;
+type AutumnApiHandler = (request: NextRequest) => Promise<NextResponse>;
 
 // Enhanced error handling wrapper for Autumn routes
-async function handleAutumnRequest(handler: AutumnApiHandler, request: Request) {
+async function handleAutumnRequest(handler: AutumnApiHandler, request: NextRequest) {
   try {
     return await handler(request);
   } catch (error) {
@@ -64,10 +64,10 @@ async function handleAutumnRequest(handler: AutumnApiHandler, request: Request) 
 }
 
 // Export wrapped handlers
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   return handleAutumnRequest(originalHandler.GET, request);
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   return handleAutumnRequest(originalHandler.POST, request);
 }

@@ -1,7 +1,7 @@
 
 import { generateText, generateObject } from 'ai';
 import { z } from 'zod';
-import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData } from './types';
+import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData, SSEEvent } from './types';
 import { getProviderModel, normalizeProviderName, getConfiguredProviders } from './provider-config';
 import { detectBrandMentions, detectMultipleBrands } from './brand-detection-service';
 import { getMessages, getTranslation, getLanguageName } from './locale-utils';

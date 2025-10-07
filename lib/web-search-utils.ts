@@ -13,12 +13,7 @@
 // ============================================
 // Enhanced Brand Analysis with Provider-Native Search
 // ============================================
-export async function analyzeBrandWithProviderSearch(
-  _brandName: string,
-  _competitors: string[],
-  _prompt: string,
-  _provider: 'openai' | 'anthropic' | 'google' | 'perplexity' = 'openai'
-) {
+export async function analyzeBrandWithProviderSearch() {
   // This function is now handled by ai-utils-enhanced.ts
   // which properly uses each provider's native search capabilities
   throw new Error(

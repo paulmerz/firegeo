@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+﻿import OpenAI from 'openai';
 import { AIResponse } from './types';
 import { apiUsageTracker, estimateCost } from './api-usage-tracker';
 import { getLanguageName } from './locale-utils';
@@ -253,14 +253,6 @@ function hostnameFromUrl(url: string): string {
   }
 }
 
-// Utility: trim snippet without cutting mid-word
-function trimAtWord(input: string, limit: number): string {
-  if (!input) return '';
-  if (input.length <= limit) return input;
-  const slice = input.slice(0, limit);
-  const lastSpace = slice.lastIndexOf(' ');
-  return (lastSpace > 40 ? slice.slice(0, lastSpace) : slice).trim();
-}
 
 /**
  * OpenAI Web Search Implementation using the Responses API
@@ -574,7 +566,11 @@ Return the content in ${languageName} language.`;
       sentiment: analysisResult.sentiment,
       confidence: analysisResult.confidence,
       timestamp: new Date(),
-      webSearchSources: webSearchSources,
+      webSearchSources: webSearchSources.map((s) => ({
+        title: s.title || s.domain || 'Source web',
+        url: s.url || '',
+        snippet: s.text || ''
+      })),
     };
 
   } catch (error) {

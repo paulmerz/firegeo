@@ -94,7 +94,7 @@ export interface AIProvider {
 export interface BrandPrompt {
   id: string;
   prompt: string;
-  category: 'ranking' | 'comparison' | 'alternatives' | 'recommendations';
+  category: 'ranking' | 'comparison' | 'alternatives' | 'recommendations' | 'custom';
 }
 
 export interface AIResponse {

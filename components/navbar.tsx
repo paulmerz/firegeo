@@ -14,7 +14,7 @@ function UserCredits() {
   const t = useTranslations('common');
   const [displayCredits, setDisplayCredits] = useState<number | null>(null);
 
-  const userId = session?.user?.id || session?.userId || session?.user?.email;
+  const userId = session?.user?.id ?? session?.user?.email;
   const storageKey = userId ? `autumn_credits_${userId}` : undefined;
 
   // 1) Lecture initiale depuis le cache local si disponible

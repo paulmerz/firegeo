@@ -224,6 +224,7 @@ export async function performAnalysis({
       competitors: [],
       providerRankings: [],
       providerComparison: [],
+      sources: [],
       errors: ['No AI providers configured'],
       webSearchUsed: useWebSearch,
     };

@@ -135,7 +135,7 @@ export function ApiUsageSummary({ summary }: ApiUsageSummaryProps) {
           <div>
             <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
               <Zap className="w-4 h-4" />
-              Par phase d'analyse
+              Par phase d&apos;analyse
             </h4>
             <div className="space-y-3">
               {Object.entries(safeSummary.byPhase).map(([phase, data]) => (

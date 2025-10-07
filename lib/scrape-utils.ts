@@ -167,7 +167,7 @@ export async function crawlCompanyInfo(url: string, maxAge?: number, locale?: st
     };
 
     console.log('🕷️ [Crawler] Calling Firecrawl crawlUrl with options:', crawlOptions);
-    const result: FirecrawlCrawlResult = await (firecrawl as any).crawlUrl(normalizedUrl, crawlOptions);
+    const result: FirecrawlCrawlResult = await (firecrawl as Record<string, unknown>).crawlUrl(normalizedUrl, crawlOptions) as FirecrawlCrawlResult;
     if (!result) {
       throw new Error('Crawl returned empty result');
     }
@@ -193,9 +193,10 @@ export async function crawlCompanyInfo(url: string, maxAge?: number, locale?: st
           let statusResp: FirecrawlCrawlResult | null = null;
           try {
             // Try both method names for compatibility
-            const checker = (firecrawl as any).checkCrawlStatus || (firecrawl as any).getCrawlStatus;
-            if (checker) {
-              statusResp = await checker.call(firecrawl, jobId);
+            const firecrawlObj = firecrawl as Record<string, unknown>;
+            const checker = firecrawlObj.checkCrawlStatus || firecrawlObj.getCrawlStatus;
+            if (checker && typeof checker === 'function') {
+              statusResp = await checker.call(firecrawl, jobId) as FirecrawlCrawlResult;
             }
           } catch (e) {
             console.warn('🕷️ [Crawler] Status polling error (non-fatal):', e);

@@ -56,7 +56,7 @@ class ApiUsageTracker {
   /**
    * Détermine la phase d'un appel basé sur l'opération et les métadonnées
    */
-  private getPhaseFromCall(call: ApiCall): string {
+  private getPhaseFromCall(call: Pick<ApiCall, 'operation'>): ApiCall['phase'] {
     // Phase basée sur l'opération
     switch (call.operation) {
       case 'scrape':
@@ -209,10 +209,20 @@ class ApiUsageTracker {
         this.calls
           .filter(call => this.getPhaseFromCall(call) === 'prompt_analysis')
           .forEach(call => {
-            // Essayer différentes clés pour trouver le prompt
-            const prompt = call.metadata?.prompt || 
-                          call.metadata?.promptText || 
-                          call.metadata?.promptText?.substring(0, 100) + '...';
+            // Essayer différentes clés pour trouver le prompt (avec raffinement de type)
+            let prompt: string | undefined;
+            const metadata = call.metadata as Record<string, unknown> | undefined;
+            const promptVal = metadata?.prompt;
+            const promptTextVal = metadata?.promptText;
+
+            if (typeof promptVal === 'string') {
+              prompt = promptVal;
+            } else if (typeof promptTextVal === 'string') {
+              prompt = promptTextVal.length > 100
+                ? promptTextVal.substring(0, 100) + '...'
+                : promptTextVal;
+            }
+
             if (prompt) {
               uniquePrompts.add(prompt);
             }
@@ -387,11 +397,29 @@ interface AIUsage {
   completionTokens?: number;
   outputTokens?: number;
 }
-export function extractTokensFromUsage(usage: AIUsage | null): { inputTokens: number; outputTokens: number } {
+
+// Forme OpenAI (snake_case) pour compatibilité avec CompletionUsage
+type OpenAICompletionUsage = {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+};
+
+export function extractTokensFromUsage(
+  usage: AIUsage | OpenAICompletionUsage | null | undefined
+): { inputTokens: number; outputTokens: number } {
   if (!usage) return { inputTokens: 0, outputTokens: 0 };
-  
+
+  // Détection de la forme camelCase
+  const camelInput = (usage as AIUsage).promptTokens ?? (usage as AIUsage).inputTokens;
+  const camelOutput = (usage as AIUsage).completionTokens ?? (usage as AIUsage).outputTokens;
+
+  // Détection de la forme snake_case (OpenAI)
+  const snakeInput = (usage as OpenAICompletionUsage).prompt_tokens;
+  const snakeOutput = (usage as OpenAICompletionUsage).completion_tokens;
+
   return {
-    inputTokens: usage.promptTokens || usage.inputTokens || 0,
-    outputTokens: usage.completionTokens || usage.outputTokens || 0
+    inputTokens: camelInput ?? snakeInput ?? 0,
+    outputTokens: camelOutput ?? snakeOutput ?? 0
   };
 }

@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { userProfile, userSettings } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { handleApiError, AuthenticationError, ValidationError } from '@/lib/api-errors';
+import { handleApiError, AuthenticationError } from '@/lib/api-errors';
 
 // GET /api/user/profile - Get user profile and settings
 export async function GET(request: NextRequest) {

@@ -8,7 +8,6 @@ import { useBrandDetection } from '@/hooks/useBrandDetection';
 import type { BrandDetectionResult, BrandDetectionMatch } from '@/lib/brand-detection-service';
 import { highlightBrandMentions, segmentsToReactElements, type HighlightedSegment } from '@/lib/text-highlighting-utils';
 import { 
-  highlightTextWithBrands, 
   highlightMarkdownChildren as highlightMarkdownChildrenUtil,
   type BrandHighlightingConfig 
 } from '@/lib/brand-highlighting-utils';

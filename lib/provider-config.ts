@@ -109,7 +109,7 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       streamingResponse: true,
       maxRequestsPerMinute: 500,
     },
-    getModel: (modelId?: string, _options?: GetModelOptions) => {
+    getModel: (modelId?: string) => {
       if (!process.env.OPENAI_API_KEY) return null;
       const model = modelId || PROVIDER_CONFIGS.openai.defaultModel;
       

@@ -163,7 +163,7 @@ Return ONLY a JSON object with this exact structure:
     result.variations = [...new Set(result.variations)].filter(v => v && typeof v === 'string' && v.trim().length > 0);
 
     // Extract tokens from usage and update API call
-    const tokens = extractTokensFromUsage(response.usage);
+    const tokens = extractTokensFromUsage(response.usage ?? null);
     apiUsageTracker.updateCall(callId, {
       inputTokens: tokens.inputTokens,
       outputTokens: tokens.outputTokens,
