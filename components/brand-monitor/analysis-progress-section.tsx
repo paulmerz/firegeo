@@ -166,7 +166,7 @@ export function AnalysisProgressSection({
     }
     
     loadPrompts();
-  }, [company, analyzing, identifiedCompetitors, prompts, promptsGenerated, customPrompts, removedDefaultPrompts, onCreditsUpdate]);
+  }, [company, analyzing, identifiedCompetitors, prompts, promptsGenerated, customPrompts, removedDefaultPrompts, onCreditsUpdate, invalidateCredits]);
   
   // Handle adding new custom prompts without regenerating
   useEffect(() => {

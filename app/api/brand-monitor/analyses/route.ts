@@ -65,14 +65,7 @@ export async function POST(request: NextRequest) {
       const fields: Record<string, string> = {};
       if (!body.url) fields.url = 'URL is required';
       if (!body.analysisData) fields.analysisData = 'Analysis data is required';
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
       
->>>>>>> Stashed changes
-=======
-      
->>>>>>> Stashed changes
       throw new ValidationError('Invalid request', fields);
     }
 

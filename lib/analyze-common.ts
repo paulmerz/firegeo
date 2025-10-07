@@ -1,4 +1,4 @@
-import { AIResponse, AnalysisProgressData, Company, PartialResultData, ProgressData, PromptGeneratedData, ScoringProgressData, SSEEvent, AnalysisSource, BrandPrompt, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ApiUsageSummaryData } from './types';
+import { AIResponse, AnalysisProgressData, Company, PartialResultData, ProgressData, PromptGeneratedData, ScoringProgressData, SSEEvent, AnalysisSource, BrandPrompt, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData } from './types';
 import { generatePromptsForCompany, analyzePromptWithProvider, calculateBrandScores, analyzeCompetitors, identifyCompetitors, analyzeCompetitorsByProvider } from './ai-utils';
 import { analyzePromptWithProvider as analyzePromptWithProviderEnhanced } from './ai-utils-enhanced';
 import { extractAnalysisSources } from './brand-monitor-sources';
@@ -35,15 +35,8 @@ export interface AnalysisResult {
   sources: AnalysisSource[];
   errors?: string[];
   webSearchUsed?: boolean;
-<<<<<<< Updated upstream
-  apiUsageSummary?: ApiUsageSummaryData;
-=======
-  apiUsageSummary?: any;
+  apiUsageSummary?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   brandVariations?: Record<string, BrandVariation>;
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 }
 
 /**

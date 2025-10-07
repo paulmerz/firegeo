@@ -1,23 +1,5 @@
 import { generateText, generateObject, LanguageModelV1 } from 'ai';
 import { z } from 'zod';
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-import { AIResponse } from './types';
-import { getProviderModel, normalizeProviderName, getProviderConfig } from './provider-config';
-import { analyzePromptWithOpenAIWebSearch, isOpenAIWebSearchAvailable } from './openai-web-search';
-import { getLanguageName } from './locale-utils';
-import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
-import { detectMultipleBrands, BrandDetectionMatch } from './brand-detection-service';
-
-interface WebSearchSource {
-  url: string;
-  title?: string;
-  text?: string;
-  source?: string;
-  domain?: string;
-  type?: string;
-}
-=======
 import { AIResponse, type BrandVariation } from './types';
 import { getProviderModel, normalizeProviderName, getProviderConfig, PROVIDER_CONFIGS } from './provider-config';
 import { isOpenAIWebSearchAvailable, analyzePromptWithOpenAIWebSearch } from './openai-web-search';
@@ -25,21 +7,12 @@ import { getLanguageName } from './locale-utils';
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
 import { detectMultipleBrands, type BrandDetectionMatch, ensureBrandVariationsForBrand } from './brand-detection-service';
 import { cleanProviderResponse } from './provider-response-utils';
->>>>>>> Stashed changes
-=======
-import { AIResponse, type BrandVariation } from './types';
-import { getProviderModel, normalizeProviderName, getProviderConfig, PROVIDER_CONFIGS } from './provider-config';
-import { isOpenAIWebSearchAvailable, analyzePromptWithOpenAIWebSearch } from './openai-web-search';
-import { getLanguageName } from './locale-utils';
-import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
-import { detectMultipleBrands, type BrandDetectionMatch, ensureBrandVariationsForBrand } from './brand-detection-service';
-import { cleanProviderResponse } from './provider-response-utils';
->>>>>>> Stashed changes
 
 /**
  * Extract brand name from complex brand strings
  * Focus on the actual brand, not the product
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function extractBrandName(brandString: string): string {
   let brand = brandString.trim();
   
@@ -62,33 +35,7 @@ function extractBrandName(brandString: string): string {
  * Create simple variations for basic brand names (case, accents)
  * For complex multi-word brands, use AI-powered detection
  */
-function createSimpleBrandVariations(brandString: string): string[] {
-  const coreBrand = extractBrandName(brandString);
-  const variations = new Set<string>();
-  
-  // Add original
-  variations.add(coreBrand);
-  
-  // Add lowercase
-  const lower = coreBrand.toLowerCase();
-  variations.add(lower);
-  
-  // Add without accents
-  const normalized = lower
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-  if (normalized !== lower) {
-    variations.add(normalized);
-  }
-  
-  // Add uppercase version of normalized
-  if (normalized !== lower) {
-    variations.add(normalized.charAt(0).toUpperCase() + normalized.slice(1));
-  }
-  
-  const list = Array.from(variations).filter(v => v.length > 1);
-  return filterBrandVariations(coreBrand, list);
-}
+// Removed unused function
 
 async function resolveBrandVariations(
   brandName: string,
@@ -130,17 +77,9 @@ export async function analyzePromptWithProviderEnhanced(
   competitors: string[],
   useMockMode: boolean = false,
   useWebSearch: boolean = true, // New parameter
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  locale?: string // Locale parameter
-): Promise<AIResponse | null> {
-=======
-=======
->>>>>>> Stashed changes
   locale?: string, // Locale parameter
   brandVariations?: Record<string, BrandVariation> // Pre-generated brand variations
 ): Promise<AIResponse> {
->>>>>>> Stashed changes
   const trimmedPrompt = prompt.trim();
   // Mock mode for demo/testing without API keys
   if (useMockMode || provider === 'Mock') {
@@ -153,7 +92,7 @@ export async function analyzePromptWithProviderEnhanced(
   
   if (!providerConfig || !providerConfig.isConfigured()) {
     console.warn(`Provider ${provider} not configured, skipping provider`);
-    return null;
+    throw new Error(`Provider ${provider} not configured`);
   }
   
   let model: LanguageModelV1 | string | null = null;
@@ -176,7 +115,7 @@ export async function analyzePromptWithProviderEnhanced(
   
   if (!model) {
     console.warn(`Failed to get model for ${provider}`);
-    return null;
+    throw new Error(`Provider ${provider} not configured`);
   }
 
   const languageName = locale ? getLanguageName(locale) : 'English';
@@ -185,8 +124,8 @@ export async function analyzePromptWithProviderEnhanced(
   const rawPrompt = trimmedPrompt;
 
   try {
-    let text: string;
-    let sources: WebSearchSource[] = [];
+  let text: string;
+  let sources: Array<{url: string; title?: string; text?: string; source?: string; domain?: string; type?: string}> = [];
 
     // Handle OpenAI web search separately using the new implementation
     if (normalizedProvider === 'openai' && useWebSearch && model === 'openai-web-search') {
@@ -199,29 +138,20 @@ export async function analyzePromptWithProviderEnhanced(
         competitors,
         locale,
         undefined, // model (use default gpt-4o-mini)
-        brandVariations as any // Pass precomputed variations to avoid regeneration
+        brandVariations as Record<string, BrandVariation> // Pass precomputed variations to avoid regeneration
       );
       
       // Guard against null result to satisfy strict null checks
       if (!openaiResult) {
         console.warn('OpenAI web search returned null; skipping provider result.');
-        return null;
+        throw new Error('OpenAI web search returned null');
       }
       
       // Enhanced brand detection fallback for web search results
       // Apply the same robust detection logic as the non-web search version
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      const text = openaiResult.response;
-      const textLower = text.toLowerCase();
-=======
-=======
->>>>>>> Stashed changes
       const rawResponseText = openaiResult.response;
       const cleanedResponseText = cleanProviderResponse(rawResponseText, { providerName: provider });
       const textLower = cleanedResponseText.toLowerCase();
-      const brandNameLower = brandName.toLowerCase();
->>>>>>> Stashed changes
       
       // Enhanced brand detection with pre-generated variations or fallback to generation
       const brandVariationData = await resolveBrandVariations(brandName, locale, brandVariations);
@@ -253,30 +183,8 @@ export async function analyzePromptWithProviderEnhanced(
         competitors: relevantCompetitors,
       };
     } else {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      if (typeof model === 'string') {
-        // This path should not be reachable due to the logic above.
-        // It's here to satisfy TypeScript's type checker.
-        throw new Error(`Unexpected string model for provider ${normalizedProvider}`);
-      }
-      // Log web search configuration for debugging
-      if (useWebSearch) {
-        console.log(`[${provider}] Web search enabled with config:`, {
-          model: typeof model === 'string' ? model : 'LanguageModelV1',
-          include: generateConfig.include,
-          tools: generateConfig.tools,
-          prompt: enhancedPrompt.substring(0, 100) + '...'
-        });
-      }
-=======
       // Log basique (sans afficher d'instructions enrichies)
       console.log(`[${provider}] Analyzing with raw prompt${useWebSearch ? ' (web search requested but not supported by SDK ai for this provider)' : ''}`);
->>>>>>> Stashed changes
-=======
-      // Log basique (sans afficher d'instructions enrichies)
-      console.log(`[${provider}] Analyzing with raw prompt${useWebSearch ? ' (web search requested but not supported by SDK ai for this provider)' : ''}`);
->>>>>>> Stashed changes
       
       // Get the model ID from provider config instead of trying to extract from model object
       const providerConfig = PROVIDER_CONFIGS[normalizedProvider];
@@ -285,15 +193,7 @@ export async function analyzePromptWithProviderEnhanced(
       // Track API call for analysis (avec prompt brut)
       const callId = apiUsageTracker.trackCall({
         provider: normalizedProvider,
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-        model: (model as { id?: string }).id || 'unknown',
-=======
         model: modelId,
->>>>>>> Stashed changes
-=======
-        model: modelId,
->>>>>>> Stashed changes
         operation: 'analysis',
         success: true,
         metadata: { 
@@ -308,7 +208,7 @@ export async function analyzePromptWithProviderEnhanced(
       const startTime = Date.now();
       // First, get the response en envoyant le prompt BRUT (sans system ni instructions)
       const result = await generateText({
-        model,
+        model: model as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         prompt: rawPrompt,
         maxTokens: 800,
         ...generateConfig,
@@ -322,20 +222,12 @@ export async function analyzePromptWithProviderEnhanced(
       apiUsageTracker.updateCall(callId, {
         inputTokens: tokens.inputTokens,
         outputTokens: tokens.outputTokens,
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-        cost: estimateCost(normalizedProvider, (model as { id?: string }).id || 'unknown', tokens.inputTokens, tokens.outputTokens),
-=======
         cost: estimateCost(normalizedProvider, modelId, tokens.inputTokens, tokens.outputTokens),
->>>>>>> Stashed changes
-=======
-        cost: estimateCost(normalizedProvider, modelId, tokens.inputTokens, tokens.outputTokens),
->>>>>>> Stashed changes
         duration
       });
       
       text = result.text;
-      sources = result.sources || [];
+      sources = [];
     }
 
     // Then analyze it with structured output
@@ -434,14 +326,6 @@ Be very thorough in detecting company names - they might appear in different con
 
     // Fallback: simple text-based mention detection 
     // This complements the AI analysis in case it misses obvious mentions
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    
-    // Use centralized brand detection service for accurate detection
-    let detectionResult;
-    try {
-      detectionResult = await detectBrandsInResponse(text, brandName, competitors);
-=======
     type EnhancedDetectionResult = {
       brandMentioned: boolean;
       competitors: string[];
@@ -455,21 +339,6 @@ Be very thorough in detecting company names - they might appear in different con
 
     let detectionResult: EnhancedDetectionResult;
     try {
-=======
-    type EnhancedDetectionResult = {
-      brandMentioned: boolean;
-      competitors: string[];
-      sentiment: 'neutral';
-      confidence: number;
-      detectionDetails: {
-        brandMatches: BrandDetectionMatch[];
-        competitorMatches: Map<string, BrandDetectionMatch[]>;
-      };
-    };
-
-    let detectionResult: EnhancedDetectionResult;
-    try {
->>>>>>> Stashed changes
       const detectionText = cleanProviderResponse(text, { providerName: provider });
 
       const brandDetection = await detectMultipleBrands(detectionText, [brandName], {
@@ -505,10 +374,6 @@ Be very thorough in detecting company names - they might appear in different con
           competitorMatches
         }
       };
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     } catch (error) {
       console.error('Brand detection failed, using AI analysis only:', error);
       // If brand detection fails, use only AI analysis
@@ -577,8 +442,8 @@ Be very thorough in detecting company names - they might appear in different con
     );
     
     if (isAuthError) {
-      console.log(`Authentication error with ${provider} - returning null to skip this provider`);
-      return null; // Return null to indicate this provider should be skipped
+      console.log(`Authentication error with ${provider} - throwing error to skip this provider`);
+      throw new Error(`Authentication error with ${provider}`);
     }
     
     // For other errors, log detailed information
@@ -636,18 +501,11 @@ function generateMockResponse(
 export async function detectBrandsInResponse(
   text: string,
   brandName: string,
-<<<<<<< Updated upstream
-  competitors: string[]
-=======
   competitors: string[],
   options: {
     locale?: string;
     providerName?: string;
   } = {}
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 ): Promise<{
   brandMentioned: boolean;
   brandPosition?: number;
@@ -716,6 +574,7 @@ export async function detectBrandsInResponse(
 export { analyzePromptWithProviderEnhanced as analyzePromptWithProvider };
 
 // Filtre générique similaire à openai-web-search.ts pour éviter des faux positifs
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function filterBrandVariations(coreBrand: string, variations: string[]): string[] {
   const coreWords = coreBrand.trim().split(/\s+/).filter(Boolean);
   const isMultiWord = coreWords.length >= 2;

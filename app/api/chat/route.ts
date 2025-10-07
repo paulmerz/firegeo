@@ -69,18 +69,10 @@ export async function POST(request: NextRequest) {
     try {
       await autumn.track({
         customer_id: sessionResponse.user.id,
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-        feature_id: FEATURE_ID_MESSAGES,
-=======
         feature_id: FEATURE_ID_CREDITS,
->>>>>>> Stashed changes
-=======
-        feature_id: FEATURE_ID_CREDITS,
->>>>>>> Stashed changes
         value: CREDITS_PER_MESSAGE,
       });
-    } catch (err) {
+    } catch {
       throw new ExternalServiceError('Unable to process credit usage. Please try again', 'autumn');
     }
 
@@ -162,7 +154,7 @@ export async function POST(request: NextRequest) {
         feature_id: FEATURE_ID_CREDITS,
       });
       remainingCredits = usage.data?.balance || 0;
-    } catch (err) {
+    } catch {
       // Silently fail if we can't get remaining credits
     }
 

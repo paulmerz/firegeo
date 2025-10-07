@@ -108,15 +108,8 @@ export interface AIResponse {
   sentiment: 'positive' | 'neutral' | 'negative';
   confidence: number;
   timestamp: Date;
-<<<<<<< Updated upstream
-  webSearchSources?: { title: string, url: string, snippet: string }[]; // Sources from web search
-=======
-  webSearchSources?: any[]; // Sources from web search
+  webSearchSources?: Array<{url: string; title?: string; text?: string; source?: string; domain?: string; type?: string}>; // Sources from web search
   brandVariations?: Record<string, BrandVariation>;
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   // Enhanced detection information
   detectionDetails?: {
     brandMatches?: {
@@ -338,49 +331,10 @@ export const PROMPT_TEMPLATES = {
     "What's the best {industry} solution for enterprise use?",
     "Which {industry} platform offers the best value?",
   ],
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-};
-
-export interface ApiUsageSummaryData {
-  totalCalls: number;
-  totalCost: number;
-  totalDuration: number;
-  byProvider: Record<string, {
-    calls: number;
-    cost: number;
-    tokens: { input: number; output: number };
-  }>;
-  byOperation: Record<string, {
-    calls: number;
-    cost: number;
-    providers: string[];
-  }>;
-  byPhase: Record<string, {
-    calls: number;
-    cost: number;
-    duration: number;
-    providers: string[];
-    averageCostPerCall?: number;
-    promptAnalysis?: {
-      totalPrompts: number;
-      averageCostPerPrompt: number;
-    };
-  }>;
-  errors: number;
-}
-=======
-=======
->>>>>>> Stashed changes
 }; 
 
 export interface BrandVariation {
   original: string;
   variations: string[];
   confidence: number;
-<<<<<<< Updated upstream
-} 
->>>>>>> Stashed changes
-=======
-} 
->>>>>>> Stashed changes
+}

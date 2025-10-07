@@ -10,15 +10,7 @@ function asTrimmedString(value: unknown): string | undefined {
   return str.length > 0 ? str : undefined;
 }
 
-function fallbackTitleFromUrl(url: string | undefined): string | undefined {
-  if (!url) return undefined;
-  try {
-    const parsed = new URL(url);
-    return parsed.hostname || url;
-  } catch {
-    return url;
-  }
-}
+// Removed unused function
 
 function determineSourceType(raw: UnknownObject | undefined): string | undefined {
   if (!raw) return undefined;
@@ -167,13 +159,6 @@ export function extractAnalysisSources(
   }
 
   if (!analysisData || typeof analysisData !== 'object') {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    // Return any sources collected from persistedSources
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     return Array.from(collectedByKey.values());
   }
 
@@ -187,22 +172,6 @@ export function extractAnalysisSources(
   const responses = analysisObject['responses'];
   if (Array.isArray(responses)) {
     (responses as AIResponse[]).forEach((response) => {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      const provider = asTrimmedString(response.provider);
-      const prompt = asTrimmedString(response.prompt);
-      const webSearchSources = response.webSearchSources;
-
-      console.log('[Sources Debug] Processing response:', {
-        provider,
-        prompt: prompt?.substring(0, 50) + '...',
-        webSearchSourcesCount: Array.isArray(webSearchSources) ? webSearchSources.length : 0
-      });
-
-      addRawSources(webSearchSources, { provider, prompt });
-=======
-=======
->>>>>>> Stashed changes
       const responseObj = response as unknown as UnknownObject;
       const provider = asTrimmedString(responseObj['provider']);
       const prompt = asTrimmedString(responseObj['prompt']);
@@ -210,10 +179,6 @@ export function extractAnalysisSources(
       
       // Debug logs removed
       addRawSources(webSearchSources, { provider, prompt, analysisId: currentAnalysisId });
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     });
   }
 

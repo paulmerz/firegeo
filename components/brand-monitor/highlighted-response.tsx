@@ -6,17 +6,7 @@ import remarkGfm from 'remark-gfm';
 import { AIResponse, type BrandVariation } from '@/lib/types';
 import type { BrandDetectionResult, BrandDetectionMatch } from '@/lib/brand-detection-service';
 import { highlightBrandMentions, segmentsToReactElements, type HighlightedSegment } from '@/lib/text-highlighting-utils';
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-import { 
-=======
 import {
-  highlightTextWithBrands,
->>>>>>> Stashed changes
-=======
-import {
-  highlightTextWithBrands,
->>>>>>> Stashed changes
   highlightMarkdownChildren as highlightMarkdownChildrenUtil,
   type BrandHighlightingConfig
 } from '@/lib/brand-highlighting-utils';
@@ -51,18 +41,7 @@ export function HighlightedResponse({
   renderMarkdown = true,
   brandVariations
 }: HighlightedResponseProps) {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  const cleanedResponse = cleanResponseText(response.response, response.provider);
-  const { detectMultipleBrands, clearError } = useBrandDetection();
-  
-  // State for enhanced detection results
-=======
   const cleanedResponse = cleanProviderResponse(response.response, { providerName: response.provider });
->>>>>>> Stashed changes
-=======
-  const cleanedResponse = cleanProviderResponse(response.response, { providerName: response.provider });
->>>>>>> Stashed changes
   const [enhancedDetectionResults, setEnhancedDetectionResults] = React.useState<Map<string, BrandDetectionResult>>(new Map());
 
   const normalizedTargetBrand = React.useMemo(() => brandName.trim().toLowerCase(), [brandName]);
@@ -168,18 +147,8 @@ export function HighlightedResponse({
       }
     };
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    performIntelligentDetection();
-  }, [cacheKey, cleanedResponse, allBrandCandidates, showHighlighting, response.detectionDetails, clearError, detectMultipleBrands, performFallbackDetection]);
-=======
     performDetection();
   }, [cacheKey, cleanedResponse, showHighlighting, brandName, competitors, response.detectionDetails, brandVariations]);
->>>>>>> Stashed changes
-=======
-    performDetection();
-  }, [cacheKey, cleanedResponse, showHighlighting, brandName, competitors, response.detectionDetails, brandVariations]);
->>>>>>> Stashed changes
 
   const detectionResults = React.useMemo(() => {
     if (!showHighlighting) return new Map();
@@ -284,19 +253,6 @@ export function HighlightedResponse({
     return highlightMarkdownChildrenUtil(children, detectionResults, highlightingConfig, showHighlighting);
   }, [detectionResults, highlightingConfig, showHighlighting]);
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  // Indicateur de mode fallback
-  const fallbackIndicator = useFallback && (
-    <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-      <span className="font-medium">Mode de détection simplifiée :</span> La détection intelligente des marques n&apos;est pas disponible. Utilisation d&apos;une détection basique.
-    </div>
-  );
-
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   if (!showHighlighting) {
     if (renderMarkdown) {
       return (
@@ -519,15 +475,7 @@ export function HighlightedText({
     };
 
     performDetection();
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  }, [brandCandidates, text, detectMultipleBrands]);
-=======
-  }, [brandCandidates, text, brandVariations]);
->>>>>>> Stashed changes
-=======
-  }, [brandCandidates, text, brandVariations]);
->>>>>>> Stashed changes
+  }, [brandCandidates, text, brandVariations, detectMultipleBrands]);
 
   const segments = React.useMemo(() => highlightBrandMentions(text, detectionResults), [text, detectionResults]);
 

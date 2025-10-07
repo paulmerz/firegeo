@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useCallback, ReactNode } from 'react';
-import { useCustomer as useAutumnCustomer, UseCustomerParams } from 'autumn-js/react';
+import { useCustomer as useAutumnCustomer } from 'autumn-js/react';
 
 // Create a context for the refetch function
 interface AutumnCustomerContextType {
@@ -12,7 +12,7 @@ const AutumnCustomerContext = createContext<AutumnCustomerContextType | null>(nu
 
 // Provider component
 export function AutumnCustomerProvider({ children }: { children: ReactNode }) {
-  const { refetch } = useAutumnCustomer({ skip: true });
+  const { refetch } = useAutumnCustomer();
 
   const refetchCustomer = useCallback(async () => {
     await refetch();
@@ -26,6 +26,8 @@ export function AutumnCustomerProvider({ children }: { children: ReactNode }) {
 }
 
 // Hook to use the customer data with global refetch
+type UseCustomerParams = Parameters<typeof useAutumnCustomer>[0];
+
 export function useCustomer(params?: UseCustomerParams) {
   const autumnCustomer = useAutumnCustomer(params);
   const context = useContext(AutumnCustomerContext);

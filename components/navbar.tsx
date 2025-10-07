@@ -11,16 +11,16 @@ import { Link, useRouter } from '@/i18n/routing';
 // Separate component that only renders when user is logged in
 function UserCredits() {
   const { data: session } = useSession();
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
   const { customer } = useCustomer();
-  const t = useTranslations('common');
   const [displayCredits, setDisplayCredits] = useState<number | null>(null);
+  const t = useTranslations('common');
+  const { data: creditsData, isLoading } = useCredits();
 
-  const userId = session?.user?.id ?? session?.user?.email;
-  const storageKey = userId ? `autumn_credits_${userId}` : undefined;
+  // Calculer les valeurs nécessaires
+  const userId = session?.user?.id ?? session?.user?.email ?? null;
+  const storageKey = userId ? `autumn_credits_${userId}` : null;
 
-  // 1) Lecture initiale depuis le cache local si disponible
+  // Lecture initiale depuis le cache local si disponible
   useEffect(() => {
     if (!storageKey) return;
     try {
@@ -34,10 +34,9 @@ function UserCredits() {
     } catch {}
   }, [storageKey]);
 
-  // 2) Quand Autumn répond, on met à jour l'état et le cache
+  // Quand Autumn répond, on met à jour l'état et le cache
   useEffect(() => {
-    const creditsUsage = customer?.features?.credits;
-    const balance = creditsUsage?.balance;
+    const balance = customer?.features?.credits?.balance;
     if (typeof balance === 'number' && balance >= 0) {
       setDisplayCredits(balance);
       if (storageKey) {
@@ -48,44 +47,23 @@ function UserCredits() {
     }
   }, [customer, storageKey]);
 
+  // Vérifier si la session existe après tous les hooks
   if (!session) {
     return null;
   }
 
-  // 3) Si aucune valeur (ni cache ni Autumn), masquer pour éviter clignotement à 0
-  if (displayCredits == null) {
-=======
-  
-  // Ne pas afficher si l'utilisateur n'est pas connecté
-  if (!session) {
+  if (isLoading) {
     return null;
   }
 
-  const { data: creditsData, isLoading } = useCredits();
-  const t = useTranslations('common');
-
-  // Afficher un indicateur de chargement ou masquer si pas de données
-  if (isLoading || !creditsData) {
->>>>>>> Stashed changes
-=======
-  
-  // Ne pas afficher si l'utilisateur n'est pas connecté
-  if (!session) {
-    return null;
-  }
-
-  const { data: creditsData, isLoading } = useCredits();
-  const t = useTranslations('common');
-
-  // Afficher un indicateur de chargement ou masquer si pas de données
-  if (isLoading || !creditsData) {
->>>>>>> Stashed changes
+  const balance = creditsData?.balance ?? displayCredits;
+  if (balance == null) {
     return null;
   }
 
   return (
     <div className="flex items-center text-sm font-medium text-gray-700">
-      <span>{creditsData.balance}</span>
+      <span>{balance}</span>
       <span className="ml-1">{t('credits')}</span>
     </div>
   );

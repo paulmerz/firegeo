@@ -71,16 +71,17 @@ Rules:
 1. Include the full brand name and common case variations
 2. Include ONLY distinctive parts that are NOT generic words (avoid: "cars", "technologies", "solutions", "systems", "group", "international", "global", "worldwide", "inc", "llc", "corp", "ltd", "limited", "company", "co")
 3. Include common abbreviations/acronyms ONLY if they are distinctive to this brand
-4. Do NOT include variations that would cause false positives
-5. Be VERY conservative - fewer, more accurate variations are better than many inaccurate ones
-6. For single-word brands that are common adjectives/nouns, ONLY include the exact brand name with proper capitalization
-7. Avoid variations that could match common words in other contexts
+4. Do NOT include variations that would cause false positives (i.e Radical is a brand, but also an adjective and radical can easily be confused with the brand in a race car context)
+5. For single-word brands that are common adjectives/nouns, ONLY include the exact brand name with proper capitalization (i.e Orange must not be included as "orange" as it would cause a false positive)
+6. Avoid variations that could match common words in other contexts
 
 Examples:
 - "Caterham Cars" → ["Caterham Cars", "Caterham", "caterham cars", "caterham"]
 - "Louis Vuitton" → ["Louis Vuitton", "louis vuitton", "LV"]
 - "Alpine" → ["Alpine", "alpine"] (NOT "BMW Alpine" - that's a different brand)
 - "Christian Dior" → ["Christian Dior", "christian dior", "Dior", "dior"]
+- "Yves Saint Laurent" → ["Saint Laurent", "YSL", "St Laurent", "Yves Saint Laurent", "yves saint laurent", "ysl"]
+- "Patek Philippe" → ["Patek Philippe", "patek philippe", "Patek"] (NOT "philippe" - too common as last name and nobody calls the brand "philippe")
 - "Nvidia Technologies" → ["Nvidia", "nvidia"] (NOT "technologies" - too generic)
 - "Apple Inc" → ["Apple"] (NOT "apple" - too common as fruit)
 - "Radical" → ["Radical"] (NOT "radical" - too common as adjective)
@@ -98,9 +99,9 @@ CRITICAL: For brands that are VERY common words (like "Radical", "Apple", "Orang
 
 Return ONLY a JSON object with this exact structure:
 {
-  "original": "exact brand name",
-  "variations": ["variation1", "variation2", ...],
-  "confidence": 0.95
+  "original": "exact brand name", (STRING)
+  "variations": ["variation1", "variation2", ...], (ARRAY OF STRINGS)
+  "confidence": "level of confidence in the variations" (NUMBER)
 }`;
 
   let callId: string | undefined;

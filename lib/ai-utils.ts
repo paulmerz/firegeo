@@ -1,19 +1,10 @@
 
 import { generateText, generateObject } from 'ai';
 import { z } from 'zod';
-<<<<<<< Updated upstream
-import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData, SSEEvent } from './types';
-import { getProviderModel, normalizeProviderName, getConfiguredProviders } from './provider-config';
-import { detectBrandMentions, detectMultipleBrands } from './brand-detection-service';
-=======
 import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData } from './types';
-import { getProviderModel, normalizeProviderName, isProviderConfigured, getConfiguredProviders, PROVIDER_CONFIGS } from './provider-config';
-import { detectBrandMentions, detectMultipleBrands, ensureBrandVariationsForBrand } from './brand-detection-service';
+import { getProviderModel, normalizeProviderName, getConfiguredProviders, PROVIDER_CONFIGS } from './provider-config';
+import { detectBrandMentions, detectMultipleBrands } from './brand-detection-service';
 import type { BrandVariation } from './types';
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 import { getMessages, getTranslation, getLanguageName } from './locale-utils';
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
 import { generateBrandQueryPrompts } from './prompt-generation';
@@ -51,21 +42,7 @@ const CompetitorSchema = z.object({
 
 const PROMPT_CATEGORY_SEQUENCE: BrandPrompt['category'][] = ['ranking', 'comparison', 'alternatives', 'recommendations'];
 
-/**
- * Helper function to use pre-generated brand variations or fallback to generation
- */
-async function getBrandVariationsForDetection(
-  brandName: string,
-  locale?: string,
-  brandVariations?: Record<string, BrandVariation>
-): Promise<string[]> {
-  if (brandVariations && brandVariations[brandName]) {
-    return brandVariations[brandName].variations;
-  }
-
-  const variation = await ensureBrandVariationsForBrand(brandName, locale);
-  return variation.variations;
-}
+// Removed unused function
 
 export async function identifyCompetitors(company: Company, progressCallback?: ProgressCallback): Promise<string[]> {
   try {
@@ -214,21 +191,10 @@ export async function analyzePromptWithProvider(
   brandName: string,
   competitors: string[],
   useMockMode: boolean = false,
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  locale?: string
-): Promise<AIResponse | null> {
-=======
-=======
->>>>>>> Stashed changes
   locale?: string,
-  brandVariations?: Record<string, BrandVariation>
+  _brandVariations?: Record<string, BrandVariation> // eslint-disable-line @typescript-eslint/no-unused-vars
 ): Promise<AIResponse> {
   const trimmedPrompt = (prompt || '').trim();
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   // Mock mode for demo/testing without API keys
   if (useMockMode || provider === 'Mock') {
     return generateMockResponse(trimmedPrompt, provider, brandName, competitors);
@@ -242,8 +208,7 @@ export async function analyzePromptWithProvider(
   
   if (!model) {
     console.warn(`Provider ${provider} not configured, skipping provider`);
-    // Return null to indicate this provider should be skipped
-    return null;
+    throw new Error(`Provider ${provider} not configured`);
   }
   
   // Get the model ID from provider config instead of trying to extract from model object
@@ -261,15 +226,7 @@ export async function analyzePromptWithProvider(
     // Track API call for analysis
     const callId = apiUsageTracker.trackCall({
       provider: normalizedProvider,
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      model: (model as { id?: string }).id || 'unknown',
-=======
       model: modelId,
->>>>>>> Stashed changes
-=======
-      model: modelId,
->>>>>>> Stashed changes
       operation: 'analysis',
       success: true,
       metadata: { 
@@ -287,7 +244,7 @@ export async function analyzePromptWithProvider(
     
     const startTime = Date.now();
     const { text, usage } = await generateText({
-      model,
+      model: model as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       prompt: trimmedPrompt,
       // GPT-5: ne pas envoyer temperature/top_p/logprobs
       maxTokens: 800,
@@ -301,15 +258,7 @@ export async function analyzePromptWithProvider(
     apiUsageTracker.updateCall(callId, {
       inputTokens: tokens.inputTokens,
       outputTokens: tokens.outputTokens,
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      cost: estimateCost(normalizedProvider, (model as { id?: string }).id || 'unknown', tokens.inputTokens, tokens.outputTokens),
-=======
       cost: estimateCost(normalizedProvider, modelId, tokens.inputTokens, tokens.outputTokens),
->>>>>>> Stashed changes
-=======
-      cost: estimateCost(normalizedProvider, modelId, tokens.inputTokens, tokens.outputTokens),
->>>>>>> Stashed changes
       duration
     });
     
@@ -363,7 +312,7 @@ Examples of mentions to catch:
       console.log(`[${provider}] Attempting structured analysis with model:`, typeof structuredModel);
       
       const result = await generateObject({
-        model: structuredModel,
+        model: structuredModel as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         schema: RankingSchema,
         prompt: analysisPrompt,
         maxRetries: 2,
@@ -421,7 +370,7 @@ ${t('aiPrompts.analysisPrompt.returnAnalysis')}
           const simplePrompt = buildSimplePrompt();
 
           const { text: simpleResponse } = await generateText({
-            model,
+            model: model as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             prompt: simplePrompt,
           });
           
@@ -490,7 +439,7 @@ Please answer:
 Be concise and direct.`;
 
           const { text: fallbackResponse } = await generateText({
-            model,
+            model: model as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             prompt: simpleFallbackPrompt,
             maxTokens: 200,
           });
@@ -892,7 +841,7 @@ export async function analyzeCompetitorsByProvider(
   company: Company,
   responses: AIResponse[],
   knownCompetitors: string[],
-  sendEvent?: (event: SSEEvent) => Promise<void>
+  sendEvent?: (event: any) => Promise<void> // eslint-disable-line @typescript-eslint/no-explicit-any
 ): Promise<{
   providerRankings: ProviderSpecificRanking[];
   providerComparison: ProviderComparisonData[];

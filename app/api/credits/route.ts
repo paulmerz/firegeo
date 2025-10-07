@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     await getAutumn().track({
       customer_id: sessionResponse.user.id,
       feature_id: FEATURE_ID_CREDITS,
-      count: value,
+      value: value,
     });
 
     // Return new balance

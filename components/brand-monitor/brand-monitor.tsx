@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useReducer, useCallback, useState, useEffect, useRef, useMemo } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import type { Company, ProviderSpecificRanking } from '@/lib/types';
 import type { BrandAnalysisWithSources } from '@/lib/db/schema';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,7 +40,7 @@ import { WebSearchToggle } from './web-search-toggle';
 import { logger } from '@/lib/logger';
 import { extractAnalysisSources } from '@/lib/brand-monitor-sources';
 import { ApiUsageSummary, ApiUsageSummaryData } from './api-usage-summary';
-import type { BrandVariation } from '@/lib/brand-detection-service';
+// Removed unused import
 import {
   CREDIT_COST_URL_ANALYSIS,
   CREDIT_COST_COMPETITOR_ANALYSIS,
@@ -296,7 +296,7 @@ export function BrandMonitor({
 
     // Restore identified competitors with their URLs from saved analysis
     if (selectedAnalysis.competitors && Array.isArray(selectedAnalysis.competitors)) {
-      const restoredCompetitors = selectedAnalysis.competitors.map((comp: any) => ({
+      const restoredCompetitors = selectedAnalysis.competitors.map((comp: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
         name: comp.name || '',
         url: comp.url,
         metadata: comp.metadata
@@ -453,7 +453,7 @@ export function BrandMonitor({
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }, [url, creditsAvailable, onCreditsUpdate, tErrors]);
+  }, [url, creditsAvailable, tErrors, updateCreditsCache]);
   
   const handlePrepareAnalysis = useCallback(async () => {
     if (!company) return;
@@ -556,7 +556,7 @@ export function BrandMonitor({
     // Show competitors on the same page with animation
     dispatch({ type: 'SET_SHOW_COMPETITORS', payload: true });
     dispatch({ type: 'SET_PREPARING_ANALYSIS', payload: false });
-  }, [company, useIntelliSearch, onCreditsUpdate, tErrors, creditsAvailable]);
+  }, [company, useIntelliSearch, tErrors, creditsAvailable, updateCreditsCache]);
   
   const handleProceedToPrompts = useCallback(() => {
     // Add a fade-out class to the current view
@@ -665,7 +665,7 @@ export function BrandMonitor({
     } finally {
       dispatch({ type: 'SET_ANALYZING', payload: false });
     }
-  }, [company, identifiedCompetitors, startSSEConnection, creditsAvailable, tErrors, tAnalysis, useWebSearch, onCreditsUpdate]);
+  }, [company, identifiedCompetitors, startSSEConnection, creditsAvailable, tErrors, tAnalysis, useWebSearch, updateCreditsCache]);
   
   const handleRestart = useCallback(() => {
     dispatch({ type: 'RESET_STATE' });

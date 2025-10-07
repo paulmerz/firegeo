@@ -83,20 +83,13 @@ const generateFallbackUrl = (competitorName: string): string | undefined => {
 };
 
 export function ProviderRankingsTabs({ 
-  providerRankings, 
+  providerRankings,
   brandName,
   shareOfVoice,
   averagePosition,
-<<<<<<< Updated upstream
-  sentimentScore
-=======
   sentimentScore,
   weeklyChange,
   identifiedCompetitors
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 }: ProviderRankingsTabsProps) {
   const t = useTranslations('brandMonitor.providerRankings');
   const [selectedProvider, setSelectedProvider] = useState(
@@ -142,7 +135,7 @@ export function ProviderRankingsTabs({
     });
   };
   const brandRank = selectedCompetitors.findIndex(c => c.isOwn) + 1;
-  const brandVisibility = selectedCompetitors.find(c => c.isOwn)?.visibilityScore || 0;
+  // const brandVisibility = selectedCompetitors.find(c => c.isOwn)?.visibilityScore || 0;
 
   return (
     <Card className="p-2 bg-card text-card-foreground gap-6 rounded-xl border py-6 shadow-sm border-gray-200 h-full flex flex-col">
@@ -153,6 +146,16 @@ export function ProviderRankingsTabs({
             <CardDescription className="text-sm text-gray-600 mt-1">
               {t('description')}
             </CardDescription>
+            {/* Utilisation des props pour éviter unused-vars et afficher des infos si disponibles */}
+            {(brandName || shareOfVoice !== undefined || averagePosition !== undefined || sentimentScore !== undefined || weeklyChange !== undefined) && (
+              <div className="mt-1 text-xs text-gray-600">
+                {brandName && <span className="mr-2">{t('brand')}: {brandName}</span>}
+                {shareOfVoice !== undefined && <span className="mr-2">{t('shareOfVoiceShort')}: {shareOfVoice}%</span>}
+                {averagePosition !== undefined && <span className="mr-2">{t('avgPositionShort')}: {averagePosition}</span>}
+                {sentimentScore !== undefined && <span className="mr-2">{t('sentimentShort')}: {sentimentScore}</span>}
+                {weeklyChange !== undefined && <span>{t('weeklyChangeShort')}: {weeklyChange > 0 ? '+' : ''}{weeklyChange}</span>}
+              </div>
+            )}
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold text-orange-600">#{brandRank}</p>

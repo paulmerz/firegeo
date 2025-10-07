@@ -44,13 +44,7 @@ export const logger: Logger = {
 };
 
 // Export par défaut pour faciliter l'import
-<<<<<<< Updated upstream
 export default logger;
-<<<<<<< Updated upstream
-=======
-export default logger;
-=======
->>>>>>> Stashed changes
 
 /**
  * Supprime les caractères hors BMP (ex: emojis) pour éviter le mojibake
@@ -72,7 +66,7 @@ function sanitizeForConsole(input: unknown): string {
   return sanitized;
 }
 
-function sanitizeArgs(args: any[]): any[] {
+function sanitizeArgs(args: any[]): any[] { // eslint-disable-line @typescript-eslint/no-explicit-any
   return args.map((arg) => (typeof arg === 'string' ? sanitizeForConsole(arg) : arg));
 }
 
@@ -93,7 +87,3 @@ function repairMojibakeIfNeeded(input: string): string {
     return input;
   }
 }
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes

@@ -5,17 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { ChevronDown, ChevronsDown, ChevronsUp } from 'lucide-react';
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-import { BrandPrompt, AIResponse } from '@/lib/types';
-=======
-import ReactMarkdown from 'react-markdown';
 import { BrandPrompt, AIResponse, BrandVariation } from '@/lib/types';
->>>>>>> Stashed changes
-=======
-import ReactMarkdown from 'react-markdown';
-import { BrandPrompt, AIResponse, BrandVariation } from '@/lib/types';
->>>>>>> Stashed changes
 import { HighlightedResponse } from './highlighted-response';
 import { useTranslations } from 'next-intl';
 import { logger } from '@/lib/logger';
@@ -153,7 +143,7 @@ export function PromptsResponsesTab({
     return () => {
       cancelled = true;
     };
-      }, [responses, brandName, competitors, brandVariations]);
+      }, [responses, brandName, competitors, brandVariations, detectionCache]);
   
   const handleExpandAll = () => {
     if (allExpanded) {
