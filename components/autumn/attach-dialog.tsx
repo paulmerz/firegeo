@@ -110,7 +110,6 @@ export default function AttachDialog(params?: AttachDialogProps) {
                     featureId: option.feature_id,
                     quantity: option.quantity || 0,
                   })),
-                  returnUrl: window.location.origin + '/dashboard',
                   successUrl: window.location.origin + '/dashboard',
                   cancelUrl: window.location.origin + '/plans',
                 });

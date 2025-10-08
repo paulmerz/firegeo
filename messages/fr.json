@@ -688,7 +688,8 @@
       "addPrompt": "Ajouter un prompt",
       "startAnalysis": "Commencer l'analyse",
       "analyzing": "Analyse en cours...",
-      "custom": "Personnalisé"
+      "custom": "Personnalisé",
+      "generatingAdaptivePrompts": "Génération de prompts adaptatifs..."
     },
     "errors": {
       "pleaseEnterUrl": "Veuillez entrer une URL",
@@ -812,22 +813,25 @@
         "price": "19€",
         "priceDesc": "/mois",
         "feature1": "50 crédits",
-        "feature2": "Support sous 24h"
+        "feature2": "SmartComp© identifie vos concurrents",
+        "feature3": "SmartBrand© détecte votre marque et ses déclinaisons",
+        "feature4": "Support par email 48h"
       },
       "watch": {
         "name": "Watch",
         "price": "39€",
         "priceDesc": "/mois",
         "feature1": "150 crédits",
-        "feature2": "Affichage des sources"
+        "feature2": "Tout ce qui est inclus dans \"Start\"",
+        "feature3": "Accès aux sources utilisées par les moteurs d'IA"
       },
       "pro": {
         "name": "Pro",
         "price": "59€",
         "priceDesc": "/mois",
         "feature1": "250 crédits",
-        "feature2": "Support sous 24h",
-        "feature3": "Affichage des sources"
+        "feature2": "Tout ce qui est inclus dans \"Watch\"",
+        "feature3": "Support par chat 7/7"
       },
       "enterprise": {
         "name": "Entreprise",

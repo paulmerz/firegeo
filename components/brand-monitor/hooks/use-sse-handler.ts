@@ -13,6 +13,7 @@ import {
   AnalysisProgressData,
   PartialResultData,
   BrandExtractionProgressData,
+  ScoringProgressData,
   SSEEvent,
   AnalysisStage
 } from '@/lib/types';
@@ -377,6 +378,22 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
             stage: stageData.stage,
             progress: adjustedProgress,
             message: stageData.message
+          }
+        });
+        break;
+
+      case 'scoring-start':
+        // Événement indiquant le début du calcul des scores pour un concurrent
+        const scoringData = eventData.data as ScoringProgressData;
+        const progressPercent = 90 + Math.round((scoringData.index / scoringData.total) * 10);
+        const progressMessage = `Calculating scores for ${scoringData.competitor} (${scoringData.index}/${scoringData.total})`;
+        
+        dispatch({
+          type: 'UPDATE_ANALYSIS_PROGRESS',
+          payload: {
+            stage: 'calculating-scores',
+            progress: progressPercent,
+            message: progressMessage
           }
         });
         break;

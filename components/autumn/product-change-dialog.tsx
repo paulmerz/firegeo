@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useCustomer } from '@/hooks/useAutumnCustomer';
+import { useCreditsInvalidation } from '@/hooks/useCreditsInvalidation';
 import { Loader2 } from 'lucide-react';
 
 interface ProductChangeDialogProps {
@@ -31,6 +32,7 @@ interface ProductChangeDialogProps {
 const ProductChangeDialog = ({ open, setOpen, preview }: ProductChangeDialogProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { attach, refetch } = useCustomer();
+  const { invalidateCredits } = useCreditsInvalidation();
   const t = useTranslations('autumn.productChangeDialog');
   const tc = useTranslations('common');
 
@@ -42,13 +44,14 @@ const ProductChangeDialog = ({ open, setOpen, preview }: ProductChangeDialogProp
       await attach({
         productId: preview.product_id,
         checkoutSessionParams: {
-          return_url: window.location.origin + '/dashboard',
           success_url: window.location.origin + '/dashboard',
           cancel_url: window.location.origin + '/dashboard',
         },
       });
-      // Refresh customer data to update credits in navbar
+      // Refresh customer data to update usage statistics
       await refetch();
+      // Invalidate credits cache to update navbar counter
+      await invalidateCredits();
       setOpen(false);
     } catch (error) {
       console.error('Error attaching product:', error);
@@ -62,7 +65,7 @@ const ProductChangeDialog = ({ open, setOpen, preview }: ProductChangeDialogProp
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency,
-    }).format(price / 100); // Assuming price is in cents
+    }).format(price); 
   };
 
   return (

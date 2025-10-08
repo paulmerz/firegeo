@@ -31,6 +31,8 @@ export default function PricingPage() {
                 items: [
                   { primaryText: t('pricing.voxum.start.feature1') },
                   { primaryText: t('pricing.voxum.start.feature2') },
+                  { primaryText: t('pricing.voxum.start.feature3') },
+                  { primaryText: t('pricing.voxum.start.feature4') },
                 ],
               },
               {
@@ -41,6 +43,7 @@ export default function PricingPage() {
                 items: [
                   { primaryText: t('pricing.voxum.watch.feature1') },
                   { primaryText: t('pricing.voxum.watch.feature2') },
+                  { primaryText: t('pricing.voxum.watch.feature3') },
                 ],
               },
               {

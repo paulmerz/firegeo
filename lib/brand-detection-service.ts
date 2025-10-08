@@ -74,6 +74,7 @@ Rules:
 4. Do NOT include variations that would cause false positives (i.e Radical is a brand, but also an adjective and radical can easily be confused with the brand in a race car context)
 5. For single-word brands that are common adjectives/nouns, ONLY include the exact brand name with proper capitalization (i.e Orange must not be included as "orange" as it would cause a false positive)
 6. Avoid variations that could match common words in other contexts
+7. Be smart as you are a brand detection expert and you know what is a brand and what is not
 
 Examples:
 - "Caterham Cars" → ["Caterham Cars", "Caterham", "caterham cars", "caterham"]
@@ -82,6 +83,8 @@ Examples:
 - "Christian Dior" → ["Christian Dior", "christian dior", "Dior", "dior"]
 - "Yves Saint Laurent" → ["Saint Laurent", "YSL", "St Laurent", "Yves Saint Laurent", "yves saint laurent", "ysl"]
 - "Patek Philippe" → ["Patek Philippe", "patek philippe", "Patek"] (NOT "philippe" - too common as last name and nobody calls the brand "philippe")
+- "Audemars Piguet" → ["Audemars Piguet", "audemars piguet", "Audemars", "AP"] (NOT "Piguet" as nobody calls the brand "Piguet")
+- "Grand Seiko" → ["Grand Seiko", "grand seiko", "GS"] (NOT "Seiko" as it is another brand, much lower price range, not "Grand" as it is a generic term and nobody calls the brand "Grand")
 - "Nvidia Technologies" → ["Nvidia", "nvidia"] (NOT "technologies" - too generic)
 - "Apple Inc" → ["Apple"] (NOT "apple" - too common as fruit)
 - "Radical" → ["Radical"] (NOT "radical" - too common as adjective)
@@ -266,8 +269,12 @@ export async function detectBrandMentions(
                         commonWords.includes(brandName.toLowerCase());
     const shouldBeCaseSensitive = isCommonWord || caseSensitive;
 
+    // Sort variations by length (longest first) to prioritize complete brand names
+    // This ensures "Audemars Piguet" matches before "Piguet" alone
+    const sortedVariations = [...brandVariation.variations].sort((a, b) => b.length - a.length);
+
     // Create regex patterns for each variation
-    const patterns = brandVariation.variations.map(variation => {
+    const patterns = sortedVariations.map(variation => {
       const escaped = variation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       // Use word boundaries but be more careful about context
       return {
@@ -277,11 +284,27 @@ export async function detectBrandMentions(
     });
 
     // Always search in the original text to get correct positions
+    // Track matched ranges to avoid overlapping matches
+    const matchedRanges: Array<{ start: number; end: number }> = [];
+    
     patterns.forEach(({ variation, regex }) => {
       let match;
       while ((match = regex.exec(text)) !== null) {
         const matchText = match[0];
         const matchIndex = match.index;
+        const matchEnd = matchIndex + matchText.length;
+        
+        // Check if this match overlaps with any existing match
+        const overlaps = matchedRanges.some(range => 
+          (matchIndex >= range.start && matchIndex < range.end) ||
+          (matchEnd > range.start && matchEnd <= range.end) ||
+          (matchIndex <= range.start && matchEnd >= range.end)
+        );
+        
+        // Skip this match if it overlaps with a longer match already found
+        if (overlaps) {
+          continue;
+        }
 
         // Check for negative context if requested
         if (excludeNegativeContext) {
@@ -356,6 +379,12 @@ export async function detectBrandMentions(
           variation,
           confidence,
           snippet
+        });
+        
+        // Record this match range to prevent overlapping shorter matches
+        matchedRanges.push({
+          start: matchIndex,
+          end: matchEnd
         });
       }
     });

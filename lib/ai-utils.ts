@@ -2,9 +2,8 @@
 import { generateText, generateObject } from 'ai';
 import { z } from 'zod';
 import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData } from './types';
-import { getProviderModel, normalizeProviderName, isProviderConfigured, getConfiguredProviders, PROVIDER_CONFIGS } from './provider-config';
-import { detectBrandMentions, detectMultipleBrands, ensureBrandVariationsForBrand } from './brand-detection-service';
-import type { BrandVariation } from './types';
+import { getProviderModel, normalizeProviderName, getConfiguredProviders, PROVIDER_CONFIGS } from './provider-config';
+import { detectBrandMentions, detectMultipleBrands } from './brand-detection-service';
 import { getMessages, getTranslation, getLanguageName } from './locale-utils';
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
 import { generateBrandQueryPrompts } from './prompt-generation';
@@ -41,22 +40,6 @@ const CompetitorSchema = z.object({
 });
 
 const PROMPT_CATEGORY_SEQUENCE: BrandPrompt['category'][] = ['ranking', 'comparison', 'alternatives', 'recommendations'];
-
-/**
- * Helper function to use pre-generated brand variations or fallback to generation
- */
-async function getBrandVariationsForDetection(
-  brandName: string,
-  locale?: string,
-  brandVariations?: Record<string, BrandVariation>
-): Promise<string[]> {
-  if (brandVariations && brandVariations[brandName]) {
-    return brandVariations[brandName].variations;
-  }
-
-  const variation = await ensureBrandVariationsForBrand(brandName, locale);
-  return variation.variations;
-}
 
 export async function identifyCompetitors(company: Company, progressCallback?: ProgressCallback): Promise<string[]> {
   try {
@@ -205,8 +188,7 @@ export async function analyzePromptWithProvider(
   brandName: string,
   competitors: string[],
   useMockMode: boolean = false,
-  locale?: string,
-  brandVariations?: Record<string, BrandVariation>
+  locale?: string
 ): Promise<AIResponse> {
   const trimmedPrompt = (prompt || '').trim();
   // Mock mode for demo/testing without API keys

@@ -7,7 +7,6 @@ import { AIResponse, type BrandVariation } from '@/lib/types';
 import type { BrandDetectionResult, BrandDetectionMatch } from '@/lib/brand-detection-service';
 import { highlightBrandMentions, segmentsToReactElements, type HighlightedSegment } from '@/lib/text-highlighting-utils';
 import {
-  highlightTextWithBrands,
   highlightMarkdownChildren as highlightMarkdownChildrenUtil,
   type BrandHighlightingConfig
 } from '@/lib/brand-highlighting-utils';
@@ -476,7 +475,7 @@ export function HighlightedText({
     };
 
     performDetection();
-  }, [brandCandidates, text, brandVariations]);
+  }, [brandCandidates, text, brandVariations, detectMultipleBrands]);
 
   const segments = React.useMemo(() => highlightBrandMentions(text, detectionResults), [text, detectionResults]);
 

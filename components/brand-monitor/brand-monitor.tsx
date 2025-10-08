@@ -1,7 +1,7 @@
-'use client';
+﻿'use client';
 
 import React, { useReducer, useCallback, useState, useEffect, useRef, useMemo } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import type { Company, ProviderSpecificRanking } from '@/lib/types';
 import type { BrandAnalysisWithSources } from '@/lib/db/schema';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import {
   brandMonitorReducer,
   initialBrandMonitorState,
   IdentifiedCompetitor,
+  CompetitorMetadata,
   PromptCompletionStatus,
   PromptStatus,
   Analysis
@@ -40,7 +41,6 @@ import { WebSearchToggle } from './web-search-toggle';
 import { logger } from '@/lib/logger';
 import { extractAnalysisSources } from '@/lib/brand-monitor-sources';
 import { ApiUsageSummary, ApiUsageSummaryData } from './api-usage-summary';
-import type { BrandVariation } from '@/lib/brand-detection-service';
 import {
   CREDIT_COST_URL_ANALYSIS,
   CREDIT_COST_COMPETITOR_ANALYSIS,
@@ -296,11 +296,11 @@ export function BrandMonitor({
 
     // Restore identified competitors with their URLs from saved analysis
     if (selectedAnalysis.competitors && Array.isArray(selectedAnalysis.competitors)) {
-      const restoredCompetitors = selectedAnalysis.competitors.map((comp: any) => ({
+      const restoredCompetitors = selectedAnalysis.competitors.map((comp: { name?: string; url?: string; metadata?: unknown }) => ({
         name: comp.name || '',
         url: comp.url,
-        metadata: comp.metadata
-      })).filter((comp: IdentifiedCompetitor) => comp.name);
+        metadata: comp.metadata as CompetitorMetadata | undefined
+      })).filter(comp => comp.name);
       
       if (restoredCompetitors.length > 0) {
         logger.info('[BrandMonitor] Restoring identified competitors with URLs:', restoredCompetitors);
@@ -485,7 +485,7 @@ export function BrandMonitor({
     
     try {
       const detectedLocale = navigator.language.split('-')[0] || 'en';
-      logger.info('ðŸš€ Starting competitor search...');
+      logger.info('🚀 Starting competitor search...');
       logger.debug('🌐 Detected browser locale:', navigator.language, '→', detectedLocale);
       
       // Import search method configuration
@@ -494,8 +494,8 @@ export function BrandMonitor({
       const apiEndpoint = getApiEndpoint(ACTIVE_SEARCH_CONFIG.method);
       const requestBody = buildRequestBody(ACTIVE_SEARCH_CONFIG, company, detectedLocale, useIntelliSearch);
       
-      logger.debug(`ðŸ”¬ [SearchMethod] Active method: ${ACTIVE_SEARCH_CONFIG.method}`);
-      logger.debug(`ðŸ”§ [SearchMethod] Config:`, ACTIVE_SEARCH_CONFIG);
+      logger.debug(`🔬 [SearchMethod] Active method: ${ACTIVE_SEARCH_CONFIG.method}`);
+      logger.debug(`🔧 [SearchMethod] Config:`, ACTIVE_SEARCH_CONFIG);
       
       const response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -540,7 +540,7 @@ export function BrandMonitor({
       }));
       
       logger.info('ðŸ† Found competitors:', foundCompetitors);
-      logger.debug('ðŸ“Š Stats:', data.stats);
+      logger.debug('📊 Stats:', data.stats);
       
       if (data.warning) {
         logger.warn('⚠️ Warning:', data.warning);
@@ -685,7 +685,7 @@ export function BrandMonitor({
     setIsRefreshingMatrix(true);
     
     try {
-      logger.info('[RefreshMatrix] ðŸ”„ Début du recalcul de la matrice...');
+      logger.info('[RefreshMatrix] 🔄 Début du recalcul de la matrice...');
       
       // Préparer les données pour l'API
       const knownCompetitors = identifiedCompetitors.map(c => c.name);

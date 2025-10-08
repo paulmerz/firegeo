@@ -3,7 +3,7 @@ import { generatePromptsForCompany, analyzePromptWithProvider, calculateBrandSco
 import { analyzePromptWithProvider as analyzePromptWithProviderEnhanced } from './ai-utils-enhanced';
 import { extractAnalysisSources } from './brand-monitor-sources';
 import { getConfiguredProviders } from './provider-config';
-import { apiUsageTracker } from './api-usage-tracker';
+import { apiUsageTracker, type ApiUsageSummary } from './api-usage-tracker';
 import { logger } from './logger';
 import { ensureBrandVariationsForBrand } from './brand-detection-service';
 import type { BrandVariation } from './types';
@@ -35,7 +35,7 @@ export interface AnalysisResult {
   sources: AnalysisSource[];
   errors?: string[];
   webSearchUsed?: boolean;
-  apiUsageSummary?: any;
+  apiUsageSummary?: ApiUsageSummary;
   brandVariations?: Record<string, BrandVariation>;
 }
 
@@ -285,8 +285,7 @@ export async function performAnalysis({
                 company.name, 
                 competitors,
                 useMockMode,
-                locale,
-                brandVariations // Pass pre-generated brand variations
+                locale
               );
           
           logger.debug(`\n=== ANALYSIS COMPLETED ===`);

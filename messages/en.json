@@ -688,7 +688,8 @@
       "addPrompt": "Add Prompt",
       "startAnalysis": "Start Analysis",
       "analyzing": "Analyzing...",
-      "custom": "Custom"
+      "custom": "Custom",
+      "generatingAdaptivePrompts": "Generating adaptive prompts..."
     },
     "errors": {
       "pleaseEnterUrl": "Please enter a URL",
@@ -812,22 +813,25 @@
         "price": "€19",
         "priceDesc": "/month",
         "feature1": "50 credits",
-        "feature2": "24h support"
+        "feature2": "SmartComp© identifies your competitors",
+        "feature3": "SmartBrand© detects your brand and its variations",
+        "feature4": "Email support within 48h"
       },
       "watch": {
         "name": "Watch",
         "price": "€39",
         "priceDesc": "/month",
         "feature1": "150 credits",
-        "feature2": "Credits roll over month to month"
+        "feature2": "Everything included in \"Start\"",
+        "feature3": "Access to sources used by AI engines"
       },
       "pro": {
         "name": "Pro",
         "price": "€59",
         "priceDesc": "/month",
         "feature1": "250 credits",
-        "feature2": "24h support",
-        "feature3": "Credits roll over month to month"
+        "feature2": "Everything included in \"Watch\"",
+        "feature3": "7/7 chat support"
       },
       "enterprise": {
         "name": "Enterprise",

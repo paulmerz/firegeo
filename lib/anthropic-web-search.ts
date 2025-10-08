@@ -71,11 +71,14 @@ After searching, analyze your response and determine:
     const duration = Date.now() - startTime;
 
     // Update API call with duration and estimated tokens
+    const firstTextBlock = message.content.find(block => block.type === 'text');
+    const outputTextLength = firstTextBlock?.type === 'text' ? firstTextBlock.text.length : 0;
+    
     apiUsageTracker.updateCall(callId, {
       duration,
       inputTokens: Math.ceil(fullPrompt.length / 4), // Rough estimation
-      outputTokens: Math.ceil((message.content[0]?.text?.length || 0) / 4),
-      cost: estimateCost('anthropic', 'claude-3-5-sonnet-latest', Math.ceil(fullPrompt.length / 4), Math.ceil((message.content[0]?.text?.length || 0) / 4))
+      outputTokens: Math.ceil(outputTextLength / 4),
+      cost: estimateCost('anthropic', 'claude-3-5-sonnet-latest', Math.ceil(fullPrompt.length / 4), Math.ceil(outputTextLength / 4))
     });
 
     // Extract the response text and citations

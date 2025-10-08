@@ -88,7 +88,6 @@ export default function PricingTable({
                     await attach({
                       productId: product.id,
                       dialog: AttachDialog,
-                      returnUrl: window.location.origin + '/dashboard',
                       successUrl: window.location.origin + '/dashboard',
                       cancelUrl: window.location.origin + '/pricing',
                     });

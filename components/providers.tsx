@@ -5,6 +5,14 @@ import { QueryProvider } from '@/lib/providers/query-provider';
 import { AutumnCustomerProvider } from '@/hooks/useAutumnCustomer';
 import { useSession } from '@/lib/auth-client';
 
+// Logger compatible avec le navigateur pour Autumn
+const clientLogger = {
+  info: (...args: unknown[]) => console.log('[Autumn]', ...args),
+  debug: (...args: unknown[]) => console.debug('[Autumn]', ...args),
+  warn: (...args: unknown[]) => console.warn('[Autumn]', ...args),
+  error: (...args: unknown[]) => console.error('[Autumn]', ...args),
+};
+
 function AuthAwareAutumnProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
   
@@ -16,6 +24,7 @@ function AuthAwareAutumnProvider({ children }: { children: React.ReactNode }) {
       allowAnonymous={true}
       skipInitialFetch={!session}
       includeCredentials={true}
+      logger={clientLogger}
     >
       <AutumnCustomerProvider>
         {children}

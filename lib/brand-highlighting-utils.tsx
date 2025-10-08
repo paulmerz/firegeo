@@ -59,7 +59,8 @@ export function createHighlightedHtml(
     if (!result.mentioned || result.matches.length === 0) return;
 
     // Get unique variations for this brand (use the actual matched texts)
-    const variations = [...new Set(result.matches.map((m) => m.text))];
+    // Sort by length (longest first) to prioritize complete brand names like "Audemars Piguet" over "Piguet"
+    const variations = [...new Set(result.matches.map((m) => m.text))].sort((a, b) => b.length - a.length);
     const className = getBrandHighlightClass(brandName, config);
 
     variations.forEach((variation) => {

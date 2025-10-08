@@ -1,7 +1,8 @@
 'use client';
 
 import { useCustomer } from '@/hooks/useAutumnCustomer';
-import { usePricingTable, type Product, type ProductItem } from 'autumn-js/react';
+import { usePricingTable } from 'autumn-js/react';
+import { Product } from 'autumn-js';
 import { useSession } from '@/lib/auth-client';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -10,11 +11,13 @@ import { Lock, CheckCircle, Loader2, User, Mail, Phone, Edit2, Save, X } from 'l
 import { Button } from '@/components/ui/button';
 import ProductChangeDialog from '@/components/autumn/product-change-dialog';
 import { useProfile, useUpdateProfile, useSettings, useUpdateSettings } from '@/hooks/useProfile';
-import type { Session } from 'better-auth';
+
+// Infer the session type from useSession
+type SessionData = NonNullable<ReturnType<typeof useSession>['data']>;
 
 // Separate component that uses Autumn hooks
-function DashboardContent({ session }: { session: Session }) {
-  const { customer, attach } = useCustomer();
+function DashboardContent({ session }: { session: SessionData }) {
+  const { customer, attach, refetch } = useCustomer();
   const { products } = usePricingTable();
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const t = useTranslations();
@@ -83,11 +86,12 @@ function DashboardContent({ session }: { session: Session }) {
         productId,
         dialog: ProductChangeDialog,
         checkoutSessionParams: {
-          return_url: window.location.origin + '/dashboard',
           success_url: window.location.origin + '/dashboard',
           cancel_url: window.location.origin + '/dashboard',
         },
       });
+      // Refresh customer data after product change
+      await refetch();
     } finally {
       setLoadingProductId(null);
     }
@@ -213,104 +217,148 @@ function DashboardContent({ session }: { session: Session }) {
               <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {(() => {
-                const findProductDetails = (id?: string) => (products || []).find((p: Product) => p.id === id);
-                const parseCreditsFromDisplay = (p: Product): number => {
-                  const items = p?.items || [];
-                  for (const it of items) {
-                    const text: string | undefined = it?.display?.primary_text;
-                    if (!text) continue;
-                    const match = text.match(/([0-9][0-9\s,\.]*)\s*credits?/i);
-                    if (match && match[1]) {
-                      const normalized = match[1].replace(/[\s,]/g, '');
-                      const num = Number(normalized);
-                      if (!Number.isNaN(num)) return num;
-                    }
-                  }
-                  return 0;
-                };
-                const getIncludedCredits = (p: Product | undefined) => {
-                  if (!p) return 0;
-                  const unitItem = p?.items?.find((it: ProductItem) => it.type === 'unit' && it.unit?.quantity !== undefined);
-                  if (unitItem?.unit?.quantity !== undefined && unitItem.unit.quantity !== null) {
-                    return unitItem.unit.quantity as number;
-                  }
-                  return parseCreditsFromDisplay(p);
-                };
-                const activeProductDetails = findProductDetails(activeProduct?.id);
-                const activeCredits = activeProductDetails ? getIncludedCredits(activeProductDetails) : 0;
+                // Données de pricing depuis les traductions (identiques à la homepage)
+                const pricingData = [
+                  {
+                    id: 'start',
+                    name: t('pricing.voxum.start.name'),
+                    price: t('pricing.voxum.start.price'),
+                    priceDesc: t('pricing.voxum.start.priceDesc'),
+                    features: [
+                      t('pricing.voxum.start.feature1'),
+                      t('pricing.voxum.start.feature2'),
+                      t('pricing.voxum.start.feature3'),
+                      t('pricing.voxum.start.feature4'),
+                    ],
+                  },
+                  {
+                    id: 'watch',
+                    name: t('pricing.voxum.watch.name'),
+                    price: t('pricing.voxum.watch.price'),
+                    priceDesc: t('pricing.voxum.watch.priceDesc'),
+                    features: [
+                      t('pricing.voxum.watch.feature1'),
+                      t('pricing.voxum.watch.feature2'),
+                      t('pricing.voxum.watch.feature3'),
+                    ],
+                    recommended: true,
+                  },
+                  {
+                    id: 'pro',
+                    name: t('pricing.voxum.pro.name'),
+                    price: t('pricing.voxum.pro.price'),
+                    priceDesc: t('pricing.voxum.pro.priceDesc'),
+                    features: [
+                      t('pricing.voxum.pro.feature1'),
+                      t('pricing.voxum.pro.feature2'),
+                      t('pricing.voxum.pro.feature3'),
+                    ],
+                  },
+                  {
+                    id: 'enterprise',
+                    name: t('pricing.voxum.enterprise.name'),
+                    price: t('pricing.voxum.enterprise.price'),
+                    features: [
+                      t('pricing.voxum.enterprise.feature1'),
+                      t('pricing.voxum.enterprise.feature2'),
+                      t('pricing.voxum.enterprise.feature3'),
+                    ],
+                  },
+                ];
 
-                return products
-                  .filter((product) => product.id !== 'free' && product.id !== '50')
-                  .map((product) => {
-                const isCurrentPlan = activeProduct?.id === product.id;
-                const isScheduledPlan = scheduledProduct?.id === product.id;
-                const features = product.properties?.is_free ? product.items : product.items?.slice(1) || [];
+                const isCurrentPlan = (planId: string) => activeProduct?.id === planId;
+                const isScheduledPlan = (planId: string) => scheduledProduct?.id === planId;
+                const autumnProduct = (planId: string) => products?.find((p: Product) => p.id === planId);
 
-                  const productCredits = getIncludedCredits(product);
-                  const isLowerTierThanActive = !!activeProduct && productCredits < activeCredits;
-                  const isFreePlan = product.properties?.is_free || product.id === 'free';
+                return pricingData.map((plan) => {
+                  const isCurrent = isCurrentPlan(plan.id);
+                  const isScheduled = isScheduledPlan(plan.id);
+                  const hasAutumnProduct = !!autumnProduct(plan.id);
 
                   return (
-                  <div key={product.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-lg">
-                          {product.display?.name || product.name}
-                          {isCurrentPlan && (
-                            <span className="ml-2 text-sm text-green-600">{t('dashboard.currentPlanLabel')}</span>
-                          )}
-                          {isScheduledPlan && (
-                            <span className="ml-2 text-sm text-orange-600">{t('dashboard.scheduledLabel')}</span>
-                          )}
-                        </h3>
-                        {product.display?.description && (
-                          <p className="text-sm text-gray-600 mt-1">{product.display.description}</p>
+                    <div 
+                      key={plan.id} 
+                      className={`bg-white rounded-[20px] shadow-sm border p-6 flex flex-col ${
+                        plan.recommended ? 'ring-2 ring-orange-500 relative' : ''
+                      }`}
+                    >
+                      {plan.recommended && (
+                        <div className="absolute top-3 right-3 bg-black text-white text-xs font-medium px-2 py-1 rounded-full">
+                          {t('home.pricing.mostPopular')}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-baseline justify-between mb-2">
+                        <h3 className="font-semibold text-lg">{plan.name}</h3>
+                        {isCurrent && (
+                          <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                            {t('dashboard.currentPlanLabel')}
+                          </span>
                         )}
-                        <ul className="mt-3 space-y-1">
-                          {features.slice(0, 3).map((item, index) => (
-                            <li key={index} className="flex items-start text-sm">
-                              {isCurrentPlan ? (
-                                <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                              ) : (
-                                <Lock className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
-                              )}
-                              <span className={!isCurrentPlan ? 'text-gray-500' : ''}>
-                                {item.display?.primary_text}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
+                        {isScheduled && (
+                          <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full">
+                            {t('dashboard.scheduledLabel')}
+                          </span>
+                        )}
                       </div>
-                      {!isCurrentPlan && !isScheduledPlan && !isFreePlan && (
+                      
+                      <div className="mb-4 pb-4 border-b">
+                        <div className="flex items-baseline">
+                          <span className="text-2xl font-bold">{plan.price}</span>
+                          {plan.priceDesc && (
+                            <span className="text-gray-600 ml-1 text-sm">
+                              {plan.priceDesc}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <ul className="space-y-2 mb-6 flex-grow">
+                        {plan.features.map((feature, index) => (
+                          <li key={index} className="flex items-start text-sm">
+                            {isCurrent ? (
+                              <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                            ) : (
+                              <Lock className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
+                            )}
+                            <span className={!isCurrent ? 'text-gray-600' : 'text-gray-900'}>
+                              {feature}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      {!isCurrent && !isScheduled && hasAutumnProduct && (
                         <Button 
-                          onClick={() => handleUpgrade(product.id)} 
+                          onClick={() => handleUpgrade(plan.id)} 
                           size="sm"
-                          variant="outline"
+                          className={plan.recommended ? 'btn-firecrawl-orange w-full' : 'w-full'}
+                          variant={plan.recommended ? 'default' : 'outline'}
                           disabled={loadingProductId !== null}
                         >
-                          {loadingProductId === product.id ? (
+                          {loadingProductId === plan.id ? (
                             <>
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                               {t('dashboard.loading')}
                             </>
                           ) : (
-                            isLowerTierThanActive ? t('dashboard.downgrade') : t('dashboard.upgrade')
+                            t('pricing.getStarted')
                           )}
                         </Button>
                       )}
-                      {isScheduledPlan && (() => {
+
+                      {isScheduled && (() => {
                         const scheduledStart = scheduledProduct?.started_at || scheduledProduct?.current_period_end;
                         if (!scheduledStart) return null;
                         return (
-                          <span className="text-sm text-gray-500">
+                          <div className="text-xs text-gray-500 text-center pt-2 border-t">
                             {t('dashboard.starts')} {new Date(scheduledStart).toLocaleDateString()}
-                          </span>
+                          </div>
                         );
                       })()}
                     </div>
-                  </div>
                   );
                 });
               })()}

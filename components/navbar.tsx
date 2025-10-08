@@ -3,7 +3,6 @@
 import Image from 'next/image';
 import { useSession, signOut } from '@/lib/auth-client';
 import { useEffect, useState } from 'react';
-import { useCustomer } from '@/hooks/useAutumnCustomer';
 import { useCredits } from '@/hooks/useMessages';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
@@ -11,14 +10,13 @@ import { Link, useRouter } from '@/i18n/routing';
 // Separate component that only renders when user is logged in
 function UserCredits() {
   const { data: session } = useSession();
+  const { data: creditsData, isLoading } = useCredits();
+  const t = useTranslations('common');
   
   // Ne pas afficher si l'utilisateur n'est pas connecté
   if (!session) {
     return null;
   }
-
-  const { data: creditsData, isLoading } = useCredits();
-  const t = useTranslations('common');
 
   // Afficher un indicateur de chargement ou masquer si pas de données
   if (isLoading || !creditsData) {

@@ -32,24 +32,9 @@ function extractBrandName(brandString: string): string {
 }
 
 /**
- * Create simple variations for basic brand names (case, accents)
- * For complex multi-word brands, use AI-powered detection
+ * Resolve brand variations using pre-computed data or generate them dynamically
+ * For complex multi-word brands, uses AI-powered detection
  */
-// Removed unused function
-
-async function resolveBrandVariations(
-  brandName: string,
-  locale?: string,
-  precomputed?: Record<string, BrandVariation>
-): Promise<BrandVariation> {
-  if (precomputed && precomputed[brandName]) {
-    return precomputed[brandName];
-  }
-  
-  const list = Array.from(variations).filter(v => v.length > 1);
-  return filterBrandVariations(coreBrand, list);
-}
-
 async function resolveBrandVariations(
   brandName: string,
   locale?: string,
@@ -151,7 +136,7 @@ export async function analyzePromptWithProviderEnhanced(
         competitors,
         locale,
         undefined, // model (use default gpt-4o-mini)
-        brandVariations as any // Pass precomputed variations to avoid regeneration
+        brandVariations as Record<string, BrandVariation> | undefined // Pass precomputed variations to avoid regeneration
       );
       
       // Enhanced brand detection fallback for web search results
@@ -159,7 +144,6 @@ export async function analyzePromptWithProviderEnhanced(
       const rawResponseText = openaiResult.response;
       const cleanedResponseText = cleanProviderResponse(rawResponseText, { providerName: provider });
       const textLower = cleanedResponseText.toLowerCase();
-      const brandNameLower = brandName.toLowerCase();
       
       // Enhanced brand detection with pre-generated variations or fallback to generation
       const brandVariationData = await resolveBrandVariations(brandName, locale, brandVariations);
@@ -193,6 +177,11 @@ export async function analyzePromptWithProviderEnhanced(
     } else {
       // Log basique (sans afficher d'instructions enrichies)
       console.log(`[${provider}] Analyzing with raw prompt${useWebSearch ? ' (web search requested but not supported by SDK ai for this provider)' : ''}`);
+      
+      // Ensure model is a LanguageModelV1 at this point
+      if (typeof model === 'string' || !model) {
+        throw new Error(`Invalid model type for ${provider}`);
+      }
       
       // Get the model ID from provider config instead of trying to extract from model object
       const providerConfig = PROVIDER_CONFIGS[normalizedProvider];
@@ -281,7 +270,7 @@ Be very thorough in detecting company names - they might appear in different con
       const analysisStartTime = Date.now();
       console.log('SELECTED MODEL (analyzePromptWithProviderEnhanced.generateObject structured):', typeof analysisModel === 'string' ? analysisModel : analysisModel);
       const result = await generateObject({
-        model: analysisModel,
+        model: analysisModel as LanguageModelV1,
         system: 'You are an expert at analyzing text and extracting structured information about companies and rankings.',
         prompt: analysisPrompt,
         schema: RankingSchema,

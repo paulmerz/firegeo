@@ -252,7 +252,7 @@ export function AnalysisProgressSection({
                 {loadingPrompts ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin text-orange-500 mr-2" />
-                    <span className="text-gray-600">Génération de prompts adaptatifs...</span>
+                    <span className="text-gray-600">{t('generatingAdaptivePrompts')}</span>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

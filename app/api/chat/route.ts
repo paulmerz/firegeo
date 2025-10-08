@@ -58,9 +58,9 @@ export async function POST(request: NextRequest) {
           access.data?.balance || 0 
         );
       }
-    } catch (err) {
-      if (err instanceof InsufficientCreditsError) {
-        throw err; // Re-throw our custom errors
+    } catch (error) {
+      if (error instanceof InsufficientCreditsError) {
+        throw error; // Re-throw our custom errors
       }
       throw new ExternalServiceError('Unable to verify credits. Please try again', 'autumn');
     }
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         feature_id: FEATURE_ID_CREDITS,
         value: CREDITS_PER_MESSAGE,
       });
-    } catch (err) {
+    } catch {
       throw new ExternalServiceError('Unable to process credit usage. Please try again', 'autumn');
     }
 
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
         feature_id: FEATURE_ID_CREDITS,
       });
       remainingCredits = usage.data?.balance || 0;
-    } catch (err) {
+    } catch {
       // Silently fail if we can't get remaining credits
     }
 

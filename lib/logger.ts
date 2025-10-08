@@ -66,7 +66,7 @@ function sanitizeForConsole(input: unknown): string {
   return sanitized;
 }
 
-function sanitizeArgs(args: any[]): any[] {
+function sanitizeArgs(args: unknown[]): unknown[] {
   return args.map((arg) => (typeof arg === 'string' ? sanitizeForConsole(arg) : arg));
 }
 

@@ -3,7 +3,6 @@ import { AIResponse, type BrandVariation } from './types';
 import { ensureBrandVariationsForBrand } from './brand-detection-service';
 import { apiUsageTracker, estimateCost } from './api-usage-tracker';
 import { getLanguageName } from './locale-utils';
-import { logger } from './logger';
 
 const ensureBrandVariations = ensureBrandVariationsForBrand;
 
