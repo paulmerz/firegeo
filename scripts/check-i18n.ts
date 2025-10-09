@@ -23,46 +23,67 @@ function flattenKeys(obj: JsonRecord, parentKey = ''): Record<string, unknown> {
 }
 
 function main(): void {
-  const en = readJsonFile('messages/en.json');
-  const fr = readJsonFile('messages/fr.json');
-
-  const flatEn = flattenKeys(en);
-  const flatFr = flattenKeys(fr);
-
-  const enKeys = new Set(Object.keys(flatEn));
-  const frKeys = new Set(Object.keys(flatFr));
-
-  const missingInFr: string[] = [];
-  const missingInEn: string[] = [];
-
-  for (const k of enKeys) {
-    if (!frKeys.has(k)) missingInFr.push(k);
+  // Liste des locales à vérifier (en est la référence)
+  const locales = ['en', 'fr', 'de'];
+  const referenceLocale = 'en';
+  
+  // Charger tous les fichiers de traduction
+  const translations: Record<string, JsonRecord> = {};
+  const flatTranslations: Record<string, Record<string, unknown>> = {};
+  
+  for (const locale of locales) {
+    try {
+      translations[locale] = readJsonFile(`messages/${locale}.json`);
+      flatTranslations[locale] = flattenKeys(translations[locale]);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la lecture de ${locale}.json:`, error);
+      process.exit(1);
+    }
   }
-  for (const k of frKeys) {
-    if (!enKeys.has(k)) missingInEn.push(k);
-  }
 
-  const emptyFrValues: string[] = Object.entries(flatFr)
-    .filter(([_, v]) => v === '' || v === null || v === undefined)
-    .map(([k]) => k);
-
+  const referenceKeys = new Set(Object.keys(flatTranslations[referenceLocale]));
   let hasError = false;
-  if (missingInFr.length > 0) {
-    hasError = true;
-    console.error(`Clés manquantes dans fr.json (vs en.json):\n- ${missingInFr.join('\n- ')}`);
-  }
-  if (missingInEn.length > 0) {
-    hasError = true;
-    console.error(`Clés supplémentaires dans fr.json absentes de en.json:\n- ${missingInEn.join('\n- ')}`);
-  }
-  if (emptyFrValues.length > 0) {
-    console.warn(`Clés avec valeurs vides dans fr.json:\n- ${emptyFrValues.join('\n- ')}`);
+
+  // Vérifier chaque locale par rapport à la référence
+  for (const locale of locales) {
+    if (locale === referenceLocale) continue;
+
+    const localeKeys = new Set(Object.keys(flatTranslations[locale]));
+    const missingKeys: string[] = [];
+    const extraKeys: string[] = [];
+    const emptyValues: string[] = [];
+
+    for (const k of referenceKeys) {
+      if (!localeKeys.has(k)) missingKeys.push(k);
+    }
+    for (const k of localeKeys) {
+      if (!referenceKeys.has(k)) extraKeys.push(k);
+    }
+
+    emptyValues.push(
+      ...Object.entries(flatTranslations[locale])
+        .filter(([_, v]) => v === '' || v === null || v === undefined)
+        .map(([k]) => k)
+    );
+
+    if (missingKeys.length > 0) {
+      hasError = true;
+      console.error(`\n❌ Clés manquantes dans ${locale}.json (vs ${referenceLocale}.json):\n- ${missingKeys.join('\n- ')}`);
+    }
+    if (extraKeys.length > 0) {
+      hasError = true;
+      console.error(`\n❌ Clés supplémentaires dans ${locale}.json absentes de ${referenceLocale}.json:\n- ${extraKeys.join('\n- ')}`);
+    }
+    if (emptyValues.length > 0) {
+      console.warn(`\n⚠️  Clés avec valeurs vides dans ${locale}.json:\n- ${emptyValues.join('\n- ')}`);
+    }
   }
 
   if (hasError) {
+    console.error('\n❌ Vérification i18n échouée.');
     process.exit(1);
   } else {
-    console.log('Vérification i18n OK: les clés correspondent entre en.json et fr.json.');
+    console.log(`\n✅ Vérification i18n OK: les clés correspondent entre ${locales.join(', ')}.`);
   }
 }
 

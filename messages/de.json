@@ -1,0 +1,1086 @@
+{
+  "common": {
+    "home": "Startseite",
+    "dashboard": "Dashboard",
+    "chat": "Chat",
+    "brandMonitor": "Markenüberwachung",
+    "pricing": "Preise",
+    "login": "Anmelden",
+    "register": "Registrieren",
+    "logout": "Abmelden",
+    "profile": "Profil",
+    "settings": "Einstellungen",
+    "loading": "Wird geladen...",
+    "error": "Fehler",
+    "success": "Erfolgreich",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "confirm": "Bestätigen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "previous": "Zurück",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "reset": "Zurücksetzen",
+    "submit": "Senden",
+    "credits": "Credits",
+    "deleting": "Wird gelöscht..."
+  },
+  "navbar": {
+    "title": "SaaS Starter",
+    "menuToggle": "Menü umschalten",
+    "userMenu": "Benutzermenü"
+  },
+  "footer": {
+    "description": "Überwachung der Sichtbarkeit Ihrer Marke in KI-Modellen",
+    "product": "Produkt",
+    "plans": "Pläne",
+    "documentation": "Dokumentation",
+    "apiReference": "API-Referenz",
+    "demo": "Demo",
+    "company": "Unternehmen",
+    "about": "Über uns",
+    "contact": "Kontakt",
+    "allRightsReserved": "Alle Rechte vorbehalten",
+    "privacyPolicy": "Datenschutzerklärung",
+    "termsOfService": "Allgemeine Geschäftsbedingungen"
+  },
+  "docs": {},
+  "privacy": {
+    "title": "Datenschutzerklärung – VOXUM",
+    "meta": {
+      "version": "Version: — Gültig ab diesem Datum"
+    },
+    "nav": {
+      "aria": "Inhaltsverzeichnis der Datenschutzerklärung",
+      "overview": "Übersicht",
+      "donnees": "Welche Daten wir erheben",
+      "bases": "Rechtsgrundlagen & Modalitäten",
+      "finalites": "Zwecke",
+      "partage": "Weitergabe & Auftragsverarbeiter",
+      "transferts": "Internationale Datenübermittlung",
+      "durees": "Aufbewahrungsfristen",
+      "cookies": "Cookies & Analytics",
+      "droits": "Ihre Rechte",
+      "securite": "Sicherheit",
+      "roles": "Rollen & Pflichten des Kunden",
+      "enfants": "Kinder",
+      "contact": "Kontakt",
+      "annexe": "Anhang (Auftragsverarbeiter)"
+    },
+    "intro": {
+      "p1": "Diese Erklärung (die „Richtlinie“) beschreibt die Verarbeitung personenbezogener Daten durch die MAJ Holding Sàrl („MAJ“, „wir“, „uns“, „unser“) im Zusammenhang mit dem Dienst VOXUM, der unter der URL https://voxum.maj.digital (die „Website/der Dienst“) zugänglich ist.",
+      "p2": "Verantwortlicher für die Datenverarbeitung: MAJ Holding Sàrl, Ch. Bois-Gentil 7, 1203 Genf, Schweiz. IDE/CHE: CHE-391.786.123. Kontakt: info@maj.digital",
+      "p3": "Durch den Zugriff auf die Website/den Dienst erklären Sie („Nutzer“, „Sie“) sich damit einverstanden, dass Ihre personenbezogenen Daten gemäss dieser Richtlinie verarbeitet werden. Wir können die Richtlinie ändern; bei wesentlichen Änderungen werden wir Sie auf angemessene Weise informieren. Wenn Sie den Änderungen nicht zustimmen, stellen Sie die Nutzung der Website/des Dienstes ein. Diese Richtlinie ergänzt unsere AGB."
+    },
+    "h": {
+      "overview": "1) Unsere Tätigkeit und Ihr Datenschutz",
+      "data": "2) Welche Daten erheben wir?",
+      "bases": "3) Rechtsgrundlagen & Verarbeitungsmodalitäten",
+      "purposes": "4) Zwecke",
+      "sharing": "5) Weitergabe & Auftragsverarbeiter",
+      "transfers": "6) Internationale Datenübermittlung",
+      "retention": "7) Aufbewahrungsfristen (Grundsätze)",
+      "cookies": "8) Cookies & Analytics",
+      "rights": "9) Ihre Rechte",
+      "security": "10) Sicherheit",
+      "roles": "11) Rollen: Verantwortlicher/Auftragsverarbeiter & Pflichten des Kunden",
+      "children": "12) Kinder",
+      "contact": "13) Kontakt",
+      "appendix": "14) Anhang – Wichtige Auftragsverarbeiter"
+    },
+    "overview": {
+      "p1": "VOXUM führt Markenpositionierungsanalysen durch, indem es KI-Anbieter und Suchwerkzeuge (OpenAI, Anthropic/Claude, Perplexity, Firecrawl, Google) mit vordefinierten Prompts abfragt. Wir vermitteln Anfragen an Dritte und fassen deren Antworten zusammen, um Berichte zu erstellen.",
+      "li1": "Datenminimierung: Es werden nur die zur Ausführung des Dienstes notwendigen Daten erhoben.",
+      "li2": "Wir verwenden Ihre Daten nicht, um unsere Modelle zu trainieren. Sofern bei den Anbietern „Zero-Retention“-Einstellungen existieren, aktivieren wir diese, wenn verfügbar.",
+      "li3": "Die Drittanbieter sind für ihre eigenen Datenverarbeitungen und Richtlinien verantwortlich.",
+      "p2": "Wir verarbeiten Ihre Daten gemäss dem revDSG (Schweiz) und gegebenenfalls der DSGVO."
+    },
+    "data": {
+      "h31": "2.1 Daten, die Sie uns zur Verfügung stellen",
+      "li1": "Konto & Identifikation: Name, Vorname, Organisation, Position, E-Mail, Telefon.",
+      "li2": "Rechnungsstellung & Verträge: Rechnungsadresse, Land, MwSt./UID, Zahlungsmittel (über Dienstleister), Historien.",
+      "li3": "Operative Inhalte: Prompts, Schlüsselwörter, Marken-/Produktlisten, Kontexte, hochgeladene Dateien.",
+      "li4": "Support: Nachrichten, Tickets, Demo-Aufzeichnungen (mit Einwilligung), Präferenzen.",
+      "h32": "2.2 Automatisch erhobene Daten",
+      "li5": "Technische Daten & Logs: IP, Zeitstempel, URL, Sitzungs-IDs, User-Agent, Performance, Sicherheit.",
+      "li6": "Cookies & Analytics: siehe §8.",
+      "h33": "2.3 Daten aus öffentlichen Quellen und von Anbietern",
+      "li7": "Öffentliche Inhalte über Firecrawl/Google (Webseiten, Suchergebnisse).",
+      "li8": "Ausgaben von KI-Modellen, die aus Ihren Prompts generiert wurden.",
+      "note": "Verantwortung des Kunden: Wenn Sie uns Daten Dritter zur Verfügung stellen, garantieren Sie, dass Sie über eine rechtliche Grundlage und angemessene Informationen verfügen."
+    },
+    "bases": {
+      "li1": "Vertragserfüllung: Konto, Analysen, Support.",
+      "li2": "Berechtigte Interessen: Sicherheit, Betrugs-/Missbrauchsprävention, Verbesserung des Dienstes, aggregierte Analysen, Rechtsverteidigung, interne Verwaltung.",
+      "li3": "Gesetzliche Verpflichtungen: Buchhaltung, Steuern, Aufbewahrung.",
+      "li4": "Einwilligung: E-Mail-Marketing, nicht wesentliche Cookies, Demo-Aufzeichnungen.",
+      "p1": "Technische & organisatorische Massnahmen: Verschlüsselung, Zugriffskontrolle, Protokollierung, Tests, Schlüsselverwaltung. Anonymisierung/Pseudonymisierung möglich (Widerspruch je nach Rechtsgrundlage)."
+    },
+    "purposes": {
+      "li1": "Bereitstellung des Dienstes: Ausführen von Anfragen, Orchestrierung von Aufrufen an Anbieter, Bereitstellung von Berichten, Wartung, Unterstützung.",
+      "li2": "Rechnungsstellung & Kundenmanagement: Verträge, Zahlungen (über Dienstleister), Inkasso, operative Kommunikation.",
+      "li3": "Sicherheit: Missbrauchserkennung, Schutz der Konten, Kontinuität.",
+      "li4": "Produktverbesserung: Nutzungsmessung, Tests, Qualität der Prompts.",
+      "li5": "B2B-Marketing (mit Einwilligung): Newsletter, Veranstaltungen, Inhalte.",
+      "li6": "Compliance: gesetzliche Verpflichtungen, Behördenanfragen, Verteidigung von Rechten."
+    },
+    "sharing": {
+      "p1": "Wir verkaufen Ihre Daten nicht. Weitergabe nur an:",
+      "li1": "Auftragsverarbeiter: Vercel, Neon (Postgres), Stripe (Zahlungen), UseAutumn (Abonnements), OpenAI, Anthropic/Claude, Perplexity, Firecrawl, Google (APIs/Analytics), Hoster/Monitoring/E-Mail/Anti-Missbrauch.",
+      "li2": "Je nach Fall eigenständige Verantwortliche: einige Anbieter für ihre eigenen Zwecke (Sicherheit, Compliance).",
+      "li3": "Behörden & Berater: gesetzliche Verpflichtungen, Schutz von Rechten, Finanzierungs-/Veräusserungsoperationen (unter angemessenen NDAs).",
+      "p2": "Transparenz: Liste der Auftragsverarbeiter auf Anfrage verfügbar; vorherige Information bei wesentlichen Änderungen, falls erforderlich."
+    },
+    "transfers": {
+      "p1": "Das Hosting erfolgt hauptsächlich in der Schweiz/EU (insbesondere über Neon). Übermittlungen ausserhalb der Schweiz/EU/des EWR (z. B. in die USA) können vorkommen, wenn dies für die Ausführung des Dienstes erforderlich ist. Garantien: SCC (EU 2021/914), angepasst an das schweizerische Recht, und angemessene zusätzliche Massnahmen. Indem Sie uns Ihre Daten mitteilen, stimmen Sie diesen Übermittlungen im gesetzlich zulässigen Rahmen zu."
+    },
+    "retention": {
+      "li1": "Konto & Identität: Vertragsdauer + 24 Monate.",
+      "li2": "Rechnungsstellung & Buchhaltung: 10 Jahre.",
+      "li3": "Prompts & Ausgaben: standardmässig 12 Monate (konfigurierbar/verkürzbar auf Anfrage).",
+      "li4": "Technische Logs: 12 Monate (bis zu 24 Monate bei Missbrauch).",
+      "li5": "Marketing: bis zum Widerruf der Einwilligung oder 24 Monate Inaktivität.",
+      "p1": "Anonymisierte Daten können für statistische Zwecke darüber hinaus aufbewahrt werden."
+    },
+    "cookies": {
+      "li1": "Notwendige: Betrieb, Sicherheit, Sitzung.",
+      "li2": "Präferenzen: Benutzereinstellungen.",
+      "li3": "Reichweitenmessung: Google Analytics (aggregierte Statistiken). Ablehnung über Consent-Banner und Browser möglich.",
+      "p1": "Die Ablehnung einiger Cookies kann die Funktionalität einschränken. Siehe ggf. separate Cookie-Richtlinie."
+    },
+    "rights": {
+      "li1": "Auskunft, Berichtigung, Löschung.",
+      "li2": "Datenübertragbarkeit (falls zutreffend), Einschränkung, Widerspruch (berechtigtes Interesse/Direktmarketing).",
+      "li3": "Jederzeitiger Widerruf der Einwilligung (ohne Rückwirkung).",
+      "p1": "Üben Sie Ihre Rechte aus: info@maj.digital. Beschwerderecht: EDÖB (Schweiz) oder Ihre lokale EU-Behörde."
+    },
+    "security": {
+      "p1": "Angemessene Massnahmen: Verschlüsselung, Segmentierung, Prinzip des geringsten Privilegs, Schwachstellenmanagement, Backups, Protokollierung, Überprüfung der Auftragsverarbeiter. Keine Sicherheit ist absolut; wenden Sie bewährte Praktiken an (starke Passwörter, 2FA, Vorsicht bei Exporten)."
+    },
+    "roles": {
+      "li1": "MAJ ist Verantwortlicher für Kontodaten, Rechnungsstellung, Nutzung der Website und Orchestrierung von Anfragen.",
+      "li2": "MAJ ist Auftragsverarbeiter für personenbezogene Daten Dritter, die zur Erstellung von Analysen anvertraut werden (DPA auf Anfrage erhältlich).",
+      "li3": "Sie bleiben für die Rechtmässigkeit der eingegebenen Daten und die Information der betroffenen Personen verantwortlich, wo dies erforderlich ist.",
+      "p1": "KI-Ausgaben können Fehler enthalten; wir beschränken die Einbeziehung nicht notwendiger personenbezogener Daten und kommen Löschungsanfragen nach, wenn dies möglich und rechtmässig ist."
+    },
+    "children": {
+      "p1": "B2B-Dienst; nicht für Personen unter 16 Jahren bestimmt. Bei unbeabsichtigter Erhebung kontaktieren Sie uns bitte zur Löschung."
+    },
+    "contact": {
+      "p1": "<strong>MAJ Holding Sàrl – VOXUM</strong>\nE-Mail: <strong>privacy@maj.digital</strong>\nAdresse: Ch. Bois-Gentil 7, 1203 Genf, Schweiz"
+    },
+    "appendix": {
+      "th1": "Anbieter",
+      "th2": "Rolle",
+      "th3": "Zweck",
+      "th4": "Standort(e)",
+      "th5": "Datenkategorien",
+      "neon": {
+        "name": "Neon (neon.com)",
+        "role": "Auftragsverarbeiter",
+        "purpose": "Postgres-Datenbank",
+        "loc": "EU (je nach gewählter Region)",
+        "data": "Konto, Prompts, Ausgaben, Metadaten"
+      },
+      "openai": {
+        "name": "OpenAI",
+        "role": "Auftragsverarbeiter / je nach Fall eigenständiger Verantwortlicher",
+        "purpose": "KI-Generierung via API",
+        "loc": "US/EU je nach Region",
+        "data": "Prompts, minimaler Kontext, Ausgaben"
+      },
+      "anthropic": {
+        "name": "Anthropic (Claude)",
+        "role": "Auftragsverarbeiter / je nach Fall eigenständiger Verantwortlicher",
+        "purpose": "KI-Generierung via API",
+        "loc": "US/EU je nach Region",
+        "data": "Prompts, minimaler Kontext, Ausgaben"
+      },
+      "perplexity": {
+        "name": "Perplexity",
+        "role": "Auftragsverarbeiter / je nach Fall eigenständiger Verantwortlicher",
+        "purpose": "Suche/KI via API",
+        "loc": "US/EU je nach Region",
+        "data": "Anfragen, minimaler Kontext, Ausgaben"
+      },
+      "firecrawl": {
+        "name": "Firecrawl",
+        "role": "Auftragsverarbeiter",
+        "purpose": "Abruf öffentlicher Inhalte",
+        "loc": "Variabel",
+        "data": "URLs, öffentliche Inhalte, Metadaten"
+      },
+      "google": {
+        "name": "Google (APIs / Analytics)",
+        "role": "Auftragsverarbeiter / je nach Fall eigenständiger Verantwortlicher",
+        "purpose": "Suche, Infrastruktur, Analytics",
+        "loc": "Weltweit (inkl. US/EU)",
+        "data": "Online-Kennungen, Nutzungsmetriken"
+      },
+      "stripe": {
+        "name": "Stripe",
+        "role": "Auftragsverarbeiter",
+        "purpose": "Zahlungen & Rechnungsstellung (Portal)",
+        "loc": "Weltweit (inkl. US/EU)",
+        "data": "Name, E-Mail, Rechnungsadresse, Kundenkennungen, Metadaten und Zahlungs-Tokens"
+      },
+      "autumn": {
+        "name": "UseAutumn",
+        "role": "Auftragsverarbeiter",
+        "purpose": "Abonnements & Kundenmanagement (UseAutumn)",
+        "loc": "EU/US je nach Region",
+        "data": "Konto-IDs, E-Mail, Abonnementstatus, Plan-Metadaten"
+      },
+      "vercel": {
+        "name": "Vercel",
+        "role": "Auftragsverarbeiter",
+        "purpose": "Hosting & Deployment",
+        "loc": "Weltweit (inkl. US/EU)",
+        "data": "Server-Logs, IP, Anfrage-Metadaten"
+      }
+    }
+  },
+  "terms": {
+    "title": "Allgemeine Geschäftsbedingungen – VOXUM",
+    "meta": {
+      "version": "Version: — Gültig ab diesem Datum"
+    },
+    "nav": {
+      "aria": "Inhaltsverzeichnis der AGB",
+      "general": "1) Allgemeines",
+      "personal": "2) Persönliche Nutzungsbedingungen",
+      "access": "3) Zugangsbedingungen, Internet",
+      "features": "4) Hauptfunktionalitäten und Dienste",
+      "ip": "5) Geistiges Eigentum",
+      "restrictions": "6) Nutzungsbeschränkungen",
+      "privacy": "7) Datenschutz",
+      "changes": "8) Änderungen & Aussetzung",
+      "warranty": "9) Gewährleistungsausschluss",
+      "liability": "10) Haftung",
+      "indemnification": "11) Schadloshaltung",
+      "misc": "12) Allgemeine Bestimmungen",
+      "law": "13) Anwendbares Recht und Gerichtsstand",
+      "contact": "14) Kontakt"
+    },
+    "content": {
+      "general": {
+        "p1": "Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für jegliche Nutzung der Website und der Dienste von VOXUM, die unter der URL https://voxum.maj.digital (der 'Dienst') zugänglich sind und von der MAJ Holding Sàrl (CHE-391.786.123), Ch. Bois-Gentil 7, 1203 Genf (\"wir\", \"unser\" oder \"VOXUM\") bereitgestellt werden.",
+        "p2": "Jede Nutzung des Dienstes durch einen Nutzer (\"Sie\" oder \"Nutzer\") gilt als Annahme dieser AGB. Wenn Sie den Dienst im Namen einer juristischen Person nutzen, bestätigen Sie, dass Sie befugt sind, diese zu binden, und akzeptieren diese AGB in deren Namen.",
+        "p3": "Wir können diese AGB jederzeit ändern; Sie werden auf angemessene Weise informiert. Jede nachfolgende Nutzung gilt als Annahme der geänderten AGB.",
+        "p4": "Bestimmte Dienste (Zahlung, API, Integrationen) können zusätzlich zu diesen AGB spezifischen Bedingungen unterliegen."
+      },
+      "personal": {
+        "p1": "Durch die Nutzung des Dienstes bestätigen Sie, dass Sie das 18. Lebensjahr vollendet haben und gegebenenfalls befugt sind, für die juristische Person zu handeln, in deren Namen Sie den Dienst nutzen."
+      },
+      "access": {
+        "p1": "Die für den Zugang zum Dienst erforderlichen Geräte und Telekommunikationskosten gehen zu Ihren Lasten.",
+        "p2": "Die Nutzung des Internets birgt Risiken (Abfangen, Verlust, Viren). Sie akzeptieren diese Risiken; wir lehnen im gesetzlich zulässigen Rahmen jede daraus resultierende Haftung ab."
+      },
+      "features": {
+        "p1": "VOXUM ermöglicht es professionellen Nutzern, die Sichtbarkeit ihrer Marke auf KI-Modellen und Suchmaschinen von Drittanbietern (OpenAI, Anthropic/Claude, Perplexity, Google usw.) zu analysieren und aggregierte Berichte zu erhalten.",
+        "p2": "Einige Dienste sind gemäss den angezeigten Plänen kostenpflichtig. Bestellungen und Zahlungen werden über unseren Zahlungsdienstleister abgewickelt; ergänzende Geschäftsbedingungen sind in den anwendbaren Dokumenten (z. B. Rechnungsstellung) enthalten.",
+        "p3": "Die Preise werden je nach Kontext in EUR/CHF angegeben; sie können sich ändern. Je nach Land können zusätzliche Steuern und Gebühren anfallen."
+      },
+      "ip": {
+        "p1": "Vorbehaltlich der Nutzerinhalte (Art. 5.3) und von Dritten bereitgestellter Elemente (Modelle, APIs) besitzen VOXUM und seine Lizenzgeber alle geistigen Eigentumsrechte am Dienst und dessen Inhalt.",
+        "p2": "Lizenz: Ihnen wird eine persönliche, widerrufliche, nicht-exklusive und nicht übertragbare Lizenz zur Nutzung des Dienstes gewährt, die strikt auf den Rahmen dieser AGB beschränkt ist.",
+        "p3": "Nutzerinhalte: Sie behalten Ihre Rechte an den von Ihnen übermittelten Inhalten. Sie gewähren uns eine weltweite, nicht-exklusive, kostenlose und übertragbare Lizenz zum Hosten, Verarbeiten, Anzeigen und Reproduzieren dieser Inhalte, um den Dienst zu betreiben. Wir können alle rechtswidrigen oder gegen die AGB verstossenden Inhalte entfernen."
+      },
+      "restrictions": {
+        "p1": "Insbesondere ist es verboten: (i) den Inhalt massenhaft zu extrahieren oder wiederzuverwenden (Scraping/Crawling), (ii) zu versuchen, auf den Quellcode zuzugreifen, (iii) den Dienst für rechtswidrige Aktivitäten zu nutzen, (iv) unsere Nutzungsbeschränkungen zu umgehen, (v) den Dienst zum Trainieren von Modellen oder zur Bewertung von Personen zu verwenden, ausser mit schriftlicher Zustimmung."
+      },
+      "privacy": {
+        "p1": "Unsere Datenschutzerklärung (\"Privacy\") ist integraler Bestandteil dieser AGB und beschreibt die Verarbeitung personenbezogener Daten: /privacy."
+      },
+      "changes": {
+        "p1": "Wir können den Dienst ganz oder teilweise, mit oder ohne Vorankündigung und im gesetzlich zulässigen Rahmen ohne Haftung ändern, aussetzen oder einstellen."
+      },
+      "warranty": {
+        "p1": "Der Dienst wird \"wie besehen\" und \"wie verfügbar\" bereitgestellt. Es wird keine Garantie für Genauigkeit, Verfügbarkeit oder Eignung für einen bestimmten Zweck gegeben. Die Ausgaben der KI-Modelle können Fehler enthalten; Sie tragen die Verantwortung für deren Nutzung."
+      },
+      "liability": {
+        "p1": "Im gesetzlich zulässigen Rahmen lehnen wir jede Haftung für indirekte oder Folgeschäden (Gewinn-, Daten-, Gelegenheitsverlust) ab. Die Gesamthaftung ist, falls zutreffend, auf die für den Dienst in den letzten 12 Monaten gezahlten Beträge begrenzt."
+      },
+      "indemnification": {
+        "p1": "Sie werden VOXUM von allen Ansprüchen freistellen, die sich aus Ihrer Verletzung der AGB, des Gesetzes oder der Rechte Dritter ergeben."
+      },
+      "misc": {
+        "p1": "Teilnichtigkeit: Die Nichtigkeit einer Klausel berührt den Rest nicht. Abtretung: Sie können Ihre Rechte nicht ohne unsere Zustimmung abtreten; wir können den Dienst abtreten. Höhere Gewalt: Wir sind nicht für Fälle höherer Gewalt verantwortlich."
+      },
+      "law": {
+        "p1": "Anwendbar ist schweizerisches Recht, ausschliesslicher Gerichtsstand ist Genf, vorbehaltlich zwingender Gerichtsstände."
+      },
+      "contact": {
+        "p1": "Kontakt: info@maj.digital — MAJ Holding Sàrl, Ch. Bois-Gentil 7, 1203 Genf, Schweiz."
+      },
+      "objectif": {
+        "title": "Ziel des Werkzeugs",
+        "p1": "Die Entdeckung, der Vergleich und die Empfehlung von Marken/Produkten zu beschleunigen, indem Echtzeit-Websuche und KI-Analyse kombiniert werden, während die strukturierten Ausgaben für das Team (Marketing, Growth, Produkt, Einkauf) nutzbar bleiben.",
+        "results": {
+          "title": "Erwartete Ergebnisse",
+          "li1": "Relevante und aktuelle Markenlisten (Websuche OpenAI/Perplexity).",
+          "li2": "Vergleiche von Alternativen mit Kriterien, Sentiment und Vertrauensniveau.",
+          "li3": "Strukturierte Antworten über AIResponse (Rankings, Erwähnungen, Quellen)."
+        },
+        "map": {
+          "title": "Zuordnung zu den Modulen",
+          "orchestrator": "Orchestrierung der Analysen:",
+          "openai": {
+            "label": "OpenAI Web Search (Responses + web_search):",
+            "link": "Dokumentation",
+            "impl": "Code"
+          },
+          "perplexity": "Wettbewerber-Pipeline Perplexity → Konvertierung OpenAI:",
+          "model": "Ausgabemodell:",
+          "in": "in"
+        },
+        "more": {
+          "title": "Weiterführende Informationen",
+          "p1": "Lesen Sie <prompts>Wie man gute Prompts schreibt</prompts> und <lecture>Ergebnisse lesen und interpretieren</lecture>, um die Relevanz und Interpretation der Analysen zu maximieren."
+        }
+      },
+      "prompts": {
+        "title": "Wie man gute Prompts schreibt",
+        "p1": "Prompts müssen spezifisch, nach Absicht getrennt und auf die erwarteten Ausgabestrukturen (AIResponse) ausgerichtet sein. Verwenden Sie messbare Kriterien und den Marktkontext, um die Websuche zu steuern.",
+        "types": {
+          "title": "3 verschiedene Arten von Analysen durchführen",
+          "ranking": "<0>Ranking</0> — „Top in “; zielt auf vergleichbare und nutzbare Listen für <1>Rankings</1>.",
+          "comparison": "<0>Vergleich</0> — vergleichen vs. ; bestehen Sie auf Kriterien.",
+          "alternatives": "<0>Alternativen</0> — „Alternativen zu “; maximal 3–5 Optionen beibehalten.",
+          "recommendations": "<0>Empfehlungen</0> — nach Nutzung/Bedarf, Einschränkungen und Budget."
+        },
+        "tech": {
+          "title": "Technische Optionen",
+          "li1": "<strong>Websuche</strong>: Aktivieren Sie useWebSearch für OpenAI — siehe <link>OpenAI Web Search</link>.",
+          "li2": "<strong>Modelle</strong>: gpt-4o-mini (Kosten/Latenz) bevorzugen und bei Bedarf auf gpt-4o umschalten.",
+          "li3": "<strong>Geltungsbereich</strong>: Geben Sie Land/Region, Segment und Unternehmensgrösse an, um die Suche zu steuern."
+        },
+        "best": {
+          "title": "Bewährte Praktiken",
+          "li1": "3–5 messbare Kriterien und einen Kontext (Markt, Land, Zielgruppe) definieren.",
+          "li2": "Entdeckung, Vergleich und Empfehlung in separaten Prompts trennen.",
+          "li3": "Auf 5 Optionen beschränken, um die Entscheidung zu erleichtern.",
+          "li4": "Einschränkungen (Budget, Vertrieb, Materialien, Grösse) angeben."
+        },
+        "examples": {
+          "title": "Geführte Beispiele",
+          "ex1": "1) Markenempfehlungen (Trends 2025)",
+          "ex2": "2) Vergleich: führende Alternative",
+          "ex3": "3) Empfehlung nach Produkt/Nutzung",
+          "title1": "Markenempfehlungen (Trends 2025)",
+          "title2": "Vergleich: führende Alternative",
+          "title3": "Empfehlung nach Produkt/Nutzung"
+        }
+      },
+      "lecture": {
+        "title": "Ergebnisse lesen und interpretieren",
+        "p1": "Dieser Abschnitt hilft Ihnen, die Interpretation der Analyseergebnisse besser zu verstehen. Er erklärt, wie die Scores berechnet werden und was sie in jedem Tab bedeuten:",
+        "structure": {
+          "title": "AIResponse-Struktur (Auszüge)",
+          "li1": "response: generierter Text.",
+          "li2": "rankings: Liste von CompanyRanking (Position, company, sentiment).",
+          "li3": "competitors: erwähnte/erkannte Wettbewerber.",
+          "li4": "brandMentioned, brandPosition: Erkennung der Zielmarke.",
+          "li5": "sentiment, confidence: Zusammenfassung von Stimmung und Vertrauen.",
+          "li6": "webSearchSources: Quellen aus der Websuche (falls aktiviert)."
+        },
+        "rankings": {
+          "title": "Rankings interpretieren",
+          "p1": "Die Positionen stammen aus der strukturierten Analyse des generierten Textes. Die Erkennung basiert auf intelligenten Markenvariationen, um falsch-negative Ergebnisse zu reduzieren."
+        },
+        "sources": {
+          "title": "Quellen der Websuche",
+          "p1": "Wenn die Websuche aktiviert ist, können die URLs aus mehreren Feldern der OpenAI-Antwort (alternative Pfade, Annotationen) und direkt aus dem Text („Konsultierte Quellen“) extrahiert werden. Nutzen Sie diese Quellen, um die Aktualität und Zuverlässigkeit zu überprüfen."
+        },
+        "scores": {
+          "title": "Scores und Matrizen",
+          "li1": "<strong>Prompts und Antworten</strong>: Dieser Tab zeigt die für die Analyse verwendeten Prompts sowie die verschiedenen von jeder KI generierten Antworten. So können Sie sehen, wie jedes KI-Modell die gestellten Fragen interpretiert und beantwortet.",
+          "li2": "<strong>Vergleichsmatrix</strong>: Die Vergleichsmatrix ermöglicht es Ihnen, die Position Ihrer Marke im Verhältnis zu ihren Wettbewerbern in Bezug auf die Sichtbarkeit zu visualisieren. Die Prozentsätze werden basierend auf der Anzahl der Vorkommen jeder Marke in den Antworten im Verhältnis zur Gesamtzahl der Antworten berechnet. Dies hilft Ihnen, die Stärken und Schwächen Ihrer Marke im Vergleich zur Konkurrenz zu identifizieren.",
+          "li3": "<strong>Marken-Ranking</strong>: Dieses Ranking zeigt die Position Ihrer Marke und ihrer Wettbewerber auf dem Markt. Die Scores basieren auf der Sichtbarkeit jeder Marke in den von den verschiedenen KIs generierten Antworten. Dies gibt Ihnen eine Vorstellung von der Bekanntheit Ihrer Marke im Vergleich zu anderen Marktteilnehmern.",
+          "li4": "<strong>Sichtbarkeits-Score</strong>: Der Sichtbarkeits-Score misst die Online-Präsenz Ihrer Marke. Er wird basierend auf der Anzahl der Erwähnungen über alle KIs sowie dem zugewiesenen durchschnittlichen Sentiment berechnet. Ein hoher Score deutet auf eine erhöhte positive Sichtbarkeit Ihrer Marke online hin. Dies ermöglicht es Ihnen, die Entwicklung der Wahrnehmung Ihrer Marke im Web zu verfolgen."
+        }
+      },
+      "credits": {
+        "title": "Verbrauch von Credits",
+        "p1": "Credits werden bei folgenden Operationen verbraucht: Scraping, Websuche, KI-Aufrufe (Generierung, strukturierte Konvertierung). Die Kosten hängen von den Modellen, der Kontextlänge und der Suchtiefe ab.",
+        "factors": {
+          "title": "Einflussfaktoren",
+          "li1": "<strong>OpenAI Websuche</strong>: fügt Kosten in Tokens hinzu (Antworten + Extraktion der Quellen).",
+          "li2": "<strong>Perplexity Wettbewerber-Pipeline</strong>: Kosten für Perplexity + strukturierte Konvertierung durch OpenAI.",
+          "li3": "<strong>Modell</strong>: gpt-4o-mini empfohlen, um Kosten/Latenz zu optimieren."
+        },
+        "orders": {
+          "title": "Grössenordnungen",
+          "li1": "Schnelle Entdeckung: geringe Kosten.",
+          "li2": "Detaillierter Vergleich (3–5 Alternativen): mittlere Kosten.",
+          "li3": "Erweiterte Websuche + Strukturierung: höhere Kosten."
+        },
+        "tracking": {
+          "title": "Verfolgung",
+          "p1": "Der Credit-Zähler ist im Dashboard mit Schwellenwert-Warnungen sichtbar."
+        },
+        "rules": {
+          "title": "Regeln pro Aktion (Brand Monitor)",
+          "li1": "URL-Analyse:  Credit",
+          "li2": "Wettbewerber identifizieren:  Credits",
+          "li3": "Prompt-Generierung:  Credits (einmalig)",
+          "li4": "Prompt-Analyse (WebSearch AN):  Credits pro Prompt",
+          "li5": "Prompt-Analyse (WebSearch AUS):  Credit pro Prompt"
+        },
+        "ui": {
+          "title": "UI-Verhalten",
+          "li1": "Die Schaltflächen bleiben klickbar: Ein Fehler erscheint, wenn die Credits nicht ausreichen.",
+          "li2": "Tooltip der Web-Search-Schaltfläche:  oder  Credit(s) pro Prompt je nach Status.",
+          "li3": "Prompt hinzufügen ist immer erlaubt (keine vorgelagerte Credit-Prüfung).",
+          "li4": "Analyse starten prüft dynamisch: Prompts × (1 oder 2 je nach WebSearch)."
+        }
+      },
+      "recharge": {
+        "title": "Credits aufladen",
+        "p1": "Sie können Ihre Credits jederzeit über die Seite mit den Plänen aufladen. Die Käufe sind sofort wirksam und die Credits nach sicherer Zahlung sofort verfügbar.",
+        "p2": "Gehen Sie zur Seite <plans>Pläne & Preise</plans>, um das passende Angebot für Ihre Nutzung zu wählen.",
+        "best": {
+          "title": "Bewährte Management-Praktiken",
+          "li1": "Aufwändige Analysen (Websuche + Strukturierung) in ruhigeren Zeiten planen.",
+          "li2": "Entdeckung, Vergleich und Empfehlung in getrennten Durchläufen durchführen.",
+          "li3": "Schwellenwert-Warnungen überwachen, um Aufladungen vorwegzunehmen."
+        }
+      },
+      "openai": {
+        "title": "OpenAI Web Search",
+        "intro": "Dieser Abschnitt dokumentiert die Integration der OpenAI-Websuche über die Responses-API und das web_search-Tool. Er behandelt den technischen Ablauf, die Code-Integration, die Konfiguration, die Fehlerbehandlung und Testbeispiele.",
+        "tabs": {
+          "overview": "Übersicht",
+          "flow": "Technischer Ablauf",
+          "code": "Code-Integration",
+          "errors": "Fehler & Fallbacks",
+          "tests": "Tests"
+        },
+        "overview": {
+          "featuresTitle": "Funktionen",
+          "li1": "Integration von OpenAI Responses mit dem web_search-Tool.",
+          "li2": "Robuste Extraktion von Quellen (mehrere Antwortpfade werden unterstützt).",
+          "li3": "Strukturierte Analyse des Ausgabetextes (Erkennung von Marken/Wettbewerbern, Ranking, Sentiment).",
+          "li4": "Kontrollierte Fallbacks (Modell, fehlender API-Schlüssel, Authentifizierungsfehler).",
+          "webEnabled": "Websuche aktiviert",
+          "demo": "UI-Demonstration"
+        },
+        "flow": {
+          "title": "Technischer Ablauf (Zusammenfassung)",
+          "li1": "Die UI aktiviert useWebSearch für den OpenAI-Provider.",
+          "li2": "analyzePromptWithOpenAIWebSearch erstellt einen erweiterten Prompt (Abschnitt „Konsultierte Quellen“).",
+          "li3": "Aufruf von client.responses.create mit tools: [{ type: \"web_search\" }] und max_output_tokens.",
+          "li4": "Überprüfung von output_text, dann Extraktion der Quellen über bekannte Felder, Annotationen und URLs im Text.",
+          "li5": "Aufruf einer strukturierten Analyse über chat.completions.create, um Rankings/Sentiment/Erwähnungen zu erzeugen.",
+          "li6": "Verstärkte Markenerkennung durch intelligente Variationen (Normalisierung und KI bei Mehrwort-Marken).",
+          "li7": "Rückgabe eines AIResponse-Objekts einschliesslich webSearchSources."
+        },
+        "code": {
+          "title": "Integrationsbeispiele",
+          "call1": "Direkter Aufruf der OpenAI Web Search Implementierung:",
+          "call2": "Automatische Aktivierung über Orchestrierung (falls verfügbar):",
+          "env": "Erforderliche Konfiguration:"
+        },
+        "errors": {
+          "title": "Fehlerbehandlung und Fallbacks",
+          "li1": "Fehlender Schlüssel: wenn OPENAI_API_KEY fehlt → Ausnahme bei der Client-Initialisierung.",
+          "li2": "Nicht unterstütztes Modell: Umschaltung auf gpt-4o-mini. Unterstützte Modelle: gpt-4o, gpt-4o-mini.",
+          "li3": "Auth-Fehler (401, invalid_api_key): die Funktion gibt null zurück, um diesen Provider zu ignorieren.",
+          "li4": "Leere Antwort: löst einen expliziten „empty response“-Fehler aus.",
+          "li5": "Strukturierte Analyse fehlgeschlagen: Fallback auf Textanalyse mit Erkennung durch Variationen."
+        },
+        "tests": {
+          "title": "Tests & Validierung",
+          "cli": "CLI-Skript (falls vorhanden):",
+          "checks": "Erwartete Überprüfungen:",
+          "li1": "Vorhandensein von nicht-leerem output_text.",
+          "li2": "Extraktion von mindestens 1–3 webSearchSources, wenn relevant.",
+          "li3": "Strukturierte Felder (Rankings, Sentiment, Erwähnungen) sind konsistent mit der Antwort."
+        }
+      }
+    }
+  },
+  "auth": {
+    "loginTitle": "Melden Sie sich bei Ihrem Konto an",
+    "registerTitle": "Erstellen Sie Ihr Konto",
+    "emailLabel": "E-Mail-Adresse",
+    "passwordLabel": "Passwort",
+    "confirmPasswordLabel": "Passwort bestätigen",
+    "forgotPassword": "Passwort vergessen?",
+    "noAccount": "Sie haben noch kein Konto?",
+    "hasAccount": "Sie haben bereits ein Konto?",
+    "signIn": "Anmelden",
+    "signUp": "Registrieren",
+    "signingIn": "Anmeldung läuft...",
+    "signingUp": "Registrierung läuft...",
+    "signingOut": "Abmeldung läuft...",
+    "resetPassword": "Passwort zurücksetzen",
+    "resetPasswordTitle": "Setzen Sie Ihr Passwort zurück",
+    "resetPasswordDescription": "Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Link zum Zurücksetzen Ihres Passworts.",
+    "sendResetLink": "Link zum Zurücksetzen senden",
+    "passwordResetSent": "Link zum Zurücksetzen des Passworts wurde an Ihre E-Mail gesendet",
+    "fullNameLabel": "Vollständiger Name",
+    "passwordResetSuccess": "Passwort erfolgreich zurückgesetzt. Sie können sich jetzt mit Ihrem neuen Passwort anmelden.",
+    "welcomeBack": "Willkommen zurück",
+    "welcomeBackDescription": "Melden Sie sich an, um Ihre Marke weiterhin auf KI-Modellen zu überwachen",
+    "joinDevelopers": "Überwachen Sie Ihre Marke dort, wo alle darüber sprechen",
+    "joinDevelopersDescription": "Überwachen Sie, was führende KI-Modelle auf dem Markt über Ihre Marke und Ihre Produkte sagen",
+    "unlimitedAccess": "Zentralisierte plattformübergreifende Suche",
+    "realtimeCollaboration": "Speichern Sie Ihre Analysen und verfolgen Sie Ihre Entwicklung",
+    "support247": "24h-Support",
+    "emailPlaceholder": "Geben Sie Ihre E-Mail ein",
+    "passwordPlaceholder": "Geben Sie Ihr Passwort ein",
+    "fullNamePlaceholder": "Geben Sie Ihren vollständigen Namen ein",
+    "newPasswordPlaceholder": "Wählen Sie ein starkes Passwort",
+    "passwordRequirement": "Muss mindestens 8 Zeichen enthalten",
+    "rememberMe": "Angemeldet bleiben",
+    "or": "Oder",
+    "createNewAccount": "neues Konto erstellen",
+    "signInExisting": "bei einem bestehenden Konto anmelden",
+    "agreeToTerms": "Ich stimme den",
+    "and": "und",
+    "existingAccountDetected": "Es scheint, als hätten Sie bereits ein Konto mit dieser E-Mail-Adresse.",
+    "signInInstead": "Stattdessen anmelden",
+    "failedToLogin": "Anmeldung fehlgeschlagen",
+    "emailNotVerified": "E-Mail nicht verifiziert. Bitte überprüfen Sie Ihren Posteingang auf die Verifizierungs-E-Mail.",
+    "failedToRegister": "Registrierung fehlgeschlagen",
+    "createAccount": "Konto erstellen",
+    "creatingAccount": "Konto wird erstellt...",
+    "forgotPasswordTitle": "Setzen Sie Ihr Passwort zurück",
+    "forgotPasswordDesc": "Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Link zum Zurücksetzen Ihres Passworts.",
+    "backToLogin": "Zurück zur Anmeldung",
+    "sendResetEmail": "E-Mail zum Zurücksetzen senden",
+    "resetEmailSent": "E-Mail zum Zurücksetzen gesendet! Überprüfen Sie Ihren Posteingang für weitere Anweisungen.",
+    "failedToSendReset": "Senden der E-Mail zum Zurücksetzen fehlgeschlagen"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Willkommen zurück!",
+    "overview": "Übersicht",
+    "recentActivity": "Letzte Aktivitäten",
+    "quickActions": "Schnellaktionen",
+    "statistics": "Statistiken",
+    "profileInformation": "Profilinformationen",
+    "editProfile": "Profil bearbeiten",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "email": "E-Mail",
+    "displayName": "Anzeigename",
+    "phone": "Telefon",
+    "bio": "Bio",
+    "notSet": "Nicht festgelegt",
+    "enterDisplayName": "Geben Sie Ihren Anzeigenamen ein",
+    "enterPhone": "Geben Sie Ihre Telefonnummer ein",
+    "tellAboutYourself": "Erzählen Sie uns etwas über sich",
+    "settings": "Einstellungen",
+    "emailNotifications": "E-Mail-Benachrichtigungen",
+    "emailNotificationsDesc": "E-Mail-Benachrichtigungen für wichtige Updates erhalten",
+    "marketingEmails": "Marketing-E-Mails",
+    "marketingEmailsDesc": "E-Mails über neue Funktionen und Angebote erhalten",
+    "accountInformation": "Kontoinformationen",
+    "currentPlan": "Aktueller Plan",
+    "currentPlanSelected": "Aktueller Plan ausgewählt",
+    "freePlan": "Kostenloser Plan",
+    "changingTo": "Wechsel zu",
+    "usageStatistics": "Nutzungsstatistiken",
+    "used": "Verbraucht",
+    "resetsOn": "Wird zurückgesetzt am",
+    "noUsageData": "Keine Nutzungsdaten verfügbar",
+    "availablePlans": "Verfügbare Pläne",
+    "currentPlanLabel": "(Aktueller Plan)",
+    "scheduledLabel": "(Geplant)",
+    "loading": "Wird geladen...",
+    "downgrade": "Downgrade",
+    "upgrade": "Upgrade",
+    "starts": "Beginnt",
+    "on": "am"
+  },
+  "chat": {
+    "title": "Chat",
+    "newChat": "Neuer Chat",
+    "newConversation": "Neue Konversation",
+    "typeMessage": "Schreiben Sie Ihre Nachricht...",
+    "send": "Senden",
+    "conversations": "Konversationen",
+    "noConversations": "Bisher keine Konversationen",
+    "loadingConversations": "Konversationen werden geladen...",
+    "untitledConversation": "Unbenannte Konversation",
+    "messagesRemaining": "Verbleibende Nachrichten:",
+    "creditBasedMessaging": "Credit-basiertes Messaging",
+    "creditBasedDesc": "Dies ist eine Demonstration des Credit-basierten Nachrichtensystems. Jede Nachricht verbraucht Credits von Ihrem Kontoguthaben.",
+    "youCurrentlyHave": "Sie haben derzeit",
+    "messageCreditsAvailable": "Nachrichten-Credits verfügbar.",
+    "getMoreCredits": "Mehr Credits erhalten",
+    "startConversation": "Konversation beginnen",
+    "sendMessageToBegin": "Senden Sie eine Nachricht, um mit der KI zu chatten",
+    "noMessagesAvailable": "Keine Nachrichten verfügbar",
+    "loadingAccountData": "Ihre Kontodaten werden geladen...",
+    "deleteConversation": "Konversation löschen",
+    "deleteConversationDesc": "Sind Sie sicher, dass Sie diese Konversation löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "delete": "Löschen"
+  },
+  "brandMonitor": {
+    "title": "Markenüberwachung",
+    "fireGeoMonitor": "VOXUM Monitor",
+    "aiBrandVisibilityPlatform": "KI-Markensichtbarkeits-Plattform",
+    "trackHowAi": "Verfolgen Sie, wie KI-Modelle Ihre Marke im Vergleich zu Wettbewerbern einstufen",
+    "newAnalysis": "Neue Analyse",
+    "loadingAnalyses": "Analysen werden geladen...",
+    "noAnalysesYet": "Bisher keine Analysen",
+    "untitledAnalysis": "Unbenannte Analyse",
+    "deleteAnalysis": "Analyse löschen",
+    "deleteAnalysisDesc": "Sind Sie sicher, dass Sie diese Analyse löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "pleaseLogIn": "Bitte melden Sie sich an, um auf den Markenmonitor zuzugreifen",
+    "addPrompt": "Prompt hinzufügen",
+    "cancel": "Abbrechen",
+    "analyze": "Analysieren",
+    "noComparisonData": "Keine Vergleichsdaten verfügbar",
+    "noComparisonDataDesc": "Die Analyse läuft möglicherweise noch oder kein Anbieter hat Daten zurückgegeben.",
+    "analyzing": "Analyse läuft...",
+    "results": "Ergebnisse",
+    "competitors": "Wettbewerber",
+    "rankings": "Rankings",
+    "visibility": "Sichtbarkeit",
+    "addCompetitor": "Wettbewerber hinzufügen",
+    "webSearch": "Websuche",
+    "deepCrawl": "Tiefen-Crawl aktivieren (langsamer, besseres Website-Verständnis)",
+    "addCustomPrompt": "Benutzerdefinierten Prompt hinzufügen",
+    "addCustomPromptDesc": "Geben Sie einen Prompt ein, auf den die KI-Modelle zu Ihrer Branche antworten sollen.",
+    "addCustomPromptPlaceholder": "Beispiel: Was ist der beste KI-Scraper?",
+    "enterCustomPromptPlaceholder": "Geben Sie einen benutzerdefinierten Prompt ein (verwenden Sie  und  als Platzhalter)",
+    "searchPromptsPlaceholder": "Prompts und Antworten durchsuchen...",
+    "legendTargetBrand": "Erwähnungen der Zielmarke",
+    "legendCompetitorBrand": "Erwähnungen von Wettbewerbern",
+    "enterUrlPlaceholder": "Geben Sie die URL Ihrer Website ein (z. B. beispiel.com)",
+    "enterUrlPlaceholderShort": "beispiel.com",
+    "competitorNamePlaceholder": "z. B. Anthropic",
+    "competitorUrlPlaceholder": "z. B. anthropic.com",
+    "addCompetitorTitle": "Wettbewerber hinzufügen",
+    "competitorNameLabel": "Name des Wettbewerbers",
+    "websiteUrlOptionalLabel": "Website-URL (optional)",
+    "addCompetitorButton": "Wettbewerber hinzufügen",
+    "maxCompetitorsReached": "Maximal 9 Wettbewerber",
+    "analyzeWebsiteAriaLabel": "Website analysieren",
+    "identifyCompetitors": "Wettbewerber identifizieren",
+    "intelliSearch": "IntelliSearch",
+    "intelliSearchTooltip": "Nutzt das Sonar Reasoning Modell von Perplexity für eine tiefere, intelligentere Wettbewerbersuche (langsamer, aber genauer)",
+    "compareAgainst": "Wir werden  mit diesen  Wettbewerber(n) vergleichen",
+    "continueToAnalysis": "Weiter zur Analyse",
+    "more": "weitere",
+    "resultsNavigation": {
+      "comparisonMatrix": "Vergleichsmatrix",
+      "promptsResponses": "Prompts und Antworten",
+      "providerRankings": "Marken-Rankings",
+      "visibilityScore": "Sichtbarkeits-Score",
+      "analyzeAnotherWebsite": "Eine andere Website analysieren",
+      "sources": "Quellen",
+      "upgradeRequiredTitle": "Verfügbar ab dem „Watch“-Plan",
+      "upgradeCta": "Meinen Plan upgraden"
+    },
+    "analysisProgress": {
+      "title": "Analysefortschritt",
+      "prompts": "Prompts",
+      "competitors": "Wettbewerber",
+      "validatingCompetitorData": "Wettbewerberdaten werden im Hintergrund validiert...",
+      "addPrompt": "Prompt hinzufügen",
+      "startAnalysis": "Analyse starten",
+      "analyzing": "Analyse läuft...",
+      "custom": "Benutzerdefiniert",
+      "generatingAdaptivePrompts": "Adaptive Prompts werden generiert..."
+    },
+    "errors": {
+      "pleaseEnterUrl": "Bitte geben Sie eine URL ein",
+      "pleaseEnterValidUrl": "Bitte geben Sie eine gültige URL ein (z. B. beispiel.com oder https://beispiel.com)",
+      "insufficientCreditsUrl": "Nicht genügend Credits. Sie benötigen mindestens  Credits, um eine URL zu analysieren.",
+      "insufficientCreditsCompetitors": "Nicht genügend Credits. Sie benötigen mindestens  Credits, um Wettbewerber zu identifizieren.",
+      "insufficientCreditsPromptGen": "Nicht genügend Credits. Sie benötigen mindestens  Credits, um Prompts zu generieren.",
+      "insufficientCreditsAddPrompt": "Nicht genügend Credits. Sie benötigen mindestens  Credits, um einen Prompt hinzuzufügen.",
+      "insufficientCreditsAnalysis": "Nicht genügend Credits. Sie benötigen  Credits ( pro Prompt), um diese Analyse durchzuführen.",
+      "buyCreditsLink": "Credits kaufen",
+      "failedToScrape": "Scraping fehlgeschlagen",
+      "noCompanyData": "Keine Unternehmensdaten erhalten",
+      "failedToExtractCompany": "Extraktion der Unternehmensinformationen fehlgeschlagen",
+      "failedToExtractCompanyWithReason": "Extraktion der Unternehmensinformationen fehlgeschlagen: ",
+      "analysisPreparationFailed": "Vorbereitung der Analyse fehlgeschlagen. Bitte versuchen Sie es erneut."
+    },
+    "analysis": {
+      "startingAnalysis": "Analyse wird gestartet...",
+      "extractingBrands": "Markenerwähnungen werden extrahiert...",
+      "brandExtractionComplete": "Markenextraktion abgeschlossen",
+      "comparisonMatrix": {
+        "title": "Vergleichsmatrix",
+        "description": "Vergleicht den Anteil der erkannten Markenerwähnungen pro Antwort je KI-Anbieter, basierend auf der Gesamtzahl der gegebenen Antworten",
+        "averageScore": "Durchschnittlicher Score",
+        "noDataAvailable": "Keine Vergleichsdaten verfügbar",
+        "ensureProvidersConfigured": "Bitte stellen Sie sicher, dass die KI-Anbieter konfiguriert und die Analyse abgeschlossen ist."
+      },
+      "promptsResponses": {
+        "title": "Prompts und Antworten",
+        "description": "KI-Antworten auf Ihre Markenanfragen",
+        "totalPrompts": "Gesamtzahl der Prompts"
+      },
+      "yourBrand": "Ihre Marke"
+    },
+    "providerRankings": {
+      "title": "Marken-Rankings",
+      "description": "Leistung Ihrer Marke pro KI-Anbieter",
+      "averageRank": "Durchschnittlicher Rang",
+      "brand": "Marke",
+      "company": "Unternehmen",
+      "visibility": "Sichtbarkeit",
+      "shareOfVoice": "Share of Voice",
+      "shareOfVoiceShort": "SoV",
+      "avgPositionShort": "Ø Pos",
+      "sentiment": "Sentiment",
+      "sentimentShort": "Sent.",
+      "positive": "Positiv",
+      "negative": "Negativ",
+      "neutral": "Neutral",
+      "competitors": "Wettbewerber",
+      "rank": "Rang",
+      "averagePosition": "Durchschnittliche Position",
+      "sentimentScore": "Sentiment-Score"
+    },
+    "visibilityScore": {
+      "title": "Sichtbarkeits-Score",
+      "description": "Sichtbarkeit Ihrer Marke bei den KI-Anbietern",
+      "overallScore": "Gesamt-Score",
+      "rank": "Rang",
+      "visibilityTooltip": "Sichtbarkeit"
+    },
+    "sourcesTab": {
+      "title": "Konsultierte Quellen",
+      "description": "Überprüfen Sie die Quellen, die von den KIs für diese Analyse verwendet wurden.",
+      "source": "Quelle",
+      "provider": "Anbieter",
+      "prompt": "Prompt",
+      "link": "Quelle öffnen",
+      "empty": "Keine Quellen für diese Analyse gespeichert.",
+      "showMore": "weitere Quellen",
+      "showLess": "Weniger anzeigen"
+    }
+  },
+  "pricing": {
+    "title": "Preispläne",
+    "simpleTransparentPricing": "Einfache und transparente Preisgestaltung",
+    "choosePerfectPlan": "Wählen Sie den perfekten Plan für Ihre Bedürfnisse. Jederzeit flexibel nach oben oder unten anpassbar.",
+    "loggedInAs": "Angemeldet als:",
+    "monthly": "Monatlich",
+    "yearly": "Jährlich",
+    "popular": "Am beliebtesten",
+    "feature": "Funktion",
+    "features": "Funktionen",
+    "getStarted": "Loslegen",
+    "currentPlan": "Aktueller Plan",
+    "upgrade": "Upgrade",
+    "downgrade": "Downgrade",
+    "free": "Kostenlos",
+    "pro": "Pro",
+    "enterprise": "Enterprise",
+    "plans": {
+      "free": {
+        "name": "Kostenlos",
+        "description": "Perfekt, um unseren Service auszuprobieren",
+        "price": "Kostenlos",
+        "priceDesc": "Keine Kreditkarte erforderlich",
+        "feature1": "10 Nachrichten pro Monat",
+        "feature1Desc": "KI-gestützte Chat-Antworten",
+        "feature2": "Community-Support",
+        "feature2Desc": "Holen Sie sich Hilfe von unserer Community",
+        "feature3": "Grundfunktionen",
+        "feature3Desc": "Wesentliche Werkzeuge für den Einstieg"
+      },
+      "pro": {
+        "name": "Pro",
+        "description": "Für alle Ihre Messaging-Anforderungen",
+        "recommendText": "Am beliebtesten",
+        "price": "10 $/Monat",
+        "priceDesc": "monatlich abgerechnet",
+        "feature1": "100 Nachrichten pro Monat",
+        "feature1Desc": "KI-gestützte Chat-Antworten",
+        "feature2": "Premium-Support",
+        "feature2Desc": "Holen Sie sich Hilfe von unserem Team",
+        "feature3": "Vorrangiger Zugang",
+        "feature3Desc": "Probieren Sie neue Funktionen als Erster aus"
+      }
+    },
+    "voxum": {
+      "start": {
+        "name": "Start",
+        "price": "19€",
+        "priceDesc": "/Monat",
+        "feature1": "50 Credits",
+        "feature2": "SmartComp© identifiziert Ihre Wettbewerber",
+        "feature3": "SmartBrand© erkennt Ihre Marke und ihre Varianten"
+      },
+      "watch": {
+        "name": "Watch",
+        "price": "39€",
+        "priceDesc": "/Monat",
+        "feature1": "150 Credits",
+        "feature2": "Alles aus dem „Start“-Plan",
+        "feature3": "Zugang zu den von den KI-Engines verwendeten Quellen",
+        "feature4": "PromptGen© generiert automatisch Prompts, die Nutzer wahrscheinlich für Ihre Marke suchen",
+        "feature5": "48h E-Mail-Support"
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "59€",
+        "priceDesc": "/Monat",
+        "feature1": "250 Credits",
+        "feature2": "Alles aus dem „Watch“-Plan",
+        "feature3": "7/7 Chat-Support"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "Auf Anfrage",
+        "feature1": "API",
+        "feature2": "SLA",
+        "feature3": "Live-Support"
+      }
+    }
+  },
+  "errors": {
+    "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "notFound": "Seite nicht gefunden",
+    "unauthorized": "Sie sind nicht berechtigt, auf diese Seite zuzugreifen",
+    "serverError": "Interner Serverfehler",
+    "networkError": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung.",
+    "validationError": "Bitte überprüfen Sie Ihre Eingabe und versuchen Sie es erneut",
+    "noInternetConnection": "Sie sind nicht mit dem Internet verbunden",
+    "connectionLost": "Verbindung verloren. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut."
+  },
+  "metadata": {
+    "title": "SaaS Starter",
+    "description": "Next.js SaaS Starter mit Better Auth"
+  },
+  "home": {
+    "demo": {
+      "title": "Verfolgen Sie Ihre Marke auf KI-Plattformen",
+      "description": "Erhalten Sie einen umfassenden Einblick in die Leistung Ihrer Marke in KI-Suchergebnissen",
+      "items": {
+        "visibility": {
+          "title": "Sichtbarkeit",
+          "description": "Sehen Sie den Anteil an Konversationen, in denen Ihre Marke erwähnt wird, und wie oft sie erscheint."
+        },
+        "prompts": {
+          "title": "Automatische Prompt-Generierung",
+          "descrition": "Generieren Sie automatisch die meistgesuchten Prompts Ihrer Zielkunden."
+        },
+        "sentiment": {
+          "title": "Sentiment",
+          "description": "Entdecken Sie, wie die KI Ihre Marke wahrnimmt, was funktioniert und was verbessert werden muss."
+        }
+      }
+    },
+    "hero": {
+      "title": "VOXUM Monitor",
+      "subtitle": "KI-Markensichtbarkeits-Plattform",
+      "description": "Verfolgen Sie, wie KI-Modelle Ihre Marke im Vergleich zu Wettbewerbern einstufen",
+      "startAnalysis": "Markenanalyse starten",
+      "viewPricing": "Preise ansehen",
+      "features": "KI-gestützt • Echtzeit-Analyse • Wettbewerber-Tracking • SEO-Einblicke"
+    },
+    "stats": {
+      "aiModels": {
+        "title": "Multi-KI-Modelle",
+        "description": "OpenAI & Perplexity"
+      },
+      "realtime": {
+        "title": "PromptGen©",
+        "description": "Generieren Sie automatisch Prompts, die auf Ihre Marke und Ihren Markt zugeschnitten sind"
+      },
+      "competitor": {
+        "title": "MarketComp©",
+        "description": "Bewerten Sie die Leistung Ihrer Marke im Vergleich zu ihren Wettbewerbern"
+      }
+    },
+    "pricing": {
+      "title": "Überwachen Sie die Sichtbarkeit Ihrer Marke",
+      "description": "Wählen Sie den Plan, der Ihren Überwachungsanforderungen entspricht",
+      "perMonth": "/Monat",
+      "mostPopular": "Am beliebtesten",
+      "viewDetailed": "Detaillierte Preise ansehen →",
+      "starter": {
+        "title": "Starter",
+        "description": "Perfekt für persönliche Marken",
+        "features": {
+          "analyses": "10 Markenanalysen/Monat",
+          "providers": "Basis-KI-Anbieter",
+          "reports": "Berichte per E-Mail"
+        },
+        "cta": "Kostenlos starten"
+      },
+      "pro": {
+        "title": "Pro",
+        "description": "Für wachsende Unternehmen",
+        "features": {
+          "analyses": "Unbegrenzte Markenanalysen",
+          "providers": "Alle KI-Anbieter",
+          "alerts": "Echtzeit-Benachrichtigungen"
+        },
+        "cta": "Kostenlose Testversion starten"
+      },
+      "enterprise": {
+        "title": "Enterprise",
+        "description": "Für Agenturen und grosse Marken",
+        "price": "Individuell",
+        "features": {
+          "brands": "Mehrere Marken",
+          "api": "API-Zugang",
+          "whiteLabel": "White-Label-Optionen"
+        },
+        "cta": "Vertrieb kontaktieren"
+      }
+    },
+    "cta1": {
+      "title": "Sehen Sie, wie KI-Modelle Ihre Marke einstufen",
+      "description": "Überwachen Sie die Sichtbarkeit Ihrer Marke auf ChatGPT, Claude, Perplexity und mehr",
+      "button": "Kostenlose Analyse starten"
+    },
+    "faq": {
+      "title": "Häufig gestellte Fragen",
+      "description": "Alles, was Sie über VOXUM Monitor wissen müssen",
+      "questions": {
+        "howItWorks": {
+          "question": "Wie funktioniert VOXUM Monitor?",
+          "answer": "VOXUM Monitor analysiert die Sichtbarkeit Ihrer Marke auf führenden KI-Plattformen wie ChatGPT, Claude und Perplexity. Geben Sie einfach die URL Ihrer Website ein, und wir zeigen Ihnen, wie KI-Modelle Ihre Marke im Vergleich zu Wettbewerbern einstufen, welche Prompts Ihre Erwähnung auslösen, und liefern umsetzbare Einblicke zur Verbesserung Ihrer KI-Sichtbarkeit."
+        },
+        "providers": {
+          "question": "Welche KI-Anbieter überwachen Sie?",
+          "answer": "Wir überwachen alle wichtigen KI-Plattformen, einschliesslich ChatGPT von OpenAI, Claude von Anthropic, Perplexity, Gemini von Google und mehr. Unser System wird kontinuierlich aktualisiert, sobald neue KI-Anbieter auftauchen, sodass Sie immer einen umfassenden Überblick über die KI-Landschaft haben."
+        },
+        "updates": {
+          "question": "Wie oft werden die Daten aktualisiert?",
+          "answer": "Unsere Überwachung arbeitet in Echtzeit. Wenn Sie eine Analyse anfordern, fragen wir alle KI-Anbieter gleichzeitig ab, um die aktuellsten Ergebnisse zu erhalten. Sie können jederzeit neue Analysen starten, um Änderungen in der Sichtbarkeit Ihrer Marke zu verfolgen und zu sehen, wie Ihre Optimierungsbemühungen wirken."
+        },
+        "insights": {
+          "question": "Welche Einblicke erhalte ich?",
+          "answer": "Sie sehen den Sichtbarkeits-Score Ihrer Marke, Wettbewerber-Rankings, welche Prompts Ihre Erwähnung auslösen, eine Analyse der Antwortqualität und spezifische Empfehlungen zur Verbesserung Ihrer KI-Präsenz. Die Plattform verfolgt auch Trends im Zeitverlauf und warnt Sie bei signifikanten Änderungen."
+        },
+        "credits": {
+          "question": "Wie viele Credits benötige ich?",
+          "answer": "Credits werden dynamisch pro Aktion verbraucht. Rechnen Sie mit 1 Credit für die anfängliche URL-Analyse und 2 Credits pro analysiertem Prompt (plus eventuelle zusätzliche Kosten je nach Ihren Aktionen). Zum Beispiel kosten 8 Prompts 16 Credits (ohne URL)."
+        }
+      }
+    },
+    "finalCta": {
+      "title": "Beginnen Sie mit der Überwachung der KI-Sichtbarkeit Ihrer Marke",
+      "description": "Übernehmen Sie die Kontrolle darüber, wie KI-Modelle Ihre Marke präsentieren",
+      "analyzeButton": "Ihre Marke analysieren",
+      "pricingButton": "Preise ansehen"
+    }
+  },
+  "aiPrompts": {
+    "companyExtraction": {
+      "instruction": "Extrahieren Sie die Unternehmensinformationen aus diesem Website-Inhalt:",
+      "extractDescription": "Extrahieren Sie den Firmennamen, eine kurze Beschreibung, relevante Schlüsselwörter und identifizieren Sie die HAUPT-Branchenkategorie.",
+      "industryRules": "Regeln zur Branchenerkennung:",
+      "industryRulesCoolers": "Wenn das Unternehmen Kühlboxen, Trinkgefässe, Outdoor-Ausrüstung, Campingausrüstung herstellt, als „Outdoor-Ausrüstung“ kategorisieren",
+      "industryRulesWebScraping": "Wenn das Unternehmen Web-Scraping, Crawling, Datenextraktion oder HTML-Analyse-Tools/Dienste anbietet, als „Web-Scraping“ kategorisieren",
+      "industryRulesAI": "Wenn das Unternehmen hauptsächlich KI/ML-Modelle oder -Dienste anbietet, als „KI“ kategorisieren",
+      "industryRulesDeployment": "Wenn das Unternehmen Hosting, Deployment oder Cloud-Infrastruktur anbietet, als „Deployment“ kategorisieren",
+      "industryRulesEcommerce": "Wenn das Unternehmen eine E-Commerce-Plattform oder ein Online-Shop-Builder ist, als „E-Commerce-Plattform“ kategorisieren",
+      "industryRulesDirectConsumer": "Wenn das Unternehmen physische Produkte direkt an Verbraucher verkauft (Kleidung, Accessoires usw.), als „Direct-to-Consumer-Marke“ kategorisieren",
+      "industryRulesApparel": "Wenn das Unternehmen im Mode-/Bekleidungs-/Unterwäschebereich tätig ist, als „Mode & Bekleidung“ kategorisieren",
+      "industryRulesDeveloper": "Wenn das Unternehmen Software-Tools oder APIs anbietet, als „Entwickler-Tools“ kategorisieren",
+      "industryRulesMarketplace": "Wenn das Unternehmen ein Marktplatz oder Aggregator ist, als „Marktplatz“ kategorisieren",
+      "industryRulesSaas": "Für andere B2B-Software „SaaS“ verwenden",
+      "industryRulesConsumer": "Für andere Konsumgüter „Konsumgüter“ verwenden",
+      "importantNote": "WICHTIG:",
+      "mainProductsNote": "Für mainProducts die TATSÄCHLICHEN PRODUKTE auflisten (z. B. „Kühlboxen“, „Trinkbecher“, „Trinkgefässe“), nicht Produktkategorien",
+      "competitorsNote": "Für competitors die VOLLSTÄNDIGEN FIRMENNAMEN extrahieren (z. B. „RTIC“, „IGLOO“, „Coleman“), nicht nur Initialen",
+      "focusNote": "Konzentrieren Sie sich darauf, was das Unternehmen HERSTELLT/VERKAUFT, nicht darauf, was IN seine Produkte kommt (z. B. Yeti stellt Kühlboxen her, keine Getränke)",
+      "languageNote": "Geben Sie den Inhalt auf ",
+      "nameExtractionTitle": "KRITISCHE ANWEISUNGEN ZUR EXTRAKTION DES FIRMENNAMENS:",
+      "nameExtraction1": "Extrahieren Sie den VOLLSTÄNDIGEN und GENAUEN Firmennamen, wie er offiziell auf der Website erscheint",
+      "nameExtraction2": "BEHALTEN SIE ALLE Zeichen bei, einschliesslich: Zahlen, Buchstaben, Sonderzeichen, Leerzeichen, Satzzeichen",
+      "nameExtraction3": "KEINEN Teil des Namens abkürzen, kürzen oder ändern",
+      "nameExtraction4": "KEINE Buchstaben oder Zahlen entfernen, die überflüssig erscheinen",
+      "nameExtraction5": "Suchen Sie den Namen an mehreren Stellen: Seitentitel, Kopfzeile, Fusszeile, Kontaktdaten, Über-uns-Bereich",
+      "nameExtraction6": "Wenn es mehrere Varianten gibt, wählen Sie die vollständigste und offiziellste Version",
+      "nameExtractionExamples": "Beispiele für KORREKTE Namensextraktion:",
+      "nameExample1": "„5QB Avocats“ → „5QB Avocats“ (NICHT „5Q Avocats“)",
+      "nameExample2": "„ABC123 Solutions“ → „ABC123 Solutions“ (NICHT „ABC Solutions“)",
+      "nameExample3": "„Smith & Associates LLC“ → „Smith & Associates LLC“ (NICHT „Smith Associates“)",
+      "nameExample4": "„Tech-Pro Industries“ → „Tech-Pro Industries“ (NICHT „TechPro Industries“)",
+      "namePrecisionNote": "Der Firmenname MUSS mit absoluter Präzision extrahiert werden — jedes Zeichen zählt"
+    },
+    "analysisPrompt": {
+      "analyzeResponse": "Analysieren Sie diese KI-Antwort bezüglich  und den Wettbewerbern :",
+      "returnAnalysis": "Geben Sie eine einfache Analyse zurück:",
+      "questionMentioned": "Wird  erwähnt? (ja/nein)",
+      "questionPosition": "Welche Position/welchen Rang hat es? (Nummer oder „nicht gerankt“)",
+      "questionCompetitors": "Welche Wettbewerber werden erwähnt? (Namen auflisten)",
+      "questionSentiment": "Wie ist das allgemeine Sentiment? (positiv/neutral/negativ)"
+    }
+  },
+  "publicPricing": {
+    "starter": {
+      "name": "Starter",
+      "description": "Perfekt für persönliche Projekte",
+      "price": "0 $",
+      "priceDesc": "/Monat",
+      "feature1": "100 Nachrichten/Monat",
+      "feature2": "Grundfunktionen",
+      "feature3": "Community-Support",
+      "button": "Kostenlos starten"
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Für wachsende Unternehmen",
+      "price": "10 $",
+      "priceDesc": "/Monat",
+      "feature1": "Unbegrenzte Nachrichten",
+      "feature2": "Erweiterte Funktionen",
+      "feature3": "Priorisierter Support",
+      "button": "Kostenlose Testversion starten"
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "Für grosse Teams",
+      "price": "Individuell",
+      "feature1": "Benutzerdefinierte Limits",
+      "feature2": "Benutzerdefinierte Funktionen",
+      "feature3": "Dedizierter Support",
+      "button": "Vertrieb kontaktieren"
+    },
+    "mostPopular": "Am beliebtesten",
+    "free": "Kostenlos",
+    "getStarted": "Loslegen",
+    "startFree": "Kostenlos starten"
+  },
+  "prompts": {
+    "webSearch": "Websuche",
+    "webSearchDesc": "Aktivieren Sie den webSearch-Schalter, damit das Tool Online-Suchen durchführen und aktuelle Informationen abrufen kann. Dies kann die Genauigkeit der Empfehlungen verbessern, indem die neuesten verfügbaren Daten verwendet werden.",
+    "models": "Modelle",
+    "modelsDesc": "Bevorzugen Sie gpt-4o-mini (Kosten/Latenz) und wechseln Sie bei Bedarf zu gpt-4o.",
+    "scope": "Geltungsbereich",
+    "scopeDesc": "Geben Sie Land/Region, Segment und Unternehmensgrösse an, um die Suche zu steuern."
+  },
+  "verifyEmail": {
+    "title": "Bestätigungs-E-Mail gesendet",
+    "subtitle": "Bitte bestätigen Sie Ihre E-Mail innerhalb von 24 Stunden, um Voxum nutzen zu können.",
+    "hint": "Denken Sie daran, Ihren 'Spam'- oder 'Werbung'-Ordner zu überprüfen.",
+    "backHome": "Zurück zur Startseite",
+    "backToLogin": "Zurück zur Anmeldung"
+  },
+  "autumn": {
+    "productChangeDialog": {
+      "title": "Planwechsel bestätigen",
+      "dueToday": "Heute fällig:",
+      "processing": "Wird verarbeitet..."
+    }
+  },
+  "seo": {
+    "common": {
+      "title": "Voxum von MAJ Digital",
+      "description": "KI-Modelle wie GPT und Perplexity sind die neuen Marken-Influencer. Unsere Plattform hilft Ihnen, zu überwachen, zu analysieren und zu optimieren, wie Ihre Marke in konversationeller KI erscheint – unerlässlich für Ihre Strategie zur Generative Engine Optimization (GEO).",
+      "siteName": "Voxum von MAJ Digital",
+      "ogAlt": "Voxum - Plattform für Generative Engine Optimization"
+    }
+  }
+}

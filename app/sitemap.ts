@@ -4,7 +4,7 @@ const appUrl: string = process.env.NEXT_PUBLIC_APP_URL ?? 'https://voxum.maj.dig
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const routes = ['', '/plans', '/brand-monitor', '/docs', '/pricing-public', '/privacy', '/terms'];
-  const locales = ['en', 'fr'];
+  const locales = ['en', 'fr', 'de'];
 
   const sitemap: MetadataRoute.Sitemap = [];
 
@@ -20,6 +20,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
           languages: {
             en: `${appUrl}/en${route}`,
             fr: `${appUrl}/fr${route}`,
+            de: `${appUrl}/de${route}`,
           },
         },
       });

@@ -19,12 +19,15 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const siteName = t('siteName');
   const ogAlt = t('ogAlt');
 
+  // Map locale to OpenGraph locale format
+  const ogLocale = locale === 'fr' ? 'fr_FR' : locale === 'de' ? 'de_DE' : 'en_US';
+
   return {
     title,
     description,
     openGraph: {
       type: 'website',
-      locale: locale === 'fr' ? 'fr_FR' : 'en_US',
+      locale: ogLocale,
       url: localizedUrl,
       siteName,
       title,
@@ -49,6 +52,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       languages: {
         en: `${appUrl}/en`,
         fr: `${appUrl}/fr`,
+        de: `${appUrl}/de`,
       },
     },
   };

@@ -4,13 +4,13 @@ import { useParams } from 'next/navigation';
 import { marked } from 'marked';
 
 const sectionsConfig = [
-  { id: 'introduction', fr: '/docs/introduction/fr.md', en: '/docs/introduction/en.md', label: { fr: 'Introduction', en: 'Introduction' } },
-  { id: 'features', fr: '/docs/key-features/fr.md', en: '/docs/key-features/en.md', label: { fr: 'Fonctionnalités clés', en: 'Key features' } },
-  { id: 'getting-started', fr: '/docs/getting-started/fr.md', en: '/docs/getting-started/en.md', label: { fr: 'Bien démarrer', en: 'Getting started' } },
-  { id: 'prompts', fr: '/docs/prompts/fr.md', en: '/docs/prompts/en.md', label: { fr: 'Prompts efficaces', en: 'Effective prompts' } },
-  { id: 'reading-results', fr: '/docs/reading-results/fr.md', en: '/docs/reading-results/en.md', label: { fr: 'Lire les résultats', en: 'Reading results' } },
-  { id: 'credits', fr: '/docs/credits/fr.md', en: '/docs/credits/en.md', label: { fr: 'Crédits', en: 'Credits' } },
-  { id: 'openai-web-search', fr: '/docs/openai-web-search/fr.md', en: '/docs/openai-web-search/en.md', label: { fr: 'OpenAI Web Search', en: 'OpenAI Web Search' } },
+  { id: 'introduction', fr: '/docs/introduction/fr.md', en: '/docs/introduction/en.md', de: '/docs/introduction/de.md', label: { fr: 'Introduction', en: 'Introduction', de: 'Einführung' } },
+  { id: 'features', fr: '/docs/key-features/fr.md', en: '/docs/key-features/en.md', de: '/docs/key-features/de.md', label: { fr: 'Fonctionnalités clés', en: 'Key features', de: 'Hauptmerkmale' } },
+  { id: 'getting-started', fr: '/docs/getting-started/fr.md', en: '/docs/getting-started/en.md', de: '/docs/getting-started/de.md', label: { fr: 'Bien démarrer', en: 'Getting started', de: 'Erste Schritte' } },
+  { id: 'prompts', fr: '/docs/prompts/fr.md', en: '/docs/prompts/en.md', de: '/docs/prompts/de.md', label: { fr: 'Prompts efficaces', en: 'Effective prompts', de: 'Effektive Prompts' } },
+  { id: 'reading-results', fr: '/docs/reading-results/fr.md', en: '/docs/reading-results/en.md', de: '/docs/reading-results/de.md', label: { fr: 'Lire les résultats', en: 'Reading results', de: 'Ergebnisse lesen' } },
+  { id: 'credits', fr: '/docs/credits/fr.md', en: '/docs/credits/en.md', de: '/docs/credits/de.md', label: { fr: 'Crédits', en: 'Credits', de: 'Credits' } },
+  { id: 'openai-web-search', fr: '/docs/openai-web-search/fr.md', en: '/docs/openai-web-search/en.md', de: '/docs/openai-web-search/de.md', label: { fr: 'OpenAI Web Search', en: 'OpenAI Web Search', de: 'OpenAI Web Search' } },
 ];
 
 export default function DocsPage() {
@@ -18,11 +18,18 @@ export default function DocsPage() {
   const [active, setActive] = useState<string>('introduction');
   const [htmlById, setHtmlById] = useState<Record<string, string>>({});
   const [error, setError] = useState<string>("");
-  const [locale, setLocale] = useState<'fr'|'en'>(routeParams?.locale === 'en' ? 'en' : 'fr');
+  const [locale, setLocale] = useState<'fr'|'en'|'de'>(() => {
+    const l = routeParams?.locale;
+    if (l === 'en') return 'en';
+    if (l === 'de') return 'de';
+    return 'fr';
+  });
 
   useEffect(() => {
     const l = window.location.pathname.split('/')[1] || 'fr';
-    setLocale(l === 'en' ? 'en' : 'fr');
+    if (l === 'en') setLocale('en');
+    else if (l === 'de') setLocale('de');
+    else setLocale('fr');
   }, []);
 
   useEffect(() => {
@@ -32,7 +39,7 @@ export default function DocsPage() {
         const { default: DOMPurify } = await import('isomorphic-dompurify');
         const entries = await Promise.all(
           sectionsConfig.map(async (s) => {
-            const path = locale === 'fr' ? s.fr : s.en;
+            const path = locale === 'de' ? s.de : locale === 'fr' ? s.fr : s.en;
             const res = await fetch(path, { cache: 'no-store' });
             if (!res.ok) throw new Error(`HTTP ${res.status} for ${path}`);
             const md = await res.text();
@@ -59,7 +66,7 @@ export default function DocsPage() {
 
   const labelFor = (id: string) => {
     const s = sectionsConfig.find(x => x.id === id)!;
-    return s.label[locale as 'fr'|'en'];
+    return s.label[locale];
   };
 
   return (
