@@ -1,5 +1,3 @@
-# Guide de l'utilisateur du Moniteur de Marque
-
 Bienvenue dans le Moniteur de Marque ! Ce guide vous expliquera comment utiliser cet outil puissant pour analyser la présence en ligne de votre marque, suivre vos concurrents et obtenir des informations précieuses grâce aux principaux modèles d'IA.
 
 ## Table des matières
@@ -35,7 +33,7 @@ Le Moniteur de Marque vous guide à travers un processus étape par étape pour 
 
 Pour commencer, entrez simplement l'URL du site web principal de votre entreprise dans le champ de saisie et cliquez sur **"Analyser"**.
 
-- **Que se passe-t-il ensuite ?** Le système va scraper votre site web pour recueillir des informations de base sur votre entreprise, telles que son nom, sa description et son secteur d'activité. Ce processus est alimenté par Firecrawl et est essentiel pour créer une base de référence pour l'analyse par l'IA.
+- **Que se passe-t-il ensuite ?** Le système va scraper votre site web pour recueillir des informations de base sur votre entreprise, telles que son nom, sa description et son secteur d'activité. Ce processus est essentiel pour créer une base de référence pour l'analyse par l'IA.
 - **Coût en crédits :** Ce premier scraping coûte un petit nombre de crédits. Vous serez informé du coût avant de continuer.
 
 ### Étape 2 : Vérifiez le profil de votre entreprise
@@ -145,4 +143,4 @@ La "Recherche Web" permet aux modèles d'IA d'effectuer des recherches en direct
 
 ### Pourquoi certains onglets ou fonctionnalités sont-ils désactivés ?
 
-L'accès à certaines fonctionnalités, comme l'onglet **Sources** ou la possibilité de voir les résultats de la recherche web, peut dépendre de votre plan d'abonnement. Si vous êtes sur un plan "Gratuit" ou "Débutant", ces fonctionnalités peuvent être masquées ou désactivées. Consultez les détails de votre plan pour plus d'informations.
+L'accès à certaines fonctionnalités, comme l'onglet **Sources** ou la possibilité de voir les résultats de la recherche web, peut dépendre de votre plan d'abonnement. Si vous êtes sur un plan "Start", ces fonctionnalités peuvent être masquées ou désactivées. Consultez les détails de votre plan pour plus d'informations.

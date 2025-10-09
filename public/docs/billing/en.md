@@ -1,5 +1,3 @@
-# Billing and Subscription Management
-
 This guide provides a complete overview of how to manage your subscription, view pricing plans, monitor your usage, and update your account details from the user dashboard.
 
 ## Table of Contents

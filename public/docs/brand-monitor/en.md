@@ -1,5 +1,3 @@
-# Brand Monitor User Guide
-
 Welcome to the Brand Monitor! This guide will walk you through how to use this powerful tool to analyze your brand's online presence, track competitors, and gain insights from leading AI models.
 
 ## Table of Contents

@@ -1,4 +1,7 @@
-- Découverte de marques tendancess
-- Comparaison d'alternatives
-- Recommandations par usage
-- Analyse de visibilitécc
+- **Analyse d'URL**, catégorisation d'affaire, résumé et génération de tags liés aux charactérisiques clefs (USP)
+- **SmartComp©** identifie vos concurrents en fonction de votre marché et de votre localisation
+- **PromptGen©** génère automatiquement les prompts que les utilisateurs sont susceptibles de rechercher pour votre marque en fonction de votre positionnement et de votre industrie
+- **Multi-LLM** permet de faire des recherches sur les LLM conversationnels d'OpenAI et Perplexity de manière simultanée
+- **SmartBrand©** détecte votre marque et ses déclinaisons (par exemple : "Audemars Piguet" se décline en "Audemars" et "AP", "Christian Dior" en "Dior" etc)
+- **MarketComp©** analyse la présence de vos compétiteurs
+- **Analyse de sentiments** pour détecter si les IA parlent de votre marque et de celles de vos concurrents de manière positive, neutre ou négative

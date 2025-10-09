@@ -1,5 +1,3 @@
-# AI Chat User Guide
-
 Welcome to the AI Chat! This guide explains how to use the chat interface to interact with our AI, manage your conversations, and understand the credit-based messaging system.
 
 ## Table of Contents

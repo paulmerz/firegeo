@@ -1,5 +1,3 @@
-# Guide de l'utilisateur du Chat IA
-
 Bienvenue dans le Chat IA ! Ce guide explique comment utiliser l'interface de chat pour interagir avec notre IA, gérer vos conversations et comprendre le système de messagerie basé sur les crédits.
 
 ## Table des matières

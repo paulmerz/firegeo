@@ -1,5 +1,3 @@
-# Gestion de la Facturation et des Abonnements
-
 Ce guide offre un aperçu complet de la manière de gérer votre abonnement, de consulter les forfaits, de surveiller votre utilisation et de mettre à jour les détails de votre compte depuis le tableau de bord utilisateur.
 
 ## Table des matières

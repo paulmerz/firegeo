@@ -1,1 +1,1 @@
-VOXUM is an AI-powered brand analysis and product recommendation tool with web search.
+AI models like GPT and Perplexity are the new brand influencers. Our platform helps you track, analyze, and optimize how your brand appears across conversational AIs — an essential tool for your Generative Engine Optimization (GEO) strategy.
