@@ -4,13 +4,14 @@ import { useParams } from 'next/navigation';
 import { marked } from 'marked';
 
 const sectionsConfig = [
-  { id: 'introduction', fr: '/docs/introduction/fr.md', en: '/docs/introduction/en.md', de: '/docs/introduction/de.md', label: { fr: 'Introduction', en: 'Introduction', de: 'Einführung' } },
-  { id: 'features', fr: '/docs/key-features/fr.md', en: '/docs/key-features/en.md', de: '/docs/key-features/de.md', label: { fr: 'Fonctionnalités clés', en: 'Key features', de: 'Hauptmerkmale' } },
-  { id: 'getting-started', fr: '/docs/getting-started/fr.md', en: '/docs/getting-started/en.md', de: '/docs/getting-started/de.md', label: { fr: 'Bien démarrer', en: 'Getting started', de: 'Erste Schritte' } },
-  { id: 'prompts', fr: '/docs/prompts/fr.md', en: '/docs/prompts/en.md', de: '/docs/prompts/de.md', label: { fr: 'Prompts efficaces', en: 'Effective prompts', de: 'Effektive Prompts' } },
-  { id: 'reading-results', fr: '/docs/reading-results/fr.md', en: '/docs/reading-results/en.md', de: '/docs/reading-results/de.md', label: { fr: 'Lire les résultats', en: 'Reading results', de: 'Ergebnisse lesen' } },
-  { id: 'credits', fr: '/docs/credits/fr.md', en: '/docs/credits/en.md', de: '/docs/credits/de.md', label: { fr: 'Crédits', en: 'Credits', de: 'Credits' } },
-  { id: 'openai-web-search', fr: '/docs/openai-web-search/fr.md', en: '/docs/openai-web-search/en.md', de: '/docs/openai-web-search/de.md', label: { fr: 'OpenAI Web Search', en: 'OpenAI Web Search', de: 'OpenAI Web Search' } },
+  { id: 'introduction', fr: '/docs/introduction/fr.md', en: '/docs/introduction/en.md', label: { fr: 'Introduction', en: 'Introduction' } },
+  { id: 'features', fr: '/docs/key-features/fr.md', en: '/docs/key-features/en.md', label: { fr: 'Fonctionnalités clés', en: 'Key features' } },
+  { id: 'getting-started', fr: '/docs/getting-started/fr.md', en: '/docs/getting-started/en.md', label: { fr: 'Bien démarrer', en: 'Getting started' } },
+  { id: 'brand-monitor', fr: '/docs/brand-monitor/fr.md', en: '/docs/brand-monitor/en.md', label: { fr: 'Moniteur de Marque', en: 'Brand Monitor' } },
+  { id: 'billing', fr: '/docs/billing/fr.md', en: '/docs/billing/en.md', label: { fr: 'Facturation', en: 'Billing' } },
+  { id: 'prompts', fr: '/docs/prompts/fr.md', en: '/docs/prompts/en.md', label: { fr: 'Prompts efficaces', en: 'Effective prompts' } },
+  { id: 'reading-results', fr: '/docs/reading-results/fr.md', en: '/docs/reading-results/en.md', label: { fr: 'Lire les résultats', en: 'Reading results' } },
+  { id: 'credits', fr: '/docs/credits/fr.md', en: '/docs/credits/en.md', label: { fr: 'Crédits', en: 'Credits' } },
 ];
 
 export default function DocsPage() {

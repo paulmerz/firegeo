@@ -1,1 +1,1 @@
-VOXUM est un outil d'analyse de marques et de recommandations produits alimenté par l'IA et la recherche web.
+Les modèles d’IA comme GPT et Perplexity sont les nouveaux influenceurs de marque. Notre plateforme vous aide à surveiller, analyser et optimiser la manière dont votre marque apparaît dans les intelligences artificielles conversationnelles — un outil essentiel pour votre stratégie de Generative Engine Optimization (GEO).

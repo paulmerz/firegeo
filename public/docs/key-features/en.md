@@ -1,4 +1,7 @@
-- Discover trending brands
-- Compare alternatives
-- Recommendations by use
-- Visibility analysis
+- **URL analysis**, business categorization, summarization, and tag generation based on key characteristics (USPs)
+- **SmartComp©** identifies your competitors based on your market and location
+- **PromptGen©** automatically generates the prompts users are most likely to search for your brand, according to your positioning and industry
+- **Multi-LLM** enables simultaneous research across OpenAI and Perplexity conversational models
+- **SmartBrand©** detects your brand and its variations (for example: “Audemars Piguet” → “Audemars” and “AP”, “Christian Dior” → “Dior”, etc.)
+- **MarketComp©** analyzes the visibility of your competitors
+- **Sentiment analysis** to detect whether AIs talk about your brand and your competitors in a positive, neutral, or negative way
