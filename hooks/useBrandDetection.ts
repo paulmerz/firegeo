@@ -194,9 +194,9 @@ export function useBrandDetection(): UseBrandDetectionReturn {
         throw new Error(error.message);
       }
 
-      const resultsObject = await response.json();
-      // Convert Object back to Map
-      const results = new Map(Object.entries(resultsObject));
+      const resultsObject = (await response.json()) as Record<string, BrandDetectionResult>;
+      // Convert Object back to Map with proper typing
+      const results = new Map<string, BrandDetectionResult>(Object.entries(resultsObject));
       console.log(`[useBrandDetection] Détection multiple réussie: ${results.size} marques traitées`);
       return results;
     } catch (err) {
