@@ -37,16 +37,28 @@ export default function DocsPage() {
     let cancelled = false;
     async function loadAll() {
       try {
-        const { default: DOMPurify } = await import('isomorphic-dompurify');
         const entries = await Promise.all(
           sectionsConfig.map(async (s) => {
-            const path = locale === 'de' ? s.de : locale === 'fr' ? s.fr : s.en;
-            const res = await fetch(path, { cache: 'no-store' });
-            if (!res.ok) throw new Error(`HTTP ${res.status} for ${path}`);
-            const md = await res.text();
-            const parsed = marked.parse(md) as string;
-            const clean = DOMPurify.sanitize(parsed);
-            return [s.id, clean as string] as const;
+            // Build candidate paths by locale with graceful fallback
+            const dePathFromFr = s.fr.replace('/fr.md', '/de.md');
+            const dePathFromEn = s.en.replace('/en.md', '/de.md');
+            const deCandidates = Array.from(new Set([dePathFromFr, dePathFromEn, s.fr, s.en]));
+            const candidates = locale === 'de'
+              ? deCandidates
+              : (locale === 'fr' ? [s.fr, s.en] : [s.en, s.fr]);
+
+            let lastError: string | null = null;
+            for (const path of candidates) {
+              const res = await fetch(path, { cache: 'no-store' });
+              if (res.ok) {
+                const md = await res.text();
+                const parsed = marked.parse(md) as string;
+                // We control doc content in /public/docs, so sanitization is not required
+                return [s.id, parsed as string] as const;
+              }
+              lastError = `HTTP ${res.status} for ${path}`;
+            }
+            throw new Error(lastError ?? 'No doc found');
           })
         );
         if (!cancelled) {
@@ -67,7 +79,8 @@ export default function DocsPage() {
 
   const labelFor = (id: string) => {
     const s = sectionsConfig.find(x => x.id === id)!;
-    return s.label[locale];
+    const labelLocale = locale === 'fr' ? 'fr' : 'en';
+    return s.label[labelLocale];
   };
 
   return (

@@ -1,5 +1,7 @@
-- Entdecken Sie Trendmarken
-- Vergleichen Sie Alternativen
-- Empfehlungen nach Verwendung
-- Sichtbarkeitsanalyse
-
+- **URL‑Analyse**, Geschäftskategorisierung, Zusammenfassung und Tag‑Generierung basierend auf Schlüsselmerkmalen (USPs)
+- **SmartComp©** identifiziert Ihre Wettbewerber anhand Ihres Marktes und Standorts
+- **PromptGen©** generiert automatisch die Prompts, nach denen Nutzer für Ihre Marke voraussichtlich suchen – basierend auf Positionierung und Branche
+- **Multi‑LLM** ermöglicht parallele Recherchen über die konversationalen Modelle von OpenAI und Perplexity
+- **SmartBrand©** erkennt Ihre Marke und deren Varianten (z. B.: „Audemars Piguet“ → „Audemars“ und „AP“, „Christian Dior“ → „Dior“ usw.)
+- **MarketComp©** analysiert die Sichtbarkeit Ihrer Wettbewerber
+- **Sentiment‑Analyse** erkennt, ob KIs über Ihre Marke und Wettbewerber positiv, neutral oder negativ sprechen

@@ -1,2 +1,1 @@
-VOXUM ist ein KI-gestütztes Tool zur Markenanalyse und Produktempfehlung mit Web-Suche.
-
+KI‑Modelle wie GPT und Perplexity sind die neuen Marken‑Influencer. Unsere Plattform hilft Ihnen dabei, zu verfolgen, zu analysieren und zu optimieren, wie Ihre Marke in konversationalen KIs erscheint – ein unverzichtbares Werkzeug für Ihre Generative‑Engine‑Optimization‑(GEO)‑Strategie.
