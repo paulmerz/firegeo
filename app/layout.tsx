@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+const appUrl: string = process.env.NEXT_PUBLIC_APP_URL ?? "https://voxum.maj.digital";
+const isProduction = appUrl === "https://voxum.maj.digital";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -13,6 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(appUrl),
   title: "Voxum by MAJ Digital",
   description: "AI models like GPT and Perplexity are new brand influencers. Our platform helps you monitor, analyze, and optimize how your brand appears in conversational AI — a must-have for your Generative Engine Optimization (GEO) strategy.",
   
@@ -20,7 +24,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://voxum.maj.digital",
+    url: `${appUrl}/en`,
     siteName: "Voxum by MAJ Digital",
     title: "Voxum by MAJ Digital - Generative Engine Optimization (GEO) Platform",
     description: "AI models like GPT and Perplexity are new brand influencers. Our platform helps you monitor, analyze, and optimize how your brand appears in conversational AI — a must-have for your Generative Engine Optimization (GEO) strategy.",
@@ -42,9 +46,6 @@ export const metadata: Metadata = {
     images: ["/og/twitter-card.jpg"],
   },
   
-  // Métadonnées supplémentaires pour LinkedIn et Discord
-  // (LinkedIn et Discord utilisent les métadonnées Open Graph)
-  
   // Métadonnées supplémentaires
   keywords: [
     "Generative Engine Optimization",
@@ -62,8 +63,8 @@ export const metadata: Metadata = {
   creator: "MAJ Digital",
   publisher: "MAJ Digital",
   
-  // Robots
-  robots: {
+  // Robots - Block indexing on staging/development
+  robots: isProduction ? {
     index: true,
     follow: true,
     googleBot: {
@@ -73,17 +74,24 @@ export const metadata: Metadata = {
       "max-image-preview": "large",
       "max-snippet": -1,
     },
+  } : {
+    index: false,
+    follow: false,
+    noarchive: true,
+    nosnippet: true,
+    noimageindex: true,
+    nocache: true,
   },
 
   
-  // Alternates pour le multilingue
-  alternates: {
+  // Alternates pour le multilingue - Only on production
+  alternates: isProduction ? {
     canonical: "https://voxum.maj.digital",
     languages: {
       "en": "https://voxum.maj.digital/en",
       "fr": "https://voxum.maj.digital/fr",
     },
-  },
+  } : undefined,
 };
 
 export default function RootLayout({

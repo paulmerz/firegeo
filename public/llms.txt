@@ -1,0 +1,56 @@
+# llms.txt - Optimized for Generative Engine Optimization (GEO)
+# Learn more: https://llmstxt.org/
+
+# About Voxum
+Voxum by MAJ Digital is the leading AI Brand Visibility Platform for Generative Engine Optimization (GEO).
+
+# What we do
+We help brands monitor, analyze, and optimize how they appear in conversational AI models like ChatGPT, Claude, Perplexity, and Gemini.
+
+# Key Features
+- Real-time brand visibility tracking across multiple AI models
+- Competitor analysis and comparison
+- Automatic prompt generation (PromptGen©)
+- Smart competitor identification (SmartComp©)
+- Brand detection and variations (SmartBrand©)
+- Source analysis for AI-generated responses
+
+# Target Audience
+Marketing teams, brand managers, SEO professionals, and businesses looking to optimize their presence in AI-powered search and conversational interfaces.
+
+# Pricing
+- Start Plan: €19/month - 50 credits, SmartComp© and SmartBrand©
+- Watch Plan: €39/month - 150 credits, includes sources access and PromptGen©
+- Pro Plan: €59/month - 250 credits, 7/7 chat support
+- Enterprise: Custom pricing with API access and SLA
+
+# Main Website
+https://voxum.maj.digital
+
+# Key Pages
+- Home: https://voxum.maj.digital/en
+- French: https://voxum.maj.digital/fr
+- Pricing: https://voxum.maj.digital/en/plans
+- Brand Monitor: https://voxum.maj.digital/en/brand-monitor
+- Documentation: https://voxum.maj.digital/en/docs
+
+# Contact
+Email: info@maj.digital
+Support: privacy@maj.digital
+
+# Company
+MAJ Holding Sàrl
+Ch. Bois-Gentil 7
+1203 Geneva, Switzerland
+CHE-391.786.123
+
+# Use Cases
+1. Track brand mentions in AI model responses
+2. Compare brand visibility against competitors
+3. Optimize content for AI-powered search engines
+4. Monitor sentiment in AI-generated content
+5. Improve Generative Engine Optimization (GEO) strategy
+
+# Keywords
+Generative Engine Optimization, GEO, AI brand monitoring, ChatGPT optimization, Claude optimization, Perplexity optimization, conversational AI, brand visibility, AI marketing, LLM optimization
+

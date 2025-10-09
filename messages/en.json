@@ -814,8 +814,7 @@
         "priceDesc": "/month",
         "feature1": "50 credits",
         "feature2": "SmartComp© identifies your competitors",
-        "feature3": "SmartBrand© detects your brand and its variations",
-        "feature4": "Email support within 48h"
+        "feature3": "SmartBrand© detects your brand and its variations"
       },
       "watch": {
         "name": "Watch",
@@ -823,7 +822,9 @@
         "priceDesc": "/month",
         "feature1": "150 credits",
         "feature2": "Everything included in \"Start\"",
-        "feature3": "Access to sources used by AI engines"
+        "feature3": "Access to sources used by AI engines",
+        "feature4": "PromptGen© automatically generates prompts that users are likely to search for your brand",
+        "feature5": "Email support within 48h"
       },
       "pro": {
         "name": "Pro",
@@ -886,7 +887,7 @@
     "stats": {
       "aiModels": {
         "title": "AI Multi-Models",
-        "description": "OpenAI, Claude, Perplexity and more"
+        "description": "OpenAI & Perplexity"
       },
       "realtime": {
         "title": "PromptGen©",
@@ -1073,6 +1074,15 @@
       "title": "Confirm Plan Change",
       "dueToday": "Due today:",
       "processing": "Processing..."
+    }
+  }
+  ,
+  "seo": {
+    "common": {
+      "title": "Voxum by MAJ Digital",
+      "description": "AI models like GPT and Perplexity are new brand influencers. Our platform helps you monitor, analyze, and optimize how your brand appears in conversational AI — essential for your Generative Engine Optimization (GEO) strategy.",
+      "siteName": "Voxum by MAJ Digital",
+      "ogAlt": "Voxum - Generative Engine Optimization Platform"
     }
   }
 }

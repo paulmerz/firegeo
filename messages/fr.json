@@ -814,8 +814,7 @@
         "priceDesc": "/mois",
         "feature1": "50 crédits",
         "feature2": "SmartComp© identifie vos concurrents",
-        "feature3": "SmartBrand© détecte votre marque et ses déclinaisons",
-        "feature4": "Support par email 48h"
+        "feature3": "SmartBrand© détecte votre marque et ses déclinaisons"
       },
       "watch": {
         "name": "Watch",
@@ -823,7 +822,9 @@
         "priceDesc": "/mois",
         "feature1": "150 crédits",
         "feature2": "Tout ce qui est inclus dans \"Start\"",
-        "feature3": "Accès aux sources utilisées par les moteurs d'IA"
+        "feature3": "Accès aux sources utilisées par les moteurs d'IA",
+        "feature4": "PromptGen© génère automatiquement les prompts que les utilisateurs sont susceptibles de rechercher pour votre marque",
+        "feature5": "Support par email 48h"
       },
       "pro": {
         "name": "Pro",
@@ -886,7 +887,7 @@
     "stats": {
       "aiModels": {
         "title": "Multi-modèles IA",
-        "description": "OpenAI, Claude, Perplexity et Plus"
+        "description": "OpenAI & Perplexity"
       },
       "realtime": {
         "title": "PromptGen©",
@@ -1073,6 +1074,15 @@
       "title": "Confirmer le changement de plan",
       "dueToday": "À payer aujourd'hui :",
       "processing": "Traitement..."
+    }
+  }
+  ,
+  "seo": {
+    "common": {
+      "title": "Voxum par MAJ Digital",
+      "description": "Les modèles d'IA comme GPT et Perplexity sont de nouveaux influenceurs de marque. Notre plateforme vous aide à surveiller, analyser et optimiser la façon dont votre marque apparaît dans l'IA conversationnelle — essentiel pour votre stratégie de Generative Engine Optimization (GEO).",
+      "siteName": "Voxum par MAJ Digital",
+      "ogAlt": "Voxum - Plateforme de Generative Engine Optimization"
     }
   }
 }
