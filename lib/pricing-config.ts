@@ -9,7 +9,8 @@ import { StaticProduct } from '@/components/pricing-section';
  * @returns Configuration des produits de tarification
  */
 export function getPricingProducts(t: (key: string) => string): StaticProduct[] {
-  return [
+
+  const products: StaticProduct[] = [
     {
       id: 'start',
       name: t('pricing.voxum.start.name'),
@@ -65,5 +66,10 @@ export function getPricingProducts(t: (key: string) => string): StaticProduct[] 
       ],
     },
   ];
+
+  // NOTE: Surcharge CHF désactivée pour l'instant (on reste en EUR partout).
+  // Pour réactiver l'affichage CHF pour les locales suisses, décommentez le bloc ci-dessous.
+
+  return products;
 }
 

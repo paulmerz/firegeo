@@ -1,5 +1,8 @@
 import { NextRequest } from 'next/server';
 import { routing } from '@/i18n/routing';
+import enMessages from '../messages/en.json';
+import frMessages from '../messages/fr.json';
+import deMessages from '../messages/de.json';
 
 /**
  * Extract locale from API request headers
@@ -24,16 +27,23 @@ export function getLocaleFromRequest(request: NextRequest): string {
   // Fallback to Accept-Language header
   const acceptLanguage = request.headers.get('accept-language');
   if (acceptLanguage) {
-    // Parse Accept-Language header (e.g., "fr-FR,fr;q=0.9,en;q=0.8")
-    const languages = acceptLanguage
+    // Parse Accept-Language header (e.g., "fr-CH,fr;q=0.9,de-CH;q=0.8") en conservant la région
+    const candidates = acceptLanguage
       .split(',')
-      .map(lang => lang.split(';')[0].trim().toLowerCase())
-      .map(lang => lang.split('-')[0]); // Extract language code only
+      .map(item => item.split(';')[0].trim().toLowerCase());
 
-    // Find first supported language
-    for (const lang of languages) {
-      if (routing.locales.some(l => l === lang)) {
-        return lang;
+    // 1) Chercher une correspondance exacte (incluant fr-CH / de-CH)
+    for (const cand of candidates) {
+      if (routing.locales.some(l => l.toLowerCase() === cand)) {
+        return cand;
+      }
+    }
+
+    // 2) Sinon, réduire à la langue et chercher une correspondance (fr, de, en)
+    for (const cand of candidates) {
+      const base = cand.split('-')[0];
+      if (routing.locales.some(l => l === base)) {
+        return base;
       }
     }
   }
@@ -46,18 +56,19 @@ export function getLocaleFromRequest(request: NextRequest): string {
  * Load messages for a given locale
  */
 export async function getMessages(locale: string) {
-  // Ensure locale is supported
-  if (!routing.locales.some(l => l === locale)) {
-    locale = routing.defaultLocale;
-  }
+  // Normaliser la locale et mapper les variantes CH vers les bases
+  const normalized = routing.locales.some(l => l === locale) ? locale : routing.defaultLocale;
+  const base = normalized === 'fr-CH' ? 'fr' : normalized === 'de-CH' ? 'de' : normalized;
 
-  try {
-    const messages = await import(`../messages/${locale}.json`);
-    return messages.default;
-  } catch {
-    console.warn(`Failed to load messages for locale ${locale}, falling back to ${routing.defaultLocale}`);
-    const fallbackMessages = await import(`../messages/${routing.defaultLocale}.json`);
-    return fallbackMessages.default;
+  // Import statique pour compatibilité Turbopack/HMR
+  switch (base) {
+    case 'fr':
+      return frMessages as Record<string, unknown>;
+    case 'de':
+      return deMessages as Record<string, unknown>;
+    case 'en':
+    default:
+      return enMessages as Record<string, unknown>;
   }
 }
 
@@ -108,6 +119,66 @@ export function getLanguageInstruction(locale: string): string {
   };
   
   return languageMap[localeUpper] || `language with locale: ${locale}`;
+}
+
+/**
+ * Return a BCP-47 locale for number/currency formatting.
+ * Keeps region when provided (e.g., fr-CH, de-CH) to get Swiss rules.
+ */
+export function getFormattingLocale(locale: string): string {
+  // Prefer exact locale tag if present, else fall back to language only
+  if (routing.locales.includes(locale as (typeof routing.locales)[number])) return locale;
+  const language = locale.split('-')[0];
+  return routing.locales.includes(language as (typeof routing.locales)[number]) ? language : routing.defaultLocale;
+}
+
+/**
+ * Format a currency amount based on the UI locale.
+ * - Uses CHF by default for fr-CH/de-CH, otherwise requires explicit currency.
+ */
+export function formatCurrency(amount: number, locale: string, currency?: string): string {
+  const isSwiss = locale === 'fr-CH' || locale === 'de-CH';
+  const resolvedCurrency = currency || (isSwiss ? 'CHF' : 'EUR');
+  const formattingLocale = getFormattingLocale(locale);
+  return new Intl.NumberFormat(formattingLocale, {
+    style: 'currency',
+    currency: resolvedCurrency,
+    currencyDisplay: 'symbol'
+  }).format(amount);
+}
+
+/**
+ * Mappe la locale UI vers la locale Stripe Checkout attendue.
+ * Stripe accepte des BCP-47 standards; on force les variantes suisses.
+ */
+export function getStripeCheckoutLocale(uiLocale: string): string {
+  // Liste des locales supportées par Stripe (extraites de la doc)
+  const supported = new Set([
+    'auto','bg','cs','da','de','el','en','en-GB','es','es-419','et','fi','fil','fr','fr-CA','hr','hu','id','it','ja','ko','lt','lv','ms','mt','nb','nl','pl','pt','pt-BR','ro','ru','sk','sl','sv','th','tr','vi','zh','zh-HK','zh-TW'
+  ]);
+
+  // Normaliser les variantes suisses vers la langue de base supportée
+  if (uiLocale === 'fr-CH') return 'fr';
+  if (uiLocale === 'de-CH') return 'de';
+
+  // Si déjà supportée, retourner tel quel
+  if (supported.has(uiLocale)) return uiLocale;
+
+  // Retenter avec la langue de base
+  const base = uiLocale.split('-')[0];
+  if (supported.has(base)) return base;
+
+  // Fallback raisonnable
+  return 'en';
+}
+
+/**
+ * Devise par défaut selon la locale UI.
+ * - fr-CH / de-CH => CHF
+ * - sinon => EUR (par défaut) sauf override explicite.
+ */
+export function getCurrencyForLocale(uiLocale: string): 'CHF' | 'EUR' {
+  return uiLocale === 'fr-CH' || uiLocale === 'de-CH' ? 'CHF' : 'EUR';
 }
 
 /**

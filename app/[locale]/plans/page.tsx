@@ -1,11 +1,12 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import PricingSection from '@/components/pricing-section';
 import { getPricingProducts } from '@/lib/pricing-config';
 
 export default function PricingPage() {
   const t = useTranslations();
+  const locale = useLocale();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 py-12">
@@ -24,7 +25,7 @@ export default function PricingPage() {
         <div className="bg-white rounded-[20px] shadow-xl p-8 border border-zinc-200">
           <PricingSection
             showHeader={false}
-            products={getPricingProducts(t)}
+            products={getPricingProducts(t, locale)}
           />
         </div>
       </div>

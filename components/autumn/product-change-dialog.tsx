@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { getStripeCheckoutLocale } from '@/lib/locale-utils';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,7 @@ const ProductChangeDialog = ({ open, setOpen, preview }: ProductChangeDialogProp
   const { invalidateCredits } = useCreditsInvalidation();
   const t = useTranslations('autumn.productChangeDialog');
   const tc = useTranslations('common');
+  const locale = useLocale();
 
   const handleConfirm = async () => {
     if (!preview.product_id) return;
@@ -46,6 +48,11 @@ const ProductChangeDialog = ({ open, setOpen, preview }: ProductChangeDialogProp
         checkoutSessionParams: {
           success_url: window.location.origin + '/dashboard',
           cancel_url: window.location.origin + '/dashboard',
+          locale: getStripeCheckoutLocale(locale),
+          automatic_tax: { enabled: true },
+          tax_id_collection: { enabled: true },
+          billing_address_collection: 'required',
+          customer_update: { address: 'auto', shipping: 'auto', name: 'auto' },
         },
       });
       // Refresh customer data to update usage statistics
@@ -62,10 +69,10 @@ const ProductChangeDialog = ({ open, setOpen, preview }: ProductChangeDialogProp
 
   const formatPrice = (price?: number, currency = 'USD') => {
     if (!price) return null;
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency,
-    }).format(price); 
+    }).format(price);
   };
 
   return (

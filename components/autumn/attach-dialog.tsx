@@ -14,7 +14,8 @@ import {
 import { getAttachContent } from "@/lib/autumn/attach-content";
 import { useCustomer } from "@/hooks/useAutumnCustomer";
 import { isNetworkError } from "@/lib/network-utils";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { getStripeCheckoutLocale } from '@/lib/locale-utils';
 
 export interface AttachDialogProps {
   open: boolean;
@@ -26,6 +27,7 @@ export default function AttachDialog(params?: AttachDialogProps) {
   const { attach, refetch } = useCustomer();
   const [loading, setLoading] = useState(false);
   const tErrors = useTranslations('errors');
+  const locale = useLocale();
   const [optionsInput, setOptionsInput] = useState<FeatureOption[]>(
     params?.preview?.options || []
   );
@@ -93,7 +95,7 @@ export default function AttachDialog(params?: AttachDialogProps) {
             <TotalPrice>
               <span>Due Today</span>
               <span>
-                {new Intl.NumberFormat("en-US", {
+                {new Intl.NumberFormat(locale, {
                   style: "currency",
                   currency: due_today.currency,
                 }).format(getTotalPrice())}
@@ -110,8 +112,15 @@ export default function AttachDialog(params?: AttachDialogProps) {
                     featureId: option.feature_id,
                     quantity: option.quantity || 0,
                   })),
-                  successUrl: window.location.origin + '/dashboard',
-                  cancelUrl: window.location.origin + '/plans',
+                  checkoutSessionParams: {
+                    locale: getStripeCheckoutLocale(locale),
+                    success_url: window.location.origin + '/dashboard',
+                    cancel_url: window.location.origin + '/plans',
+                    automatic_tax: { enabled: true },
+                    tax_id_collection: { enabled: true },
+                    billing_address_collection: 'required',
+                    customer_update: { address: 'auto', shipping: 'auto', name: 'auto' },
+                  },
                 });
                 setOpen(false);
                 

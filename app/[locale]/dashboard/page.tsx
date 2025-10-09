@@ -6,11 +6,13 @@ import { Product } from 'autumn-js';
 import { useSession } from '@/lib/auth-client';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Lock, CheckCircle, Loader2, User, Mail, Phone, Edit2, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProductChangeDialog from '@/components/autumn/product-change-dialog';
 import { useProfile, useUpdateProfile, useSettings, useUpdateSettings } from '@/hooks/useProfile';
+import { getPricingProducts } from '@/lib/pricing-config';
+import { getStripeCheckoutLocale } from '@/lib/locale-utils';
 
 // Infer the session type from useSession
 type SessionData = NonNullable<ReturnType<typeof useSession>['data']>;
@@ -21,6 +23,7 @@ function DashboardContent({ session }: { session: SessionData }) {
   const { products } = usePricingTable();
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const t = useTranslations();
+  const locale = useLocale();
   useParams();
   
   // Profile and settings hooks
@@ -88,7 +91,13 @@ function DashboardContent({ session }: { session: SessionData }) {
         checkoutSessionParams: {
           success_url: window.location.origin + '/dashboard',
           cancel_url: window.location.origin + '/dashboard',
-        },
+          // Stripe Checkout locale selon la locale UI
+          locale: getStripeCheckoutLocale(locale),
+          automatic_tax: { enabled: true },
+          tax_id_collection: { enabled: true },
+          billing_address_collection: 'required',
+          customer_update: { address: 'auto', shipping: 'auto', name: 'auto' },
+        },  
       });
       // Refresh customer data after product change
       await refetch();
@@ -219,79 +228,32 @@ function DashboardContent({ session }: { session: SessionData }) {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {(() => {
-                // Données de pricing depuis les traductions (identiques à la homepage)
-                const pricingData = [
-                  {
-                    id: 'start',
-                    name: t('pricing.voxum.start.name'),
-                    price: t('pricing.voxum.start.price'),
-                    priceDesc: t('pricing.voxum.start.priceDesc'),
-                    features: [
-                      t('pricing.voxum.start.feature1'),
-                      t('pricing.voxum.start.feature2'),
-                      t('pricing.voxum.start.feature3'),
-                      t('pricing.voxum.start.feature4'),
-                    ],
-                  },
-                  {
-                    id: 'watch',
-                    name: t('pricing.voxum.watch.name'),
-                    price: t('pricing.voxum.watch.price'),
-                    priceDesc: t('pricing.voxum.watch.priceDesc'),
-                    features: [
-                      t('pricing.voxum.watch.feature1'),
-                      t('pricing.voxum.watch.feature2'),
-                      t('pricing.voxum.watch.feature3'),
-                    ],
-                    recommended: true,
-                  },
-                  {
-                    id: 'pro',
-                    name: t('pricing.voxum.pro.name'),
-                    price: t('pricing.voxum.pro.price'),
-                    priceDesc: t('pricing.voxum.pro.priceDesc'),
-                    features: [
-                      t('pricing.voxum.pro.feature1'),
-                      t('pricing.voxum.pro.feature2'),
-                      t('pricing.voxum.pro.feature3'),
-                    ],
-                  },
-                  {
-                    id: 'enterprise',
-                    name: t('pricing.voxum.enterprise.name'),
-                    price: t('pricing.voxum.enterprise.price'),
-                    features: [
-                      t('pricing.voxum.enterprise.feature1'),
-                      t('pricing.voxum.enterprise.feature2'),
-                      t('pricing.voxum.enterprise.feature3'),
-                    ],
-                  },
-                ];
-
+                const pricingProducts = getPricingProducts(t);
                 const isCurrentPlan = (planId: string) => activeProduct?.id === planId;
                 const isScheduledPlan = (planId: string) => scheduledProduct?.id === planId;
                 const autumnProduct = (planId: string) => products?.find((p: Product) => p.id === planId);
 
-                return pricingData.map((plan) => {
-                  const isCurrent = isCurrentPlan(plan.id);
-                  const isScheduled = isScheduledPlan(plan.id);
-                  const hasAutumnProduct = !!autumnProduct(plan.id);
+                return pricingProducts.map((p) => {
+                  const isCurrent = isCurrentPlan(p.id);
+                  const isScheduled = isScheduledPlan(p.id);
+                  const hasAutumnProduct = !!autumnProduct(p.id);
+                  const recommended = !!p.recommendText;
 
                   return (
                     <div 
-                      key={plan.id} 
+                      key={p.id} 
                       className={`bg-white rounded-[20px] shadow-sm border p-6 flex flex-col ${
-                        plan.recommended ? 'ring-2 ring-orange-500 relative' : ''
+                        recommended ? 'ring-2 ring-orange-500 relative' : ''
                       }`}
                     >
-                      {plan.recommended && (
+                      {recommended && (
                         <div className="absolute top-3 right-3 bg-black text-white text-xs font-medium px-2 py-1 rounded-full">
                           {t('home.pricing.mostPopular')}
                         </div>
                       )}
                       
                       <div className="flex items-baseline justify-between mb-2">
-                        <h3 className="font-semibold text-lg">{plan.name}</h3>
+                        <h3 className="font-semibold text-lg">{p.name || p.id}</h3>
                         {isCurrent && (
                           <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
                             {t('dashboard.currentPlanLabel')}
@@ -306,17 +268,17 @@ function DashboardContent({ session }: { session: SessionData }) {
                       
                       <div className="mb-4 pb-4 border-b">
                         <div className="flex items-baseline">
-                          <span className="text-2xl font-bold">{plan.price}</span>
-                          {plan.priceDesc && (
+                          <span className="text-2xl font-bold">{p.price.primaryText}</span>
+                          {p.price.secondaryText && (
                             <span className="text-gray-600 ml-1 text-sm">
-                              {plan.priceDesc}
+                              {p.price.secondaryText}
                             </span>
                           )}
                         </div>
                       </div>
 
                       <ul className="space-y-2 mb-6 flex-grow">
-                        {plan.features.map((feature, index) => (
+                        {p.items.map((item, index) => (
                           <li key={index} className="flex items-start text-sm">
                             {isCurrent ? (
                               <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
@@ -324,7 +286,7 @@ function DashboardContent({ session }: { session: SessionData }) {
                               <Lock className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
                             )}
                             <span className={!isCurrent ? 'text-gray-600' : 'text-gray-900'}>
-                              {feature}
+                              {item.primaryText}
                             </span>
                           </li>
                         ))}
@@ -332,13 +294,13 @@ function DashboardContent({ session }: { session: SessionData }) {
 
                       {!isCurrent && !isScheduled && hasAutumnProduct && (
                         <Button 
-                          onClick={() => handleUpgrade(plan.id)} 
+                          onClick={() => handleUpgrade(p.id)} 
                           size="sm"
-                          className={plan.recommended ? 'btn-firecrawl-orange w-full' : 'w-full'}
-                          variant={plan.recommended ? 'default' : 'outline'}
+                          className={recommended ? 'btn-firecrawl-orange w-full' : 'w-full'}
+                          variant={recommended ? 'default' : 'outline'}
                           disabled={loadingProductId !== null}
                         >
-                          {loadingProductId === plan.id ? (
+                          {loadingProductId === p.id ? (
                             <>
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                               {t('dashboard.loading')}

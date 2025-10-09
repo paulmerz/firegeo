@@ -13,14 +13,10 @@ import { getPricingTableContent } from "@/lib/autumn/pricing-table-content";
 import { Product, ProductItem } from "autumn-js";
 import { isNetworkError } from "@/lib/network-utils";
 import { useTranslations } from "next-intl";
-export default function PricingTable({
-  productDetails,
-}: {
-  productDetails?: Product[];
-}) {
+export default function PricingTable() {
   const { attach } = useCustomer();
   const [isAnnual, setIsAnnual] = useState(false);
-  const { products, isLoading, error } = usePricingTable({ productDetails });
+  const { products, isLoading, error } = usePricingTable();
   const tErrors = useTranslations('errors');
 
   if (isLoading) {
@@ -88,8 +84,12 @@ export default function PricingTable({
                     await attach({
                       productId: product.id,
                       dialog: AttachDialog,
-                      successUrl: window.location.origin + '/dashboard',
-                      cancelUrl: window.location.origin + '/pricing',
+                      checkoutSessionParams: {
+                        automatic_tax: { enabled: true },
+                        tax_id_collection: { enabled: true },
+                        billing_address_collection: 'required',
+                        customer_update: { address: 'auto', shipping: 'auto', name: 'auto' },
+                      },
                     });
                   } else if (product.display?.button_url) {
                     window.open(product.display?.button_url, "_blank");

@@ -7,6 +7,10 @@ export default getRequestConfig(async ({ requestLocale }) => {
   // to implement locale-based code splitting.
   let locale = await requestLocale;
 
+  // Normalize region-specific Swiss locales to base language for messages
+  const localeForMessages =
+    locale === 'fr-CH' ? 'fr' : locale === 'de-CH' ? 'de' : locale;
+
   // Ensure that a valid locale is used
   if (!routing.locales.includes(locale as any)) {
     locale = routing.defaultLocale;
@@ -14,6 +18,6 @@ export default getRequestConfig(async ({ requestLocale }) => {
 
   return {
     locale,
-    messages: (await import(`../messages/${locale}.json`)).default
+    messages: (await import(`../messages/${localeForMessages}.json`)).default
   };
 });
