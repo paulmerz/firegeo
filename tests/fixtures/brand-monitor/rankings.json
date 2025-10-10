@@ -1,0 +1,52 @@
+[
+  {
+    "rank": 1,
+    "brand": "Rolex",
+    "visibilityScore": 50,
+    "mentions": 4,
+    "totalResponses": 8,
+    "percentage": 50.0,
+    "sentiment": "positive",
+    "trend": "stable"
+  },
+  {
+    "rank": 2,
+    "brand": "Audemars Piguet",
+    "visibilityScore": 12.5,
+    "mentions": 2,
+    "totalResponses": 8,
+    "percentage": 25.0,
+    "sentiment": "positive",
+    "trend": "stable"
+  },
+  {
+    "rank": 3,
+    "brand": "Patek Philippe",
+    "visibilityScore": 12.5,
+    "mentions": 2,
+    "totalResponses": 8,
+    "percentage": 25.0,
+    "sentiment": "positive",
+    "trend": "stable"
+  },
+  {
+    "rank": 4,
+    "brand": "Vacheron Constantin",
+    "visibilityScore": 12.5,
+    "mentions": 2,
+    "totalResponses": 8,
+    "percentage": 25.0,
+    "sentiment": "positive",
+    "trend": "stable"
+  },
+  {
+    "rank": 5,
+    "brand": "Omega",
+    "visibilityScore": 12.5,
+    "mentions": 2,
+    "totalResponses": 8,
+    "percentage": 25.0,
+    "sentiment": "positive",
+    "trend": "stable"
+  }
+]
