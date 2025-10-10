@@ -1,0 +1,81 @@
+{
+  "id": "rolex-mocked-001",
+  "name": "Rolex",
+  "url": "https://mockedData.com",
+  "description": "Rolex est une marque suisse de montres de luxe fondée en 1905. La marque est reconnue pour ses montres de haute qualité, sa précision et son prestige dans l'industrie horlogère mondiale.",
+  "industry": "Horlogerie de luxe",
+  "logo": "https://www.rolex.com/rolex-logo.png",
+  "favicon": "https://www.rolex.com/favicon.ico",
+  "scraped": true,
+  "scrapedData": {
+    "title": "Rolex - Montres de luxe suisses",
+    "description": "Rolex est une marque suisse de montres de luxe fondée en 1905. La marque est reconnue pour ses montres de haute qualité, sa précision et son prestige dans l'industrie horlogère mondiale.",
+    "keywords": [
+      "montres de luxe",
+      "horlogerie suisse",
+      "Submariner",
+      "Daytona",
+      "Datejust",
+      "GMT-Master",
+      "Explorer",
+      "précision",
+      "qualité",
+      "prestige"
+    ],
+    "mainContent": "Rolex est une manufacture horlogère suisse de renommée mondiale, créée en 1905 par Hans Wilsdorf et Alfred Davis. La marque est devenue synonyme d'excellence, d'innovation et de prestige dans l'industrie horlogère. Ses montres emblématiques comme la Submariner, la Daytona et la GMT-Master sont recherchées par les collectionneurs du monde entier.",
+    "mainProducts": [
+      "Submariner",
+      "Daytona", 
+      "Datejust",
+      "GMT-Master",
+      "Explorer",
+      "Yacht-Master",
+      "Sky-Dweller",
+      "Milgauss"
+    ],
+    "competitors": [
+      "Audemars Piguet",
+      "Patek Philippe",
+      "Vacheron Constantin",
+      "Omega",
+      "Breitling",
+      "TAG Heuer"
+    ],
+    "ogImage": "https://www.rolex.com/og-image.jpg",
+    "ogTitle": "Rolex - Montres de luxe suisses",
+    "ogDescription": "Découvrez la collection de montres Rolex, symboles d'excellence et de prestige dans l'horlogerie de luxe.",
+    "metaKeywords": [
+      "rolex",
+      "montres",
+      "luxe",
+      "suisse",
+      "horlogerie",
+      "submariner",
+      "daytona"
+    ],
+    "rawMetadata": {
+      "viewport": "width=device-width, initial-scale=1",
+      "robots": "index, follow",
+      "language": "fr-FR"
+    }
+  },
+  "businessProfile": {
+    "businessType": "Manufacture horlogère",
+    "marketSegment": "Luxe haut de gamme",
+    "targetCustomers": "Consommateurs de luxe, collectionneurs, professionnels",
+    "primaryMarkets": [
+      "Europe",
+      "Amérique du Nord", 
+      "Asie-Pacifique",
+      "Moyen-Orient"
+    ],
+    "technologies": [
+      "Mouvements mécaniques",
+      "Alliages exclusifs",
+      "Certification chronomètre",
+      "Technologies antimagnétiques"
+    ],
+    "businessModel": "Vente directe et réseau de distributeurs sélectionnés",
+    "confidenceScore": 0.95
+  }
+}

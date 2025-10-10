@@ -76,7 +76,7 @@ export default function Home() {
 
       <InteractiveDemo />
 
-      <PricingSection products={getPricingProducts(t, locale)} />
+      <PricingSection products={getPricingProducts(t)} />
 
 
       {/* CTA Section 1 */}

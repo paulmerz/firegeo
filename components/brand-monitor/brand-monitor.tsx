@@ -828,8 +828,8 @@ export function BrandMonitor({
               </div>
               <p className="text-xs text-gray-500 mt-2 text-center">
                 {useWebSearch 
-                  ? "Les modèles d&apos;IA effectueront des recherches en ligne pour des informations plus récentes et précises"
-                  : "Les modèles d&apos;IA utiliseront uniquement leurs connaissances pré-entraînées"
+                  ? "Les modèles d'IA effectueront des recherches en ligne pour des informations plus récentes et précises"
+                  : "Les modèles d'IA utiliseront uniquement leurs connaissances pré-entraînées"
                 }
               </p>
             </div>

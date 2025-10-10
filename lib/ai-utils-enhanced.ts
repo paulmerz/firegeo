@@ -7,6 +7,7 @@ import { getLanguageName } from './locale-utils';
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
 import { detectMultipleBrands, type BrandDetectionMatch, ensureBrandVariationsForBrand } from './brand-detection-service';
 import { cleanProviderResponse } from './provider-response-utils';
+import { mockAnalyzePromptWithProviderEnhanced, shouldUseMockMode } from './ai-utils-mock';
 
 /**
  * Extract brand name from complex brand strings
@@ -73,16 +74,16 @@ export async function analyzePromptWithProviderEnhanced(
   provider: string,
   brandName: string,
   competitors: string[],
-  useMockMode: boolean = false,
   useWebSearch: boolean = true, // New parameter
   locale?: string, // Locale parameter
   brandVariations?: Record<string, BrandVariation> // Pre-generated brand variations
 ): Promise<AIResponse> {
-  const trimmedPrompt = prompt.trim();
-  // Mock mode for demo/testing without API keys
-  if (useMockMode || provider === 'Mock') {
-    return generateMockResponse(trimmedPrompt, provider, brandName, competitors);
+  // Use mock mode in test environment
+  if (shouldUseMockMode()) {
+    return mockAnalyzePromptWithProviderEnhanced(prompt, provider, brandName, competitors, useWebSearch, locale, brandVariations);
   }
+
+  const trimmedPrompt = prompt.trim();
 
   // Normalize provider name for consistency
   const normalizedProvider = normalizeProviderName(provider);
@@ -455,41 +456,6 @@ Be very thorough in detecting company names - they might appear in different con
   }
 }
 
-// Helper function to generate mock responses
-function generateMockResponse(
-  prompt: string,
-  provider: string,
-  brandName: string,
-  competitors: string[]
-): AIResponse {
-  const mentioned = Math.random() > 0.3;
-  const position = mentioned ? Math.floor(Math.random() * 5) + 1 : undefined;
-  
-  // Get the proper display name for the provider
-  const providerDisplayName = provider === 'openai' ? 'OpenAI' :
-                             provider === 'anthropic' ? 'Anthropic' :
-                             provider === 'google' ? 'Google' :
-                             provider === 'perplexity' ? 'Perplexity' :
-                             provider; // fallback to original
-  
-  return {
-    provider: providerDisplayName,
-    prompt,
-    response: `Mock response for ${prompt}`,
-    rankings: competitors.slice(0, 5).map((comp, idx) => ({
-      position: idx + 1,
-      company: comp,
-      reason: 'Mock reason',
-      sentiment: 'neutral' as const,
-    })),
-    competitors: competitors.slice(0, 3),
-    brandMentioned: mentioned,
-    brandPosition: position,
-    sentiment: mentioned ? 'positive' : 'neutral',
-    confidence: 0.8,
-    timestamp: new Date(),
-  };
-}
 
 /**
  * Enhanced brand detection using the centralized service

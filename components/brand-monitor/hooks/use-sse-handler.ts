@@ -15,6 +15,7 @@ import {
   BrandExtractionProgressData,
   ScoringProgressData,
   SSEEvent,
+  SSEEventType,
   AnalysisStage
 } from '@/lib/types';
 import type { ApiUsageSummaryData } from '../api-usage-summary';
@@ -320,7 +321,7 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
         }
         
         // Recalculer la progression globale après chaque prompt terminé
-        const updatedStatus = {
+        const updatedStatus: PromptCompletionStatus = {
           ...promptCompletionStatusRef.current,
           [normalizedCompletePrompt]: {
             ...promptCompletionStatusRef.current[normalizedCompletePrompt],
@@ -511,7 +512,7 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
           payload: 'Failed to analyze brand visibility'
         });
       }
-      logger.error(error);
+      logger.error(error instanceof Error ? error.message : String(error));
       
       // Reset progress
       dispatch({

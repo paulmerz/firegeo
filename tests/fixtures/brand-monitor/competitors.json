@@ -1,0 +1,46 @@
+[
+  {
+    "name": "Audemars Piguet",
+    "url": "https://www.audemarspiguet.com",
+    "description": "Audemars Piguet est une manufacture horlogère suisse de haute horlogerie fondée en 1875. Connue pour ses montres complexes et innovantes comme la Royal Oak.",
+    "industry": "Horlogerie de luxe",
+    "founded": "1875",
+    "headquarters": "Le Brassus, Suisse",
+    "website": "https://www.audemarspiguet.com",
+    "keyProducts": ["Royal Oak", "Royal Oak Offshore", "Code 11.59"],
+    "brandValues": ["Innovation", "Tradition", "Excellence", "Audace"]
+  },
+  {
+    "name": "Patek Philippe",
+    "url": "https://www.patek.com",
+    "description": "Patek Philippe est une manufacture horlogère suisse de haute horlogerie fondée en 1839. Reconnue pour ses montres de collection et complications complexes.",
+    "industry": "Horlogerie de luxe",
+    "founded": "1839",
+    "headquarters": "Genève, Suisse",
+    "website": "https://www.patek.com",
+    "keyProducts": ["Nautilus", "Calatrava", "Aquanaut", "Grand Complications"],
+    "brandValues": ["Tradition", "Excellence", "Innovation", "Prestige"]
+  },
+  {
+    "name": "Vacheron Constantin",
+    "url": "https://www.vacheron-constantin.com",
+    "description": "Vacheron Constantin est la plus ancienne manufacture horlogère au monde, fondée en 1755. Spécialisée dans la haute horlogerie et les complications.",
+    "industry": "Horlogerie de luxe",
+    "founded": "1755",
+    "headquarters": "Genève, Suisse",
+    "website": "https://www.vacheron-constantin.com",
+    "keyProducts": ["Overseas", "Patrimony", "Traditionnelle", "Métiers d'Art"],
+    "brandValues": ["Tradition", "Excellence", "Artisanat", "Innovation"]
+  },
+  {
+    "name": "Omega",
+    "url": "https://www.omegawatches.com",
+    "description": "Omega est une marque horlogère suisse fondée en 1848. Connue pour ses montres de sport et son association avec la NASA et les Jeux Olympiques.",
+    "industry": "Horlogerie de luxe",
+    "founded": "1848",
+    "headquarters": "Bienne, Suisse",
+    "website": "https://www.omegawatches.com",
+    "keyProducts": ["Speedmaster", "Seamaster", "Constellation", "De Ville"],
+    "brandValues": ["Innovation", "Précision", "Sport", "Exploration"]
+  }
+]

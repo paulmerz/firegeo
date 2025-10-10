@@ -192,6 +192,7 @@ export type SSEEventType =
   | 'brand-extraction-progress'
   | 'brand-extraction-complete'
   | 'partial-result'
+  | 'credits'
   | 'complete'
   | 'error';
 

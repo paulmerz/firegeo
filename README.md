@@ -52,6 +52,19 @@ npm run dev
 
 Visit [http://localhost:3000](http://localhost:3000) to see your app!
 
+### Tests E2E (Playwright)
+
+- Installer le binaire Chromium: `pnpm playwright:install`
+- Lancer les tests: `pnpm test:e2e`
+- Mode visible: `pnpm test:e2e:headed`
+
+Playwright démarre automatiquement le serveur via `pnpm dev` (Turbopack) avec `reuseExistingServer`.
+
+#### Pre-commit (branche dev)
+
+Husky exécute les E2E sur la branche `dev`. Si un test échoue, le commit est bloqué.
+Hook: `.husky/pre-commit`.
+
 ## Manual Setup (Step-by-Step)
 
 If you prefer to run the setup commands individually or need more control over the configuration process:

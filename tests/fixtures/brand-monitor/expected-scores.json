@@ -1,0 +1,44 @@
+{
+  "targetBrand": "Rolex",
+  "expectedScores": {
+    "visibilityScore": 50,
+    "mentions": 4,
+    "totalResponses": 8,
+    "percentage": 50.0,
+    "sentiment": "positive"
+  },
+  "expectedHighlights": {
+    "totalHighlights": 4,
+    "brandVariations": [
+      "Rolex",
+      "ROLEX"
+    ],
+    "expectedLocations": [
+      "Prompts et réponses"
+    ]
+  },
+  "expectedCompetitors": [
+    "Audemars Piguet",
+    "Patek Philippe",
+    "Vacheron Constantin",
+    "Omega"
+  ],
+  "expectedMatrix": {
+    "rows": 5,
+    "columns": 4,
+    "totalCells": 20,
+    "nonZeroCells": 8
+  },
+  "expectedRankings": {
+    "firstPlace": "Rolex",
+    "lastPlace": "Omega",
+    "totalBrands": 5
+  },
+  "validationRules": {
+    "visibilityScoreCalculation": "(mentions / totalResponses) * 100",
+    "expectedVisibilityScore": "(4 / 8) * 100 = 50%",
+    "highlightSelector": "[data-brand-highlight=\"true\"]",
+    "matrixSelector": "[data-competitor][data-provider]",
+    "rankingSelector": ".brand-ranking-item"
+  }
+}

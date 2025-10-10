@@ -10,6 +10,7 @@ import { generateBrandQueryPrompts } from './prompt-generation';
 import { createFallbackBrandPrompts } from './prompt-fallbacks';
 import { logger } from './logger';
 import { cleanProviderResponse } from './provider-response-utils';
+import { mockAnalyzePromptWithProvider, shouldUseMockMode } from './ai-utils-mock';
 
 
 const RankingSchema = z.object({
@@ -187,14 +188,14 @@ export async function analyzePromptWithProvider(
   provider: string,
   brandName: string,
   competitors: string[],
-  useMockMode: boolean = false,
   locale?: string
 ): Promise<AIResponse> {
-  const trimmedPrompt = (prompt || '').trim();
-  // Mock mode for demo/testing without API keys
-  if (useMockMode || provider === 'Mock') {
-    return generateMockResponse(trimmedPrompt, provider, brandName, competitors);
+  // Use mock mode in test environment
+  if (shouldUseMockMode()) {
+    return mockAnalyzePromptWithProvider(prompt, provider, brandName, competitors, locale);
   }
+
+  const trimmedPrompt = (prompt || '').trim();
 
   // Normalize provider name for consistency
   const normalizedProvider = normalizeProviderName(provider);
@@ -1073,47 +1074,3 @@ export async function analyzeCompetitorsByProvider(
   return { providerRankings, providerComparison };
 }
 
-// Mock response generator for demo mode
-function generateMockResponse(
-  prompt: string,
-  provider: string,
-  brandName: string,
-  competitors: string[]
-): AIResponse {
-  // Create a realistic-looking ranking
-  const allCompanies = [brandName, ...competitors].slice(0, 10);
-  const shuffled = [...allCompanies].sort(() => Math.random() - 0.5);
-  
-  const rankings: CompanyRanking[] = shuffled.slice(0, 5).map((company, index) => ({
-    position: index + 1,
-    company,
-    reason: `${company} offers strong features in this category`,
-    sentiment: Math.random() > 0.7 ? 'positive' : Math.random() > 0.3 ? 'neutral' : 'negative' as const,
-  }));
-  
-  const brandRanking = rankings.find(r => r.company === brandName);
-  const brandMentioned = !!brandRanking || Math.random() > 0.3;
-  const brandPosition = brandRanking?.position || (brandMentioned ? Math.floor(Math.random() * 8) + 3 : undefined);
-  
-  // Get the proper display name for the provider
-  const providerDisplayName = provider === 'openai' ? 'OpenAI' :
-                             provider === 'anthropic' ? 'Anthropic' :
-                             provider === 'google' ? 'Google' :
-                             provider === 'perplexity' ? 'Perplexity' :
-                             provider; // fallback to original
-
-  return {
-    provider: providerDisplayName,
-    prompt,
-    response: `Based on my analysis, here are the top solutions:\n\n${rankings.map(r => 
-      `${r.position}. ${r.company} - ${r.reason}`
-    ).join('\n')}\n\nThese rankings are based on features, user satisfaction, and market presence.`,
-    rankings,
-    competitors: competitors.filter(() => Math.random() > 0.5),
-    brandMentioned,
-    brandPosition,
-    sentiment: brandRanking?.sentiment || 'neutral',
-    confidence: Math.random() * 0.3 + 0.7,
-    timestamp: new Date(),
-  };
-} 
