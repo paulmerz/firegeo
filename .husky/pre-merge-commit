@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/h"
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [ "$branch" = "dev" ]; then
+  echo "Running E2E on dev branch merge..."
+  pnpm test:e2e || exit 1
+else
+  echo "Skipping E2E on merge (branch: $branch)"
+fi
