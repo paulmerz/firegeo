@@ -2,7 +2,7 @@
 
 import { Link } from "@/i18n/routing";
 import { useState } from "react";
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import PricingSection from '@/components/pricing-section';
 import InteractiveDemo from '@/components/interactive-demo';
@@ -11,7 +11,6 @@ import { getPricingProducts } from '@/lib/pricing-config';
 export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const t = useTranslations();
-  const locale = useLocale();
   useParams();
 
   const toggleFaq = (index: number) => {

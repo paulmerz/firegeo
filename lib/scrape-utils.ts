@@ -1,4 +1,5 @@
 import { generateObject } from 'ai';
+import type { LanguageModelV1 } from 'ai';
 import { z } from 'zod';
 import { Company } from './types';
 import FirecrawlApp from '@mendable/firecrawl-js';
@@ -167,7 +168,7 @@ export async function crawlCompanyInfo(url: string, maxAge?: number, locale?: st
     };
 
     console.log('🕷️ [Crawler] Calling Firecrawl crawlUrl with options:', crawlOptions);
-    const result: FirecrawlCrawlResult = await (firecrawl as Record<string, unknown>).crawlUrl(normalizedUrl, crawlOptions) as FirecrawlCrawlResult;
+    const result: FirecrawlCrawlResult = await (firecrawl as unknown as { crawlUrl: (url: string, options: unknown) => Promise<FirecrawlCrawlResult> }).crawlUrl(normalizedUrl, crawlOptions);
     if (!result) {
       throw new Error('Crawl returned empty result');
     }
@@ -180,7 +181,7 @@ export async function crawlCompanyInfo(url: string, maxAge?: number, locale?: st
     } else if (Array.isArray(result.pages)) {
       pages = result.pages.filter(Boolean);
     } else {
-      const jobId = result.jobId || result.id || result.data?.id;
+      const jobId = result.jobId || result.id || (result as { data?: { id?: string } }).data?.id;
       if (!jobId && result?.error) {
         throw new Error(result.error);
       }
@@ -193,9 +194,8 @@ export async function crawlCompanyInfo(url: string, maxAge?: number, locale?: st
           let statusResp: FirecrawlCrawlResult | null = null;
           try {
             // Try both method names for compatibility
-            const firecrawlObj = firecrawl as Record<string, unknown>;
-            const checker = firecrawlObj.checkCrawlStatus || firecrawlObj.getCrawlStatus;
-            if (checker && typeof checker === 'function') {
+            const checker = (firecrawl as unknown as { checkCrawlStatus?: (id: string) => Promise<FirecrawlCrawlResult>; getCrawlStatus?: (id: string) => Promise<FirecrawlCrawlResult> }).checkCrawlStatus || (firecrawl as unknown as { checkCrawlStatus?: (id: string) => Promise<FirecrawlCrawlResult>; getCrawlStatus?: (id: string) => Promise<FirecrawlCrawlResult> }).getCrawlStatus;
+            if (typeof checker === 'function') {
               statusResp = await checker.call(firecrawl, jobId) as FirecrawlCrawlResult;
             }
           } catch (e) {
@@ -280,48 +280,50 @@ async function processScrapedData(markdown: string, metadata: Record<string, unk
     
     // Try providers in order of preference (fastest first)
     const providerOrder = ['openai', 'anthropic', 'google', 'perplexity'];
-    let selectedProvider = null;
-    let selectedModel = null;
     
-    for (const providerId of providerOrder) {
-      const provider = configuredProviders.find(p => p.id === providerId);
-      if (provider) {
-        console.log(`🔍 [Processor] Trying provider: ${provider.name}`);
-        
-        // Try to find a fast model first, then fallback to default
-        const fastModel = provider.models.find(m => 
-          m.name.toLowerCase().includes('mini') || 
+    // Build candidate list from configured providers following the preference order
+    const candidates = providerOrder
+      .map(id => configuredProviders.find(p => p.id === id))
+      .filter((p): p is typeof configuredProviders[number] => !!p)
+      .map(provider => {
+        // Prefer a fast model if present
+        const fastModel = provider.models.find(m =>
+          m.name.toLowerCase().includes('mini') ||
           m.name.toLowerCase().includes('flash') ||
           m.name.toLowerCase().includes('haiku')
         );
-        
         const modelId = fastModel?.id || provider.defaultModel;
-        const model = getProviderModel(provider.id, modelId);
-        
-        if (model) {
-          selectedProvider = provider;
-          selectedModel = model;
-          console.log(`✅ [Processor] Selected provider: ${provider.name} with model: ${model}`);
-          break;
-        } else {
-          console.warn(`⚠️ [Processor] Provider ${provider.name} available but no suitable model found`);
-        }
-      }
-    }
-    
-    if (!selectedProvider || !selectedModel) {
+        const model = getProviderModel(provider.id, modelId) as unknown as LanguageModelV1 | null;
+        return { provider, model } as { provider: typeof configuredProviders[number]; model: LanguageModelV1 | null };
+      })
+      .filter((c): c is { provider: typeof configuredProviders[number]; model: LanguageModelV1 } => !!c.model);
+
+    if (candidates.length === 0) {
       console.error('❌ [Processor] No working provider/model combination found');
       throw new Error('No working provider/model combination found');
     }
-    
+
+    // Helper to decide if we should failover to next provider
+    const isQuotaOrRetryableError = (err: unknown): boolean => {
+      const msg = (err as { message?: string })?.message?.toLowerCase?.() || '';
+      const code = (err as { code?: string })?.code || (err as { data?: { error?: { code?: string } } })?.data?.error?.code;
+      const statusCode = (err as { statusCode?: number })?.statusCode;
+      return statusCode === 429 || msg.includes('quota') || msg.includes('rate limit') || code === 'insufficient_quota';
+    };
+
     // Get language instruction for the prompt based on locale
     const languageInstruction = getLanguageInstruction(locale || 'en');
-    
-    console.log('SELECTED MODEL (scrapeCompanyInfo.generateObject):', typeof selectedModel === 'string' ? selectedModel : selectedModel);
-    const { object } = await generateObject({
-      model: selectedModel,
-      schema: EnhancedCompanySchema,
-      prompt: `Analyze this company website and extract comprehensive business information for competitor research:
+
+    // Attempt providers sequentially until one succeeds
+    let extractedObject: unknown | null = null;
+    for (const { provider, model } of candidates) {
+      try {
+        console.log(`🔍 [Processor] Trying provider: ${provider.name}`);
+        console.log('SELECTED MODEL (scrapeCompanyInfo.generateObject):', typeof model === 'string' ? model : model);
+        const { object } = await generateObject({
+          model,
+          schema: EnhancedCompanySchema,
+          prompt: `Analyze this company website and extract comprehensive business information for competitor research:
 
       URL: ${url}
       Content: ${html}
@@ -379,7 +381,28 @@ async function processScrapedData(markdown: string, metadata: Record<string, unk
       - "ABC123 Solutions" → "ABC123 Solutions" (NOT "ABC Solutions")
       - "Smith & Associates LLC" → "Smith & Associates LLC" (NOT "Smith Associates")
       - "Tech-Pro Industries" → "Tech-Pro Industries" (NOT "TechPro Industries")`
-    });
+        });
+        extractedObject = object;
+        console.log(`✅ [Processor] Extraction succeeded with provider: ${provider.name}`);
+        break;
+      } catch (err) {
+        console.warn(`⚠️ [Processor] Extraction failed with provider ${provider.name}:`, err);
+        if (isQuotaOrRetryableError(err)) {
+          console.warn(`↪️ [Processor] Will try next provider due to quota/retryable error (${provider.name})`);
+          continue;
+        }
+        // Non-retryable error: rethrow to be handled by outer catch
+        throw err;
+      }
+    }
+
+    if (!extractedObject) {
+      console.error('❌ [Processor] All providers failed to extract structured data');
+      throw new Error('All providers failed to extract structured data');
+    }
+
+    // Validate that extractedObject has the expected structure
+    const validatedData = EnhancedCompanySchema.parse(extractedObject);
 
     // Extract favicon URL - try multiple sources
     const urlObj = new URL(url);
@@ -393,19 +416,19 @@ async function processScrapedData(markdown: string, metadata: Record<string, unk
     return {
       id: crypto.randomUUID(),
       url: url,
-      name: object.name,
-      description: object.description,
-      industry: object.industry,
+      name: validatedData.name,
+      description: validatedData.description,
+      industry: validatedData.industry,
       logo: metadata?.ogImage as string || undefined,
       favicon: faviconUrl,
       scraped: true,
       scrapedData: {
-        title: object.name,
-        description: object.description,
-        keywords: object.keywords,
+        title: validatedData.name,
+        description: validatedData.description,
+        keywords: validatedData.keywords,
         mainContent: html || '',
-        mainProducts: object.mainProducts,
-        competitors: object.competitors,
+        mainProducts: validatedData.mainProducts,
+        competitors: validatedData.competitors,
         ogImage: metadata?.ogImage as string || undefined,
         favicon: faviconUrl,
         // Additional metadata from enhanced scraping
@@ -416,13 +439,13 @@ async function processScrapedData(markdown: string, metadata: Record<string, unk
       },
       // Enhanced business profile data (eliminating need for company-profiler)
       businessProfile: {
-        businessType: object.businessType,
-        marketSegment: object.marketSegment,
-        targetCustomers: object.targetCustomers,
-        primaryMarkets: object.primaryMarkets,
-        technologies: object.technologies,
-        businessModel: object.businessModel,
-        confidenceScore: object.confidenceScore,
+        businessType: validatedData.businessType,
+        marketSegment: validatedData.marketSegment,
+        targetCustomers: validatedData.targetCustomers,
+        primaryMarkets: validatedData.primaryMarkets,
+        technologies: validatedData.technologies,
+        businessModel: validatedData.businessModel,
+        confidenceScore: validatedData.confidenceScore,
       },
     };
   } catch (error) {

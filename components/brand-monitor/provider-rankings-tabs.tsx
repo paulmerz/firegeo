@@ -12,18 +12,19 @@ import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { CompetitorCell } from './competitor-cell';
 
-// Provider icon mapping
+// Provider icon mapping (case-insensitive)
 const getProviderIcon = (provider: string) => {
-  switch (provider) {
-    case 'OpenAI':
+  const key = (provider || '').toLowerCase();
+  switch (key) {
+    case 'openai':
       return (
         <img 
-          src="https://cdn.brandfetch.io/idR3duQxYl/theme/dark/symbol.svg?c=1bxid64Mup7aczewSAYMX&t=1749527471692" 
+          src="/OpenAI_logo.svg" 
           alt="OpenAI" 
           className="w-7 h-7"
         />
       );
-    case 'Anthropic':
+    case 'anthropic':
       return (
         <img 
           src="https://cdn.brandfetch.io/idmJWF3N06/theme/dark/symbol.svg" 
@@ -31,7 +32,7 @@ const getProviderIcon = (provider: string) => {
           className="w-6 h-6"
         />
       );
-    case 'Google':
+    case 'google':
       return (
         <div className="w-7 h-7 flex items-center justify-center">
           <svg viewBox="0 0 24 24" className="w-7 h-7">
@@ -42,10 +43,10 @@ const getProviderIcon = (provider: string) => {
           </svg>
         </div>
       );
-    case 'Perplexity':
+    case 'perplexity':
       return (
         <img 
-          src="https://cdn.brandfetch.io/idNdawywEZ/w/800/h/800/theme/dark/idgTrPQ4JH.png?c=1bxid64Mup7aczewSAYMX&t=1754453397133" 
+          src="/Perplexity_logo.svg" 
           alt="Perplexity" 
           className="w-6 h-6"
         />
@@ -57,11 +58,6 @@ const getProviderIcon = (provider: string) => {
 
 interface ProviderRankingsTabsProps {
   providerRankings: ProviderSpecificRanking[];
-  brandName: string;
-  shareOfVoice?: number;
-  averagePosition?: number;
-  sentimentScore?: number;
-  weeklyChange?: number;
   identifiedCompetitors?: IdentifiedCompetitor[];
 }
 
@@ -84,11 +80,6 @@ const generateFallbackUrl = (competitorName: string): string | undefined => {
 
 export function ProviderRankingsTabs({ 
   providerRankings,
-  brandName,
-  shareOfVoice,
-  averagePosition,
-  sentimentScore,
-  weeklyChange,
   identifiedCompetitors
 }: ProviderRankingsTabsProps) {
   const t = useTranslations('brandMonitor.providerRankings');
@@ -145,16 +136,6 @@ export function ProviderRankingsTabs({
             <CardDescription className="text-sm text-gray-600 mt-1">
               {t('description')}
             </CardDescription>
-            {/* Utilisation des props pour éviter unused-vars et afficher des infos si disponibles */}
-            {(brandName || shareOfVoice !== undefined || averagePosition !== undefined || sentimentScore !== undefined || weeklyChange !== undefined) && (
-              <div className="mt-1 text-xs text-gray-600">
-                {brandName && <span className="mr-2">{t('brand')}: {brandName}</span>}
-                {shareOfVoice !== undefined && <span className="mr-2">{t('shareOfVoiceShort')}: {shareOfVoice}%</span>}
-                {averagePosition !== undefined && <span className="mr-2">{t('avgPositionShort')}: {averagePosition}</span>}
-                {sentimentScore !== undefined && <span className="mr-2">{t('sentimentShort')}: {sentimentScore}</span>}
-                {weeklyChange !== undefined && <span>{t('weeklyChangeShort')}: {weeklyChange > 0 ? '+' : ''}{weeklyChange}</span>}
-              </div>
-            )}
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold text-orange-600">#{brandRank}</p>

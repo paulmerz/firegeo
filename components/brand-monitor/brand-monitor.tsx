@@ -947,11 +947,6 @@ export function BrandMonitor({
                   <div id="provider-rankings" className="h-full">
                     <ProviderRankingsTabs 
                       providerRankings={providerRankingsForDisplay} 
-                      brandName={company?.name || tAnalysis('yourBrand')}
-                      shareOfVoice={brandData.shareOfVoice}
-                      averagePosition={Math.round(brandData.averagePosition)}
-                      sentimentScore={brandData.sentimentScore}
-                      weeklyChange={brandData.weeklyChange}
                       identifiedCompetitors={identifiedCompetitors}
                     />
                   </div>

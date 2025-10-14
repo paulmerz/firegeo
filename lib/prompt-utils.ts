@@ -16,8 +16,8 @@ export async function generateAdaptivePrompts(
 
   const targetBrand = company.name;
   
-  // Get up to 4 competitor names
-  const competitorNames = competitors.slice(0, 4).map(c => c.name);
+  // Get up to 9 competitor names
+  const competitorNames = competitors.slice(0, 9).map(c => c.name);
   
   try {
     logger.debug('Generating AI prompts via API for:', targetBrand, 'vs', competitorNames);

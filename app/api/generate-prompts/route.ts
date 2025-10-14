@@ -12,7 +12,7 @@ const GeneratePromptsSchema = z.object({
     description: z.string().optional(),
     website: z.string().optional(),
   }),
-  competitors: z.array(z.string()).max(4),
+  competitors: z.array(z.string()).max(9),
 });
 
 export async function POST(request: NextRequest) {

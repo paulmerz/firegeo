@@ -1,14 +1,14 @@
 {
   "targetBrand": "Rolex",
   "expectedScores": {
-    "visibilityScore": 50,
-    "mentions": 4,
+    "visibilityScore": 25,
+    "mentions": 2,
     "totalResponses": 8,
-    "percentage": 50.0,
+    "percentage": 25,
     "sentiment": "positive"
   },
   "expectedHighlights": {
-    "totalHighlights": 4,
+    "totalHighlights": 62,
     "brandVariations": [
       "Rolex",
       "ROLEX"
@@ -18,11 +18,15 @@
     ]
   },
   "expectedCompetitors": [
+    "Caterham Cars",
+    "Grand Seiko",
+    "Yves Saint Laurent",
     "Audemars Piguet",
-    "Patek Philippe",
-    "Vacheron Constantin",
-    "Omega"
+    "Stripe",
+    "Zara",
+    "The North Face"
   ],
+  "perBrandPercentage": 25,
   "expectedMatrix": {
     "rows": 5,
     "columns": 4,
@@ -32,11 +36,11 @@
   "expectedRankings": {
     "firstPlace": "Rolex",
     "lastPlace": "Omega",
-    "totalBrands": 5
+    "totalBrands": 8
   },
   "validationRules": {
     "visibilityScoreCalculation": "(mentions / totalResponses) * 100",
-    "expectedVisibilityScore": "(4 / 8) * 100 = 50%",
+    "expectedVisibilityScore": "(2 / 8) * 100 = 25%",
     "highlightSelector": "[data-brand-highlight=\"true\"]",
     "matrixSelector": "[data-competitor][data-provider]",
     "rankingSelector": ".brand-ranking-item"

@@ -14,9 +14,9 @@ export default defineConfig({
     baseURL: 'http://localhost:3000',
     trace: 'off',
     headless:  false,
-    launchOptions: {
+    /*launchOptions: {
       slowMo: 1000,
-    },
+    },*/
   },
   webServer: {
     command: 'pnpm dev',

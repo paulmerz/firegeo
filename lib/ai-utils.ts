@@ -1,16 +1,27 @@
 
 import { generateText, generateObject } from 'ai';
 import { z } from 'zod';
-import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData } from './types';
+import { Company, BrandPrompt, AIResponse, AIResponseAnalysis, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData, SSEEvent } from './types';
 import { getProviderModel, normalizeProviderName, getConfiguredProviders, PROVIDER_CONFIGS } from './provider-config';
 import { detectBrandMentions, detectMultipleBrands } from './brand-detection-service';
-import { getMessages, getTranslation, getLanguageName } from './locale-utils';
+import { getLanguageName } from './locale-utils';
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
+import type { AIUsage, OpenAICompletionUsage } from './api-usage-tracker';
 import { generateBrandQueryPrompts } from './prompt-generation';
 import { createFallbackBrandPrompts } from './prompt-fallbacks';
 import { logger } from './logger';
 import { cleanProviderResponse } from './provider-response-utils';
-import { mockAnalyzePromptWithProvider, shouldUseMockMode } from './ai-utils-mock';
+import { getMockedRawResponse } from './ai-utils-mock';
+import type { MockMode } from './types';
+
+
+function isError(value: unknown): value is Error {
+  return value instanceof Error;
+}
+
+function toErrorMessage(value: unknown): string {
+  return value instanceof Error ? value.message : String(value);
+}
 
 
 const RankingSchema = z.object({
@@ -28,6 +39,8 @@ const RankingSchema = z.object({
     confidence: z.number().min(0).max(1),
   }),
 });
+
+// type RankingItem = z.infer<typeof RankingSchema>["rankings"][number];
 
 const CompetitorSchema = z.object({
   competitors: z.array(z.object({
@@ -142,7 +155,7 @@ IMPORTANT:
     }
 
     return competitors;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error identifying competitors:', error);
     return company.scrapedData?.competitors || [];
   }
@@ -161,7 +174,7 @@ export async function generatePromptsForCompany(company: Company, competitors: s
         description: company.description || company.scrapedData?.description || company.scrapedData?.title,
         website: company.url,
       },
-      competitors: normalizedCompetitors.slice(0, 4),
+      competitors: normalizedCompetitors.slice(0, 9),
       locale: company.businessProfile?.primaryMarkets?.[0],
       maxPrompts: 8,
     });
@@ -177,8 +190,9 @@ export async function generatePromptsForCompany(company: Company, competitors: s
       prompt,
       category: PROMPT_CATEGORY_SEQUENCE[index % PROMPT_CATEGORY_SEQUENCE.length],
     }));
-  } catch (error) {
-    logger.error('generatePromptsForCompany fallback triggered:', error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    logger.error('generatePromptsForCompany fallback triggered:', msg);
     return createFallbackBrandPrompts(company, normalizedCompetitors);
   }
 }
@@ -188,12 +202,10 @@ export async function analyzePromptWithProvider(
   provider: string,
   brandName: string,
   competitors: string[],
-  locale?: string
+  locale?: string,
+  options?: { mockMode?: MockMode }
 ): Promise<AIResponse> {
-  // Use mock mode in test environment
-  if (shouldUseMockMode()) {
-    return mockAnalyzePromptWithProvider(prompt, provider, brandName, competitors, locale);
-  }
+  // Mocking is controlled via options.mockMode passed from headers
 
   const trimmedPrompt = (prompt || '').trim();
 
@@ -240,16 +252,28 @@ export async function analyzePromptWithProvider(
     console.log(`[${provider}] Normalized provider:`, normalizedProvider);
     
     const startTime = Date.now();
-    const { text, usage } = await generateText({
-      model,
-      prompt: trimmedPrompt,
-      // GPT-5: ne pas envoyer temperature/top_p/logprobs
-      maxTokens: 800,
-    });
+    let text: string;
+    let usage: unknown;
+    
+    // Partial mock: mock only RAW LLM response, keep structured analysis real
+    if ((options?.mockMode || 'none') === 'raw') {
+      console.log(`[${provider}] Using partial mock mode - mocking raw LLM response only`);
+      text = getMockedRawResponse(provider, trimmedPrompt);
+      usage = { inputTokens: 0, outputTokens: 0 };
+    } else {
+      const result = await generateText({
+        model,
+        prompt: trimmedPrompt,
+        // GPT-5: ne pas envoyer temperature/top_p/logprobs
+        maxTokens: 800,
+      });
+      text = result.text;
+      usage = result.usage;
+    }
     const duration = Date.now() - startTime;
 
     // Extract tokens from usage
-    const tokens = extractTokensFromUsage(usage);
+    const tokens = extractTokensFromUsage(usage as AIUsage | OpenAICompletionUsage | null | undefined);
     
     // Update API call with actual usage
     apiUsageTracker.updateCall(callId, {
@@ -266,6 +290,14 @@ export async function analyzePromptWithProvider(
       console.error(`[${provider}] ERROR: Empty response for prompt: "${trimmedPrompt}"`);
       throw new Error(`${provider} returned empty response`);
     }
+
+    // Return RAW response only (analysis handled elsewhere)
+    return {
+      provider,
+      prompt,
+      response: text,
+      timestamp: new Date(),
+    };
 
     // Then analyze it with structured output
     const analysisPrompt = `Analyze this AI response about ${brandName} and its competitors:
@@ -317,101 +349,106 @@ Examples of mentions to catch:
       
       console.log(`[${provider}] Structured analysis successful:`, JSON.stringify(result.object, null, 2));
       object = result.object;
-    } catch (error) {
-      console.error(`[${provider}] ERROR in structured analysis:`, error instanceof Error ? error.message : String(error));
-      if (error instanceof Error) {
+    } catch (error: unknown) {
+      const structuredErrorMessage = toErrorMessage(error);
+      console.error(`[${provider}] ERROR in structured analysis:`, structuredErrorMessage);
+      if (isError(error)) {
+        const err = error as Error & { cause?: unknown };
         console.error(`[${provider}] Error details:`, {
-          name: error.name,
-          stack: error.stack,
-          cause: (error as { cause?: unknown }).cause,
+          name: err.name,
+          stack: err.stack,
+          cause: err.cause,
         });
+      } else {
+        console.error(`[${provider}] Error details (non-Error):`, String(error));
       }
       
       // For Anthropic, try a simpler text-based approach
       if (provider === 'Anthropic') {
         try {
           // Load translations for the current locale
-          const messages = locale ? await getMessages(locale) : null;
+          // const messages = locale ? await getMessages(locale as string) : null;
           
-          const buildSimplePrompt = () => {
-            if (!messages) {
-              // Fallback to English prompt
-              return `Analyze this AI response about ${brandName} and competitors ${competitors.join(', ')}:
-
-"${text}"
-
-Return a simple analysis:
-1. Is ${brandName} mentioned? (yes/no)
-2. What position/ranking does it have? (number or "not ranked")
-3. Which competitors are mentioned? (list names)
-4. What's the overall sentiment? (positive/neutral/negative)`;
-            }
-            
-            // Use translated prompt
-            const t = (key: string, replacements?: Record<string, string>) => getTranslation(messages, key, replacements);
-            
-            return `${t('aiPrompts.analysisPrompt.analyzeResponse', { 
-              brandName, 
-              competitors: competitors.join(', ') 
-            })}:
-
-"${text}"
-
-${t('aiPrompts.analysisPrompt.returnAnalysis')}
-1. ${t('aiPrompts.analysisPrompt.questionMentioned', { brandName })}
-2. ${t('aiPrompts.analysisPrompt.questionPosition')}
-3. ${t('aiPrompts.analysisPrompt.questionCompetitors')}
-4. ${t('aiPrompts.analysisPrompt.questionSentiment')}`;
-          };
+          // const buildSimplePrompt = () => {
+          //   if (!messages) {
+          //     // Fallback to English prompt
+          //     return `Analyze this AI response about ${brandName} and competitors ${competitors.join(', ')}:
+          //
+          // "${text}"
+          //
+          // Return a simple analysis:
+          // 1. Is ${brandName} mentioned? (yes/no)
+          // 2. What position/ranking does it have? (number or "not ranked")
+          // 3. Which competitors are mentioned? (list names)
+          // 4. What's the overall sentiment? (positive/neutral/negative)`;
+          //   }
+          //   
+          //   // Use translated prompt
+          //   const t = (key: string, replacements?: Record<string, string>) => getTranslation(messages!, key, replacements);
+          //   
+          //   return `${t('aiPrompts.analysisPrompt.analyzeResponse', { 
+          //     brandName, 
+          //     competitors: competitors.join(', ') 
+          //   })}:
+          //
+          // "${text}"
+          //
+          // ${t('aiPrompts.analysisPrompt.returnAnalysis')}
+          // 1. ${t('aiPrompts.analysisPrompt.questionMentioned', { brandName })}
+          // 2. ${t('aiPrompts.analysisPrompt.questionPosition')}
+          // 3. ${t('aiPrompts.analysisPrompt.questionCompetitors')}
+          // 4. ${t('aiPrompts.analysisPrompt.questionSentiment')}`;
+          // };
           
-          const simplePrompt = buildSimplePrompt();
+          // const simplePrompt = buildSimplePrompt();
 
-          const { text: simpleResponse } = await generateText({
-            model: model as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-            prompt: simplePrompt,
-          });
+          // let simpleResponse: string;
+          if ((options?.mockMode || 'none') === 'raw') {
+            console.log(`[${provider}] Partial mock mode: mocking raw simple analysis prompt response`);
+            // simpleResponse = getMockedRawResponse(provider, simplePrompt);
+          } else {
+            // const { text: sr } = await generateText({
+            //   model: model as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+            //   prompt: simplePrompt,
+            // });
+            // simpleResponse = sr;
+          }
           
           // Parse the simple response with enhanced detection
-          const lines = simpleResponse.toLowerCase().split('\n');
-          const aiSaysBrandMentioned = lines.some(line => line.includes('yes'));
+          // const lines = simpleResponse.toLowerCase().split('\n');
+          // const aiSaysBrandMentioned = lines.some(line => line.includes('yes'));
           
           // Use enhanced detection as fallback with pre-generated variations
-          const detectionText = cleanProviderResponse(text, { providerName: provider });
+          // const detectionText = cleanProviderResponse(text, { providerName: provider });
 
-          const brandDetection = await detectBrandMentions(detectionText, brandName, {
-            caseSensitive: false,
-            excludeNegativeContext: false,
-            minConfidence: 0.3
-          });
+          // const _brandDetection = await detectBrandMentions(detectionText, brandName, {
+          //   caseSensitive: false,
+          //   excludeNegativeContext: false,
+          //   minConfidence: 0.3
+          // });
 
-          const competitorDetections = await detectMultipleBrands(detectionText, competitors, {
-            caseSensitive: false,
-            excludeNegativeContext: false,
-            minConfidence: 0.3
-          });
+          // const _competitorDetections = await detectMultipleBrands(detectionText, competitors, {
+          //   caseSensitive: false,
+          //   excludeNegativeContext: false,
+          //   minConfidence: 0.3
+          // });
 
-          const competitors_mentioned = competitors.filter(c => 
-            competitorDetections.get(c)?.mentioned || false
-          );
+          // const _competitors_mentioned = competitors.filter(c => 
+          //   _competitorDetections.get(c)?.mentioned || false
+          // );
 
-          if (aiSaysBrandMentioned && !brandDetection.mentioned) {
-            console.log(`[${provider}] Ignoring AI-only brand mention for "${brandName}" - no matches found by detector.`);
-          }
+          // if (aiSaysBrandMentioned && !_brandDetection.mentioned) {
+          //   console.log(`[${provider}] Ignoring AI-only brand mention for "${brandName}" - no matches found by detector.`);
+          // }
 
           return {
             provider,
             prompt,
             response: text,
-            brandMentioned: brandDetection.mentioned,
-            brandPosition: undefined,
-            competitors: competitors_mentioned,
-            rankings: [],
-            sentiment: 'neutral' as const,
-            confidence: 0.7,
             timestamp: new Date(),
           };
-        } catch (fallbackError) {
-          console.error('Fallback analysis also failed:', fallbackError instanceof Error ? fallbackError.message : String(fallbackError));
+        } catch (fallbackError: unknown) {
+          console.error('Fallback analysis also failed:', toErrorMessage(fallbackError));
         }
       }
       
@@ -435,92 +472,87 @@ Please answer:
 
 Be concise and direct.`;
 
-          const { text: fallbackResponse } = await generateText({
-            model: model as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-            prompt: simpleFallbackPrompt,
-            maxTokens: 200,
-          });
+          let fallbackResponse: string;
+          if ((options?.mockMode || 'none') === 'raw') {
+            console.log(`[${provider}] Partial mock mode: mocking raw fallback analysis prompt response`);
+            fallbackResponse = getMockedRawResponse(provider, simpleFallbackPrompt);
+          } else {
+            const { text: fr } = await generateText({
+              model: model as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+              prompt: simpleFallbackPrompt,
+              maxTokens: 200,
+            });
+            fallbackResponse = fr;
+          }
           
           console.log(`[${provider}] Fallback response:`, fallbackResponse);
           
           // Parse the simple response
-          const lines = fallbackResponse.toLowerCase().split('\n');
-          const brandMentionedLine = lines.find(line => line.includes('yes') || line.includes('no'));
-          const aiSaysBrandMentioned = brandMentionedLine?.includes('yes') || false;
+          // const lines = fallbackResponse.toLowerCase().split('\n');
+          // const brandMentionedLine = lines.find(line => line.includes('yes') || line.includes('no'));
+          // const aiSaysBrandMentioned = brandMentionedLine?.includes('yes') || false;
           
           // Enhanced detection as backup
-          const detectionText = cleanProviderResponse(text, { providerName: provider });
+          // const detectionText = cleanProviderResponse(text, { providerName: provider });
 
-          const brandDetection = await detectBrandMentions(detectionText, brandName, {
-            caseSensitive: false,
-            excludeNegativeContext: false,
-            minConfidence: 0.3
-          });
+          // const _brandDetection = await detectBrandMentions(detectionText, brandName, {
+          //   caseSensitive: false,
+          //   excludeNegativeContext: false,
+          //   minConfidence: 0.3
+          // });
 
-          const competitorDetections = await detectMultipleBrands(detectionText, competitors, {
-            caseSensitive: false,
-            excludeNegativeContext: false,
-            minConfidence: 0.3
-          });
+          // const _competitorDetections = await detectMultipleBrands(detectionText, competitors, {
+          //   caseSensitive: false,
+          //   excludeNegativeContext: false,
+          //   minConfidence: 0.3
+          // });
 
-          console.log(`[${provider}] Fallback analysis - AI says mentioned: ${aiSaysBrandMentioned}, Detection says: ${brandDetection.mentioned}`);
+          // console.log(`[${provider}] Fallback analysis - AI says mentioned: ${aiSaysBrandMentioned}, Detection says: ${brandDetection.mentioned}`);
 
-          if (aiSaysBrandMentioned && !brandDetection.mentioned) {
-            console.log(`[${provider}] Ignoring AI-only brand mention for "${brandName}" - detector found no evidence.`);
-          }
+          // if (aiSaysBrandMentioned && !brandDetection.mentioned) {
+          //   console.log(`[${provider}] Ignoring AI-only brand mention for "${brandName}" - detector found no evidence.`);
+          // }
 
           return {
             provider,
             prompt: trimmedPrompt,
             response: text,
-            brandMentioned: brandDetection.mentioned,
-            brandPosition: undefined,
-            competitors: competitors.filter(c => competitorDetections.get(c)?.mentioned || false),
-            rankings: [],
-            sentiment: 'neutral' as const,
-            confidence: 0.7,
             timestamp: new Date(),
           };
-        } catch (fallbackError) {
-          console.error(`[${provider}] Fallback analysis also failed:`, fallbackError instanceof Error ? fallbackError.message : String(fallbackError));
+        } catch (fallbackError: unknown) {
+          console.error(`[${provider}] Fallback analysis also failed:`, toErrorMessage(fallbackError));
         }
       }
       
       // Final fallback with enhanced detection
-      const detectionText = cleanProviderResponse(text, { providerName: provider });
+      // const detectionText = cleanProviderResponse(text, { providerName: provider });
 
-      const brandDetection = await detectBrandMentions(detectionText, brandName, {
-        caseSensitive: false,
-        excludeNegativeContext: false,
-        minConfidence: 0.3
-      });
+      // const _brandDetection = await detectBrandMentions(detectionText, brandName, {
+      //   caseSensitive: false,
+      //   excludeNegativeContext: false,
+      //   minConfidence: 0.3
+      // });
 
-      const competitorDetections = await detectMultipleBrands(detectionText, competitors, {
-        caseSensitive: false,
-        excludeNegativeContext: false,
-        minConfidence: 0.3
-      });
+      // const _competitorDetections = await detectMultipleBrands(detectionText, competitors, {
+      //   caseSensitive: false,
+      //   excludeNegativeContext: false,
+      //   minConfidence: 0.3
+      // });
       
       return {
         provider,
         prompt: trimmedPrompt,
         response: text,
-        brandMentioned: brandDetection.mentioned,
-        brandPosition: undefined,
-        competitors: competitors.filter(c => competitorDetections.get(c)?.mentioned || false),
-        rankings: [],
-        sentiment: 'neutral' as const,
-        confidence: brandDetection.confidence * 0.5, // Lower confidence for fallback
         timestamp: new Date(),
       };
     }
 
-    const rankings = object.rankings.map((r): CompanyRanking => ({
-      position: r.position,
-      company: r.company,
-      reason: r.reason,
-      sentiment: r.sentiment,
-    }));
+    // const _rankings = object.rankings.map((r: RankingItem): CompanyRanking => ({
+    //   position: r.position,
+    //   company: r.company,
+    //   reason: r.reason,
+    //   sentiment: r.sentiment,
+    // }));
 
     // Enhanced fallback with proper brand detection using centralized service
     const detectionText = cleanProviderResponse(text, { providerName: provider });
@@ -550,9 +582,9 @@ Be concise and direct.`;
 
     // Surface AI-only competitors that we intentionally ignore
     const aiOnlyCompetitors = new Set(
-      object.analysis.competitors.filter(c => competitors.includes(c) && c !== brandName)
+      object.analysis.competitors.filter((c: string) => competitors.includes(c) && c !== brandName)
     );
-    relevantCompetitors.forEach(c => aiOnlyCompetitors.delete(c));
+    relevantCompetitors.forEach((c: string) => aiOnlyCompetitors.delete(c));
 
     if (aiOnlyCompetitors.size > 0) {
       console.log(`[${provider}] Ignoring AI-only competitors without detector evidence: [${Array.from(aiOnlyCompetitors).join(', ')}]`);
@@ -590,34 +622,9 @@ Be concise and direct.`;
       provider: providerDisplayName,
       prompt,
       response: text,
-      rankings,
-      competitors: relevantCompetitors,
-      brandMentioned,
-      brandPosition: object.analysis.brandPosition,
-      sentiment: object.analysis.overallSentiment,
-      confidence: object.analysis.confidence,
       timestamp: new Date(),
-      detectionDetails: {
-        brandMatches: brandDetectionResult.matches.map(m => ({
-          text: m.text,
-          index: m.index,
-          confidence: m.confidence
-        })),
-        competitorMatches: new Map(
-          Array.from(competitorDetectionResults.entries())
-            .filter(([, result]) => result.mentioned)
-            .map(([name, result]) => [
-              name,
-              result.matches.map((m) => ({
-                text: m.text,
-                index: m.index,
-                confidence: m.confidence
-              }))
-            ])
-        )
-      }
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(`Error with ${provider}:`, error);
     
     // Special handling for Google errors
@@ -632,13 +639,13 @@ Be concise and direct.`;
       }
     }
     
-    throw error;
+    throw (error instanceof Error ? error : new Error(String(error)));
   }
 }
 
 export async function analyzeCompetitors(
   company: Company,
-  responses: AIResponse[],
+  analyses: AIResponseAnalysis[],
   knownCompetitors: string[]
 ): Promise<CompetitorRanking[]> {
   // Create a set of companies to track (company + its known competitors)
@@ -647,7 +654,7 @@ export async function analyzeCompetitors(
   // Log des marques recherchées
   console.log(`[AnalyzeCompetitors] 🎯 Marque cible: "${company.name}"`);
   console.log(`[AnalyzeCompetitors] 🏆 Concurrents trackés: [${Array.from(trackedCompanies).join(', ')}]`);
-  console.log(`[AnalyzeCompetitors] 📊 Total réponses à analyser: ${responses.length}`);
+  console.log(`[AnalyzeCompetitors] 📊 Total réponses à analyser: ${analyses.length}`);
   
   // Initialize competitor data
   const competitorMap = new Map<string, {
@@ -665,14 +672,13 @@ export async function analyzeCompetitors(
     });
   });
 
-  // Process all responses
-  responses.forEach((response, responseIndex) => {
+  // Process all analyses
+  analyses.forEach((response, responseIndex) => {
     // Track which companies were mentioned in this response
     const mentionedInResponse = new Set<string>();
     
     // Log des outputs de prompts et réponses
-    console.log(`[AnalyzeCompetitors] 📝 Réponse ${responseIndex + 1}/${responses.length} (${response.provider}):`);
-    console.log(`  Prompt: "${response.prompt?.substring(0, 100)}..."`);
+    console.log(`[AnalyzeCompetitors] 📝 Réponse ${responseIndex + 1}/${analyses.length} (${response.provider}):`);
     console.log(`  Réponse: "${response.response?.substring(0, 200)}..."`);
     console.log(`  Brand mentionné: ${response.brandMentioned}`);
     console.log(`  Concurrents détectés: [${response.competitors?.join(', ') || 'aucun'}]`);
@@ -707,7 +713,7 @@ export async function analyzeCompetitors(
       const brandData = competitorMap.get(company.name)!;
       brandData.mentions++;
       console.log(`    ✅ ${company.name} mentionné comme marque`);
-      if (response.brandPosition) {
+      if (response.brandPosition !== undefined && response.brandPosition !== null) {
         brandData.positions.push(response.brandPosition);
       }
       brandData.sentiments.push(response.sentiment);
@@ -715,7 +721,7 @@ export async function analyzeCompetitors(
   });
 
   // Calculate scores for each competitor
-  const totalResponses = responses.length;
+  const totalResponses = analyses.length;
   const competitors: CompetitorRanking[] = [];
 
   competitorMap.forEach((data, name) => {
@@ -838,7 +844,7 @@ export async function analyzeCompetitorsByProvider(
   company: Company,
   responses: AIResponse[],
   knownCompetitors: string[],
-  sendEvent?: (event: any) => Promise<void> // eslint-disable-line @typescript-eslint/no-explicit-any
+  sendEvent?: (event: SSEEvent) => Promise<void>
 ): Promise<{
   providerRankings: ProviderSpecificRanking[];
   providerComparison: ProviderComparisonData[];
@@ -861,13 +867,14 @@ export async function analyzeCompetitorsByProvider(
   console.log(`[ProviderComparison] 🔍 Extraction des marques des réponses LLM...`);
   const brandExtractions = new Map();
   
-  // Grouper les réponses par provider
+  // Grouper les réponses par provider (normalisé)
   const responsesByProvider = new Map<string, AIResponse[]>();
   responses.forEach(response => {
-    if (!responsesByProvider.has(response.provider)) {
-      responsesByProvider.set(response.provider, []);
+    const providerKey = normalizeProviderName(response.provider);
+    if (!responsesByProvider.has(providerKey)) {
+      responsesByProvider.set(providerKey, []);
     }
-    responsesByProvider.get(response.provider)!.push(response);
+    responsesByProvider.get(providerKey)!.push(response);
   });
   
   // Calculer le nombre total de réponses à traiter pour la progression
@@ -875,7 +882,8 @@ export async function analyzeCompetitorsByProvider(
   let processedResponses = 0;
   
   // Analyser chaque provider en parallèle
-  const providerExtractionPromises = Array.from(responsesByProvider.entries()).map(async ([provider, providerResponses]) => {
+  const providerExtractionPromises = Array.from(responsesByProvider.entries()).map(async ([rawProvider, providerResponses]) => {
+    const provider = normalizeProviderName(rawProvider);
     console.log(`[ProviderComparison] 📝 Analyse ${provider}: ${providerResponses.length} réponses`);
     
     // Traiter toutes les réponses de ce provider en parallèle
@@ -909,8 +917,9 @@ export async function analyzeCompetitorsByProvider(
           }
           
           return extraction;
-        } catch (error) {
-          console.error(`[ProviderComparison] ❌ Erreur extraction ${provider}-${index + 1}:`, error);
+        } catch (error: unknown) {
+          const extractionErrorMessage = error instanceof Error ? error.message : String(error);
+          console.error(`[ProviderComparison] ❌ Erreur extraction ${provider}-${index + 1}:`, extractionErrorMessage);
           processedResponses++;
           
           // Mise à jour de la progression même en cas d'erreur
@@ -974,9 +983,7 @@ export async function analyzeCompetitorsByProvider(
       const visibilityScore = detection?.percentage || 0; // Utiliser le pourcentage réel
       
       // Pour les positions et sentiments, on garde la logique existante des rankings
-      const brandRankings = providerResponses
-        .flatMap(r => r.rankings || [])
-        .filter(r => r.company === brandName);
+      const brandRankings: CompanyRanking[] = [];
       
       const positions = brandRankings
         .map(r => r.position)

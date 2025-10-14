@@ -1,0 +1,54 @@
+{
+  "expectedPositiveByPrompt": {
+    "ranking": [
+      "Caterham",
+      "Grand Seiko",
+      "GS",
+      "Yves Saint Laurent",
+      "YSL",
+      "Saint-Laurent"
+    ],
+    "comparison": [
+      "Audemars Piguet",
+      "AP",
+      "Audemars",
+      "Stripe",
+      "Zara",
+      "zara"
+    ],
+    "alternatives": [
+      "The North Face",
+      "North Face",
+      "Heineken",
+      "Morgan Stanley"
+    ],
+    "recommendations": [
+      "Rolex"
+    ]
+  },
+  "forbiddenByPrompt": {
+    "ranking": [
+      "Caterhlam School",
+      "Cater",
+      "Seiko",
+      "Grand",
+      "Laurent"
+    ],
+    "comparison": [
+      "Piguet",
+      "stripe pattern",
+      "pinstripe",
+      "Zoro"
+    ],
+    "alternatives": [
+      "NF",
+      "north-face wall",
+      "NV",
+      "Heine",
+      "Morgan",
+      "MS"
+    ],
+    "recommendations": []
+  }
+}
+

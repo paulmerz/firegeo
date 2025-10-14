@@ -32,7 +32,7 @@ const getProviderIcon = (provider: string) => {
     case 'OpenAI':
       return (
         <img 
-          src="https://cdn.brandfetch.io/idR3duQxYl/theme/dark/symbol.svg?c=1bxid64Mup7aczewSAYMX&t=1749527471692" 
+          src="/OpenAI_logo.svg" 
           alt="OpenAI" 
           className="w-6 h-6"
         />
@@ -59,7 +59,7 @@ const getProviderIcon = (provider: string) => {
     case 'Perplexity':
       return (
         <img 
-          src="https://cdn.brandfetch.io/idNdawywEZ/w/800/h/800/theme/dark/idgTrPQ4JH.png?c=1bxid64Mup7aczewSAYMX&t=1754453397133" 
+          src="/Perplexity_logo.svg" 
           alt="Perplexity" 
           className="w-6 h-6"
         />
@@ -84,7 +84,7 @@ export function PromptsResponsesTab({
   const [allExpanded, setAllExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   // Track which (prompt, provider) sources list is expanded beyond 3
-  const [expandedSources, setExpandedSources] = useState<Record<string, boolean>>({});
+  // const [expandedSources, setExpandedSources] = useState<Record<string, boolean>>({});
   const [detectionCache, setDetectionCache] = useState<Map<string, DetectionResult>>(new Map());
 
   useEffect(() => {
@@ -292,7 +292,7 @@ export function PromptsResponsesTab({
         const hasBrandMention = promptResponses.some(response => {
           const cacheKey = `${response.provider}:${response.prompt}`;
           const detection = detectionCache.get(cacheKey);
-          return detection?.brandMentioned ?? response.brandMentioned;
+          return detection?.brandMentioned ?? false;
         });
         
         // Check if this tile is expanded - auto-expand when searching
@@ -345,7 +345,7 @@ export function PromptsResponsesTab({
                     const isFailed = !providerResponse.response || providerResponse.response.trim().length === 0;
                     const cacheKey = `${providerResponse.provider}:${providerResponse.prompt}`;
                     const detection = detectionCache.get(cacheKey);
-                    const detectedMention = detection?.brandMentioned ?? providerResponse.brandMentioned;
+                    const detectedMention = detection?.brandMentioned ?? false;
                     
                     return (
                       <div key={providerName} className="relative flex items-center">
@@ -390,7 +390,7 @@ export function PromptsResponsesTab({
                       const isFailed = !response.response || response.response.trim().length === 0;
                       const cacheKey = `${response.provider}:${response.prompt}`;
                       const detection = detectionCache.get(cacheKey);
-                      const detectedMention = detection?.brandMentioned ?? response.brandMentioned;
+                      const detectedMention = detection?.brandMentioned ?? false;
 
                       return (
                       <div key={providerName} className="space-y-1">
@@ -408,11 +408,6 @@ export function PromptsResponsesTab({
                               Brand Mentioned
                             </Badge>
                           ) : null}
-                          {response.brandPosition && response.brandPosition > 0 && (
-                            <Badge variant="outline" className="text-xs">
-                              Position #{response.brandPosition}
-                            </Badge>
-                          )}
                         </div>
                         <div className="bg-gray-50 rounded-md p-3 text-sm text-gray-700 select-text cursor-text max-w-full overflow-hidden">
                           {isFailed ? (
@@ -431,80 +426,7 @@ export function PromptsResponsesTab({
                           )}
                         </div>
                         
-                        {/* Web Search Sources */}
-                        {!hideWebSearchSources && response.webSearchSources && response.webSearchSources.length > 0 && (
-                          <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
-                            <div className="flex items-center gap-1 mb-2">
-                              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                              </svg>
-                              <span className="text-xs font-medium text-blue-800">Sources consultées</span>
-                            </div>
-                            <div className="space-y-1">
-                              {(() => {
-                                const expandKey = `${idx}-${providerName}`;
-                                const toDomain = (input: string): string | null => {
-                                  if (!input) return null;
-                                  try {
-                                    const maybeUrl = /^(https?:)?\/\//i.test(input) ? input : `https://${input}`;
-                                    const { hostname } = new URL(maybeUrl);
-                                    return hostname.replace(/^www\./i, '');
-                                  } catch {
-                                    // Fallback: strip path if any
-                                    return input.split('/')[0].replace(/^www\./i, '').trim() || null;
-                                  }
-                                };
-                                const domains = Array.from(new Set(
-                                  (response.webSearchSources || [])
-                                    .map((s: { domain?: string; url?: string }) => toDomain(
-                                      typeof s?.domain === 'string' && s.domain.trim()
-                                        ? s.domain
-                                        : (typeof s?.url === 'string' ? s.url : '')
-                                    ))
-                                    .filter(Boolean)
-                                )) as string[];
-
-                                const showAll = !!expandedSources[expandKey];
-                                const visible = showAll ? domains : domains.slice(0, 3);
-                                return (
-                                  <>
-                                    {visible.map((domain) => (
-                                      <div key={domain} className="text-xs text-blue-700">
-                                        <a
-                                          href={`https://${domain}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="hover:text-blue-900 underline"
-                                        >
-                                          {domain}
-                                        </a>
-                                      </div>
-                                    ))}
-                                    {domains.length > 3 && (
-                                      showAll ? (
-                                        <button
-                                          type="button"
-                                          onClick={() => setExpandedSources(prev => ({ ...prev, [expandKey]: false }))}
-                                          className="text-xs text-blue-600 italic underline"
-                                        >
-                                          {t('sourcesTab.showLess')}
-                                        </button>
-                                      ) : (
-                                        <button
-                                          type="button"
-                                          onClick={() => setExpandedSources(prev => ({ ...prev, [expandKey]: true }))}
-                                          className="text-xs text-blue-600 italic underline"
-                                        >
-                                          +{domains.length - 3} {t('sourcesTab.showMore')}
-                                        </button>
-                                      )
-                                    )}
-                                  </>
-                                );
-                              })()}
-                            </div>
-                          </div>
-                        )}
+                        {/* Web Search Sources removed: UI no longer relies on optional AIResponse fields */}
                       </div>
                       );
                     })}

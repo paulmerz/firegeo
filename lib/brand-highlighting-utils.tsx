@@ -47,35 +47,105 @@ export function getBrandHighlightClass(
 
 /**
  * Create highlighted HTML for a text based on brand detection results
+ * Uses position-based approach to avoid recursive replacements that cause duplications
  */
 export function createHighlightedHtml(
   text: string,
   detectionResults: Map<string, BrandDetectionResultForHighlighting>,
   config: BrandHighlightingConfig
 ): string {
-  let highlightedText = text;
+  // Early return for empty text or no matches
+  if (!text || text.trim().length === 0 || detectionResults.size === 0) {
+    return text;
+  }
+
+  // Collect all matches with their positions by searching in the actual text
+  const allMatches: Array<{
+    start: number;
+    end: number;
+    brandName: string;
+    text: string;
+    className: string;
+    confidence: number;
+  }> = [];
 
   detectionResults.forEach((result, brandName) => {
     if (!result.mentioned || result.matches.length === 0) return;
-
-    // Get unique variations for this brand (use the actual matched texts)
-    // Sort by length (longest first) to prioritize complete brand names like "Audemars Piguet" over "Piguet"
-    const variations = [...new Set(result.matches.map((m) => m.text))].sort((a, b) => b.length - a.length);
     const className = getBrandHighlightClass(brandName, config);
-
+    
+    // Get unique variations for this brand (use the actual matched texts)
+    const variations = [...new Set(result.matches.map((m) => m.text))].sort((a, b) => b.length - a.length);
+    
     variations.forEach((variation) => {
+      // Search for the variation in the actual text instead of using provided index
       const escaped = variation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
-
-      highlightedText = highlightedText.replace(
-        regex,
-        (match) =>
-          `<span class="${className}" data-brand-highlight="true" data-brand-name="${brandName}">${match}</span>`
-      );
+      let match;
+      
+      while ((match = regex.exec(text)) !== null) {
+        // Avoid duplicate matches at the same position
+        const isDuplicate = allMatches.some(existing => 
+          existing.start === match.index && existing.end === match.index + match[0].length
+        );
+        
+        if (!isDuplicate) {
+          allMatches.push({
+            start: match.index,
+            end: match.index + match[0].length,
+            brandName,
+            text: match[0],
+            className,
+            confidence: result.matches.find(m => m.text === variation)?.confidence || 0.5
+          });
+        }
+      }
     });
   });
 
-  return highlightedText;
+  // Early return if no valid matches
+  if (allMatches.length === 0) {
+    return text;
+  }
+
+  // Sort matches by position
+  allMatches.sort((a, b) => a.start - b.start);
+  
+  // Resolve overlapping matches (keep the one with higher confidence)
+  const nonOverlapping = allMatches.reduce((acc, match) => {
+    const lastMatch = acc[acc.length - 1];
+    if (!lastMatch || match.start >= lastMatch.end) {
+      // No overlap
+      acc.push(match);
+    } else if (match.confidence > lastMatch.confidence) {
+      // Overlap but this match has higher confidence
+      acc[acc.length - 1] = match;
+    }
+    // Otherwise keep the existing match
+    return acc;
+  }, [] as typeof allMatches);
+
+  // Build the final HTML in a single pass
+  let result = '';
+  let lastEnd = 0;
+
+  nonOverlapping.forEach(match => {
+    // Add text before this match
+    if (match.start > lastEnd) {
+      result += text.substring(lastEnd, match.start);
+    }
+    
+    // Add highlighted match
+    result += `<span class="${match.className}" data-brand-highlight="true" data-brand-name="${match.brandName}">${match.text}</span>`;
+    
+    lastEnd = match.end;
+  });
+
+  // Add remaining text
+  if (lastEnd < text.length) {
+    result += text.substring(lastEnd);
+  }
+
+  return result;
 }
 
 /**

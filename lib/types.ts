@@ -101,36 +101,23 @@ export interface AIResponse {
   provider: string;
   prompt: string;
   response: string;
-  rankings?: CompanyRanking[];
-  competitors: string[];
+  timestamp: Date;
+}
+
+// New: structured analysis separate from raw response
+export interface AIResponseAnalysis {
+  provider: string;
+  response: string;
+  rankings: CompanyRanking[];
   brandMentioned: boolean;
+  competitors: string[];
   brandPosition?: number;
   sentiment: 'positive' | 'neutral' | 'negative';
   confidence: number;
-  timestamp: Date;
-  webSearchSources?: Array<{ title?: string; url: string; snippet?: string }>; // Sources from web search
-  brandVariations?: Record<string, BrandVariation>;
-  // Enhanced detection information
-  detectionDetails?: {
-    brandMatches?: {
-      text: string;
-      index: number;
-      confidence: number;
-      snippet?: string;
-    }[];
-    competitorMatches?: Map<string, {
-      text: string;
-      index: number;
-      confidence: number;
-      snippet?: string;
-    }[]> | Record<string, {
-      text: string;
-      index: number;
-      confidence: number;
-      snippet?: string;
-    }[]>;
-  };
 }
+
+// Mock control for tests via request header
+export type MockMode = 'none' | 'raw';
 
 export interface AnalysisSource {
   id?: string;
@@ -246,7 +233,7 @@ export interface AnalysisProgressData {
 export interface PartialResultData {
   provider: string;
   prompt: string;
-  response: Partial<AIResponse>;
+  response: Partial<AIResponseAnalysis>;
   competitorScores?: Partial<CompetitorRanking>[];
 }
 

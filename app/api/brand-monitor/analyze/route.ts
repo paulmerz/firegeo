@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { auth } from '@/lib/auth';
 import { Autumn } from 'autumn-js';
 import { performAnalysis, createSSEMessage } from '@/lib/analyze-common';
-import { SSEEvent } from '@/lib/types';
+import { SSEEvent, type MockMode } from '@/lib/types';
 import { getLocaleFromRequest } from '@/lib/locale-utils';
 import { 
   AuthenticationError, 
@@ -92,8 +92,11 @@ export async function POST(request: NextRequest) {
           timestamp: new Date()
         });
 
-        // Extract locale from request
+        // Extract locale and mockMode from request
         const locale = getLocaleFromRequest(request);
+        const headerMock = request.headers.get('x-mock-mode') as MockMode | null;
+        const urlMock = (request as NextRequest).nextUrl?.searchParams?.get('mockMode') as MockMode | null;
+        const mockMode = (headerMock || urlMock || 'none') as MockMode;
         
         // Perform the analysis using common logic
         const analysisResult = await performAnalysis({
@@ -102,7 +105,8 @@ export async function POST(request: NextRequest) {
           userSelectedCompetitors,
           useWebSearch,
           sendEvent,
-          locale
+          locale,
+          mockMode
         });
 
         // Send final complete event with all data

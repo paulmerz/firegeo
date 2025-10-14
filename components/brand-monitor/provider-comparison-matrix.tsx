@@ -24,18 +24,19 @@ interface ProviderComparisonMatrixProps {
 
 type ProviderMetrics = ProviderComparisonData['providers'][string];
 
-// Provider icon mapping
+// Provider icon mapping (case-insensitive)
 const getProviderIcon = (provider: string) => {
-  switch (provider) {
-    case 'OpenAI':
+  const key = (provider || '').toLowerCase();
+  switch (key) {
+    case 'openai':
       return (
         <img 
-          src="https://cdn.brandfetch.io/idR3duQxYl/theme/dark/symbol.svg?c=1bxid64Mup7aczewSAYMX&t=1749527471692" 
+          src="/OpenAI_logo.svg" 
           alt="OpenAI" 
           className="w-7 h-7"
         />
       );
-    case 'Anthropic':
+    case 'anthropic':
       return (
         <img 
           src="https://cdn.brandfetch.io/idmJWF3N06/theme/dark/symbol.svg" 
@@ -43,7 +44,7 @@ const getProviderIcon = (provider: string) => {
           className="w-5 h-5"
         />
       );
-    case 'Google':
+    case 'google':
       return (
         <div className="w-5 h-5 flex items-center justify-center">
           <svg viewBox="0 0 24 24" className="w-5 h-5">
@@ -54,10 +55,10 @@ const getProviderIcon = (provider: string) => {
           </svg>
         </div>
       );
-    case 'Perplexity':
+    case 'perplexity':
       return (
         <img 
-          src="https://cdn.brandfetch.io/idNdawywEZ/w/800/h/800/theme/dark/idgTrPQ4JH.png?c=1bxid64Mup7aczewSAYMX&t=1754453397133" 
+          src="/Perplexity_logo.svg" 
           alt="Perplexity" 
           className="w-5 h-5"
         />

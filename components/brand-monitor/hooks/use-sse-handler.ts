@@ -15,7 +15,6 @@ import {
   BrandExtractionProgressData,
   ScoringProgressData,
   SSEEvent,
-  SSEEventType,
   AnalysisStage
 } from '@/lib/types';
 import type { ApiUsageSummaryData } from '../api-usage-summary';
@@ -95,7 +94,6 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
   };
 
   const handleSSEEvent = (eventData: SSEMessage<unknown>) => {
-    logger.debug('[SSE] Received event:', eventData.type, eventData.data);
     
     try {
       switch (eventData.type) {

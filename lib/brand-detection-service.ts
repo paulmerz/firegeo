@@ -53,15 +53,6 @@ export async function generateIntelligentBrandVariations(
   locale: string = 'en'
 ): Promise<BrandVariation> {
   const coreBrand = brandName.trim();
-  
-  // For very simple single words, use basic variations
-  if (coreBrand.length <= 3 && !coreBrand.includes(' ')) {
-    return {
-      original: coreBrand,
-      variations: [coreBrand, coreBrand.toLowerCase()],
-      confidence: 1.0
-    };
-  }
 
   const prompt = `You are a brand detection expert. Analyze this brand name and generate ONLY the variations that would be appropriate for brand detection in text.
 
@@ -74,13 +65,14 @@ Rules:
 4. Do NOT include variations that would cause false positives (i.e Radical is a brand, but also an adjective and radical can easily be confused with the brand in a race car context)
 5. For single-word brands that are common adjectives/nouns, ONLY include the exact brand name with proper capitalization (i.e Orange must not be included as "orange" as it would cause a false positive)
 6. Avoid variations that could match common words in other contexts
-7. Be smart as you are a brand detection expert and you know what is a brand and what is not
+7. Be smart as you are a brand detection expert and you know what is a brand and what is not, how people call it or not
 
-Examples:
+Examples you can use for training :
 - "Caterham Cars" → ["Caterham Cars", "Caterham", "caterham cars", "caterham"]
-- "Louis Vuitton" → ["Louis Vuitton", "louis vuitton", "LV"]
+- "Louis Vuitton" → ["Louis Vuitton", "louis vuitton", "LV", "Vuitton"]
 - "Alpine" → ["Alpine", "alpine"] (NOT "BMW Alpine" - that's a different brand)
-- "Christian Dior" → ["Christian Dior", "christian dior", "Dior", "dior"]
+- "Christian Dior" → ["Christian Dior", "christian dior", "Dior", "dior"]¨
+- "Dior" → ["Dior", "dior", "Christian Dior", "christian dior"] ("Dior" is the short form, "Christian Dior" is the full brand name)
 - "Yves Saint Laurent" → ["Saint Laurent", "YSL", "St Laurent", "Yves Saint Laurent", "yves saint laurent", "ysl"]
 - "Patek Philippe" → ["Patek Philippe", "patek philippe", "Patek"] (NOT "philippe" - too common as last name and nobody calls the brand "philippe")
 - "Audemars Piguet" → ["Audemars Piguet", "audemars piguet", "Audemars", "AP"] (NOT "Piguet" as nobody calls the brand "Piguet")
@@ -92,11 +84,13 @@ Examples:
 - "Black" → ["Black"] (NOT "black" - too common as color)
 - "Nike" → ["Nike", "nike"] (OK - distinctive enough, not too common)
 - "Tesla" → ["Tesla", "tesla"] (OK - distinctive enough, not too common)
-- "Google" → ["Google"] (NOT "google" - too common as verb)
+- "Google" → ["Google", "google"] (OK - distinctive enough, not too common the verb "google" comes from the brand name)
 - "Amazon" → ["Amazon", "amazon"] (OK - distinctive enough, not too common)
 - "Lotus" → ["Lotus", "lotus"] (OK - distinctive enough)
 - "BMW" → ["BMW", "bmw"] (OK - distinctive acronym)
 - "Mercedes" → ["Mercedes", "mercedes"] (OK - distinctive name)
+- "Morgan Stanley" → ["Morgan Stanley", "Morgan Stanley & Co."] ("Morgan" is a generic name, "MS" is the acronym but never used alone)
+-...
 
 CRITICAL: For brands that are VERY common words (like "Radical", "Apple", "Orange", "Black", "Google"...), be VERY conservative and ONLY include the exact brand name with proper capitalization. For distinctive brands (like "Nike", "Tesla", "Amazon", "Mercedes"...), include both capitalized and lowercase versions.
 
@@ -142,6 +136,7 @@ Return ONLY a JSON object with this exact structure:
       max_tokens: 300
     });
     const duration = Date.now() - startTime;
+    logger.debug('[Brand Detection Service] OpenAI response:', response.choices[0]?.message?.content);
 
     let content = response.choices[0]?.message?.content?.trim();
     if (!content) {
@@ -178,7 +173,7 @@ Return ONLY a JSON object with this exact structure:
     });
 
     console.log(`🤖 [AI Brand Variations] ${coreBrand} → [${result.variations.join(', ')}]`);
-    cacheBrandVariations(brandName, locale, result);
+    cacheBrandVariations(brandName, result);
 
     return result;
   } catch (error) {
@@ -274,12 +269,15 @@ export async function detectBrandMentions(
     const sortedVariations = [...brandVariation.variations].sort((a, b) => b.length - a.length);
 
     // Create regex patterns for each variation
+    // Make separators flexible: spaces and hyphens are considered equivalent
     const patterns = sortedVariations.map(variation => {
-      const escaped = variation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      // Use word boundaries but be more careful about context
+      const sepClass = '[\\s\\-–—]+';
+      const parts = variation.trim().split(/\s+/);
+      const escapedParts = parts.map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+      const flexible = escapedParts.join(sepClass);
       return {
         variation,
-        regex: new RegExp(`\\b${escaped}\\b`, shouldBeCaseSensitive ? 'g' : 'gi')
+        regex: new RegExp(`\\b${flexible}\\b`, shouldBeCaseSensitive ? 'g' : 'gi')
       };
     });
 
@@ -363,14 +361,7 @@ export async function detectBrandMentions(
         const snippetContext = text.substring(snippetStart, snippetEnd);
         const snippet = snippetContext.trim();
 
-        logger.debug('[Brand Detection] Match trouvé', {
-          brandName,
-          variation,
-          index: matchIndex,
-          matchText,
-          snippet,
-          confidence
-        });
+        
 
         matches.push({
           text: matchText,
@@ -455,9 +446,28 @@ export async function detectMultipleBrands(
   const results = new Map<string, BrandDetectionResult>();
   
   // Process brands in parallel for better performance
+  const normalizeKey = (value: string) =>
+    (value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
   const detectionPromises = brandNames.map(async (brandName) => {
     try {
-      const result = await detectBrandMentions(text, brandName, options, locale, variationsMap);
+      let localVariationsMap = variationsMap;
+      // Si la map est fournie mais ne contient pas la clé originale, tenter la clé normalisée
+      if (variationsMap && !variationsMap.has(brandName)) {
+        const normalized = normalizeKey(brandName);
+        if (variationsMap.has(normalized)) {
+          localVariationsMap = new Map(variationsMap);
+          const v = variationsMap.get(normalized)!;
+          localVariationsMap.set(brandName, v);
+        }
+      }
+
+      const result = await detectBrandMentions(text, brandName, options, locale, localVariationsMap);
       return { brandName, result, error: null };
     } catch (error) {
       return { brandName, result: null, error };
@@ -501,20 +511,21 @@ export async function detectMultipleBrands(
 const brandVariationCache = new Map<string, BrandVariation>();
 const pendingBrandVariationPromises = new Map<string, Promise<BrandVariation>>();
 
-const buildCacheKey = (brandName: string, locale: string): string => {
+// Cache key ne dépend plus de la locale pour éviter des duplications
+// entre locales différentes qui référencent la même marque.
+const buildCacheKey = (brandName: string): string => {
   const normalizedBrand = (brandName || '')
     .trim()
     .toLowerCase()
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .replace(/\s+/g, ' ');
-  const normalizedLocale = (locale || 'en').toLowerCase();
 
-  return `${normalizedBrand}_${normalizedLocale}`;
+  return `${normalizedBrand}`;
 };
 
-const cacheBrandVariations = (brandName: string, locale: string, variations: BrandVariation) => {
-  brandVariationCache.set(buildCacheKey(brandName, locale), variations);
+const cacheBrandVariations = (brandName: string, variations: BrandVariation) => {
+  brandVariationCache.set(buildCacheKey(brandName), variations);
 };
 
 /**
@@ -522,9 +533,9 @@ const cacheBrandVariations = (brandName: string, locale: string, variations: Bra
  */
 export async function getCachedBrandVariations(
   brandName: string,
-  locale: string = 'en'
+  // _locale: string = 'en'
 ): Promise<BrandVariation> {
-  const cacheKey = buildCacheKey(brandName, locale);
+  const cacheKey = buildCacheKey(brandName);
 
   if (brandVariationCache.has(cacheKey)) {
     return brandVariationCache.get(cacheKey)!;
@@ -534,7 +545,7 @@ export async function getCachedBrandVariations(
 }
 
 export async function ensureBrandVariationsForBrand(brandName: string, locale: string = 'en'): Promise<BrandVariation> {
-  const cacheKey = buildCacheKey(brandName, locale);
+  const cacheKey = buildCacheKey(brandName);
 
   if (brandVariationCache.has(cacheKey)) {
     return brandVariationCache.get(cacheKey)!;
@@ -548,8 +559,8 @@ export async function ensureBrandVariationsForBrand(brandName: string, locale: s
 
   const generationPromise = (async () => {
     try {
-      const generated = await generateIntelligentBrandVariations(brandName, locale);
-      cacheBrandVariations(brandName, locale, generated);
+      const generated = await generateIntelligentBrandVariations(brandName);
+      cacheBrandVariations(brandName, generated);
       return generated;
     } finally {
       pendingBrandVariationPromises.delete(cacheKey);

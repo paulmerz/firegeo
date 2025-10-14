@@ -42,7 +42,7 @@ const getProviderIcon = (provider: string) => {
     case 'OpenAI':
       return (
         <img 
-          src="https://cdn.brandfetch.io/idR3duQxYl/theme/dark/symbol.svg?c=1bxid64Mup7aczewSAYMX&t=1749527471692" 
+          src="/OpenAI_logo.svg" 
           alt="OpenAI" 
           className="w-7 h-7"
         />
@@ -69,7 +69,7 @@ const getProviderIcon = (provider: string) => {
     case 'Perplexity':
       return (
         <img 
-          src="https://cdn.brandfetch.io/idNdawywEZ/w/800/h/800/theme/dark/idgTrPQ4JH.png?c=1bxid64Mup7aczewSAYMX&t=1754453397133" 
+          src="/Perplexity_logo.svg" 
           alt="Perplexity" 
           className="w-5 h-5"
         />

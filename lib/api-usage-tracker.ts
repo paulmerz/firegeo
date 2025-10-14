@@ -416,7 +416,7 @@ export function estimateCost(provider: string, model: string, inputTokens: numbe
 /**
  * Helper pour extraire les tokens des réponses AI SDK
  */
-interface AIUsage {
+export interface AIUsage {
   promptTokens?: number;
   inputTokens?: number;
   completionTokens?: number;
@@ -424,7 +424,7 @@ interface AIUsage {
 }
 
 // Forme OpenAI (snake_case) pour compatibilité avec CompletionUsage
-type OpenAICompletionUsage = {
+export type OpenAICompletionUsage = {
   prompt_tokens?: number;
   completion_tokens?: number;
   total_tokens?: number;
