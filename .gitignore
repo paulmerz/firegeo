@@ -49,6 +49,7 @@ next-env.d.ts
 test-*.js
 *.test.js
 register-user.js
+/test-results/*
 
 # OS files
 .DS_Store
