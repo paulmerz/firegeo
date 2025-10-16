@@ -143,7 +143,7 @@ export function SourcesTab({ sources }: SourcesTabProps) {
                                   <td className="py-3 pr-4 text-gray-700 max-w-xs">
                                     <div className="break-words">
                                       {source.prompt ? (
-                                        <span className="text-sm">{`Source trouvée pour: ${source.prompt}`}</span>
+                                        <span className="text-sm">{source.prompt}</span>
                                       ) : (
                                         <span className="text-gray-400 italic">Non spécifié</span>
                                       )}
@@ -158,7 +158,7 @@ export function SourcesTab({ sources }: SourcesTabProps) {
                                         className="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700 break-all"
                                       >
                                         <ExternalLink className="h-3.5 w-3.5" />
-                                        {t('link')}
+                                        {source.title?.trim() || source.url}
                                       </a>
                                     ) : (
                                       <span className="text-gray-400">—</span>

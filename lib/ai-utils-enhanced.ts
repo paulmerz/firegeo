@@ -1,47 +1,26 @@
-import { generateText, LanguageModelV1 } from 'ai';
+import { generateText, LanguageModel } from 'ai';
+import { openai } from '@ai-sdk/openai';
 // import { z } from 'zod';
-import { AIResponse, type BrandVariation, type MockMode } from './types';
+import { AIResponse, type MockMode } from './types';
 import { getProviderModel, normalizeProviderName, getProviderConfig, PROVIDER_CONFIGS } from './provider-config';
-import { isOpenAIWebSearchAvailable, analyzePromptWithOpenAIWebSearch } from './openai-web-search';
 // import { getLanguageName } from './locale-utils';
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
 import { detectMultipleBrands, type BrandDetectionMatch } from './brand-detection-service';
 import { cleanProviderResponse } from './provider-response-utils';
 import { getMockedRawResponse } from './ai-utils-mock';
 
+const OPENAI_WEB_MODEL_ID = 'gpt-5' as const;
+
 /**
  * Extract brand name from complex brand strings
  * Focus on the actual brand, not the product
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function extractBrandName(brandString: string): string {
-  let brand = brandString.trim();
-  
-  // Handle parentheses format like "Citroën (Ami)" -> "Citroën"
-  const parenthesesMatch = brand.match(/^([^(]+)\s*\(/);
-  if (parenthesesMatch) {
-    brand = parenthesesMatch[1].trim();
-  }
-  
-  // Handle comma format like "Renault, Twizy" -> "Renault"
-  const commaMatch = brand.match(/^([^,]+),/);
-  if (commaMatch) {
-    brand = commaMatch[1].trim();
-  }
-  
-  return brand;
-}
 
-
-// Enhanced version with web search grounding
+// Version unifiée: génération de réponses (avec/sans web search)
 export async function analyzePromptWithProviderEnhanced(
   prompt: string,
   provider: string,
-  brandName: string,
-  competitors: string[],
-  useWebSearch: boolean = true, // New parameter
-  locale?: string, // Locale parameter
-  brandVariations?: Record<string, BrandVariation>, // Pre-generated brand variations
+  useWebSearch: boolean = true,
   options?: { mockMode?: MockMode }
 ): Promise<AIResponse> {
   // Use mock mode in test environment
@@ -58,22 +37,65 @@ export async function analyzePromptWithProviderEnhanced(
     throw new Error(`Provider ${provider} not configured`);
   }
   
-  let model: LanguageModelV1 | string | null = null;
+  let model: LanguageModel | null = null;
   const generateConfig: Record<string, unknown> = {};
   
-  // Handle provider-specific web search configurations
-  if (normalizedProvider === 'openai' && useWebSearch) {
-    // Use the new OpenAI web search implementation
-    if (!isOpenAIWebSearchAvailable()) {
-      console.warn('OpenAI web search not available, falling back to standard OpenAI');
-      model = getProviderModel('openai');
-    } else {
-      // We'll handle OpenAI web search separately, so just mark it
-      model = 'openai-web-search';
+  // Configuration par provider (model, system, tools, providerOptions)
+  let systemPrompt: string = 'You are a helpful assistant.';
+  let toolsOpenAI: { web_search: ReturnType<typeof openai.tools.webSearch> } | undefined;
+  let toolChoice: { type: 'tool'; toolName: 'web_search' } | undefined;
+  let providerOptions: {
+    openai?: { reasoningEffort: 'minimal' | 'medium' | 'high'; parallelToolCalls?: true };
+    google?: { useSearchGrounding: true };
+  } = {};
+
+  switch (normalizedProvider) {
+    case 'openai': {
+      if (useWebSearch) {
+        model = openai.responses(OPENAI_WEB_MODEL_ID);
+        systemPrompt = 'You are ChatGPT, a helpful assistant.';
+        toolsOpenAI = {
+          web_search: openai.tools.webSearch({
+            userLocation: { type: 'approximate', city: undefined, region: undefined, country: undefined, timezone: undefined }
+          })
+        } as const;
+        toolChoice = { type: 'tool', toolName: 'web_search' } as const;
+        providerOptions = { openai: { reasoningEffort: 'medium', parallelToolCalls: true as const } };
+      } else {
+        model = getProviderModel('openai');
+        systemPrompt = 'You are ChatGPT, a helpful assistant.';
+        providerOptions = { openai: { reasoningEffort: 'medium' } };
+      }
+      break;
     }
-  } else {
-    // Get model with web search options if supported
-    model = getProviderModel(normalizedProvider, undefined, { useWebSearch });
+    case 'google': {
+      model = getProviderModel('google', undefined, { useWebSearch });
+      systemPrompt = 'You are a helpful assistant.';
+      if (useWebSearch) {
+        providerOptions = { google: { useSearchGrounding: true as const } };
+      }
+      break;
+    }
+    case 'perplexity': {
+      // Recherche intégrée côté Perplexity
+      model = getProviderModel('perplexity');
+      systemPrompt = 'You are Perplexity, a helpful search assistant trained by Perplexity AI.';
+      break;
+    }
+    case 'anthropic': {
+      model = getProviderModel('anthropic');
+      systemPrompt = 'You are a helpful assistant.';
+      break;
+    }
+    case 'mistral': {
+      model = getProviderModel('mistral');
+      systemPrompt = 'You are a helpful assistant.';
+      break;
+    }
+    default: {
+      model = getProviderModel(normalizedProvider, undefined, { useWebSearch });
+      systemPrompt = 'You are a helpful assistant.';
+    }
   }
   
   if (!model) {
@@ -81,102 +103,91 @@ export async function analyzePromptWithProviderEnhanced(
     throw new Error(`Provider ${provider} not configured`);
   }
 
-  // const languageName = locale ? getLanguageName(locale) : 'English';
-  
   // IMPORTANT: envoyer le prompt brut sans injection d'instructions supplémentaires
   const rawPrompt = trimmedPrompt;
 
   try {
-  let text: string;
+    let text: string;
+    let urlsNormalized: { url: string; title?: string }[] | undefined;
 
-    // Handle OpenAI web search separately using the new implementation
-    if (normalizedProvider === 'openai' && useWebSearch && model === 'openai-web-search') {
-      console.log(`[${provider}] Using OpenAI web search implementation`);
-      
-      // Use the dedicated OpenAI web search function
-      const openaiResult = await analyzePromptWithOpenAIWebSearch(
-        trimmedPrompt,
-        brandName,
-        competitors,
-        locale,
-        undefined, // model (use default gpt-4o-mini)
-        brandVariations as Record<string, BrandVariation> | undefined, // Not used here anymore
-        { mockMode } // ensure mocked raw response when requested
-      );
-      // Return RAW minimal from web search path
-      return openaiResult;
-    } else {
-      // Log basique (sans afficher d'instructions enrichies)
-      console.log(`[${provider}] Analyzing with raw prompt${useWebSearch ? ' (web search requested but not supported by SDK ai for this provider)' : ''}`);
-      
-      // Ensure model is a LanguageModelV1 at this point
-      if (typeof model === 'string' || !model) {
-        throw new Error(`Invalid model type for ${provider}`);
+    // Ensure model exists
+    if (!model) {
+      throw new Error(`Invalid model for ${provider}`);
+    }
+
+    // Déterminer le modelId pour le tracking
+    const providerConfigForId = PROVIDER_CONFIGS[normalizedProvider];
+    const modelId = normalizedProvider === 'openai' && useWebSearch ? OPENAI_WEB_MODEL_ID : (providerConfigForId?.defaultModel || 'unknown');
+
+    // Track API call (prompt brut)
+    const callId = apiUsageTracker.trackCall({
+      provider: normalizedProvider,
+      model: modelId,
+      operation: 'analysis',
+      success: true,
+      metadata: { 
+        prompt: rawPrompt.substring(0, 100) + '...',
+        useWebSearch
       }
-      
-      // Get the model ID from provider config instead of trying to extract from model object
-      const providerConfig = PROVIDER_CONFIGS[normalizedProvider];
-      const modelId = providerConfig?.defaultModel || 'unknown';
-      
-      // Track API call for analysis (avec prompt brut)
-      const callId = apiUsageTracker.trackCall({
-        provider: normalizedProvider,
-        model: modelId,
-        operation: 'analysis',
-        success: true,
-        metadata: { 
-          prompt: rawPrompt.substring(0, 100) + '...',
-          brandName,
-          competitorsCount: competitors.length,
-          locale,
-          useWebSearch
-        }
+    });
+
+    const startTime = Date.now();
+
+    if (mockMode === 'raw') {
+      // Mock de la réponse LLM
+      text = getMockedRawResponse(provider, rawPrompt);
+      apiUsageTracker.updateCall(callId, { inputTokens: 0, outputTokens: 0, cost: 0, duration: 0 });
+    } else {
+      const result = await generateText({
+        model,
+        prompt: rawPrompt,
+        system: systemPrompt,
+        ...generateConfig,
+        maxRetries: 3,
+        ...(toolsOpenAI ? { tools: toolsOpenAI } : {}),
+        ...(toolChoice ? { toolChoice } : {}),
+        ...(Object.keys(providerOptions).length ? { providerOptions } : {}),
       });
 
-      const startTime = Date.now();
-      
-      // Partial mock via options (mock only raw LLM response)
-      if (mockMode === 'raw') {
-        console.log(`[${provider}] Using partial mock mode - mocking raw LLM response only`);
-        text = getMockedRawResponse(provider, rawPrompt);
-        
-        // Update API call with mock usage (no real tokens)
-        apiUsageTracker.updateCall(callId, {
-          inputTokens: 0,
-          outputTokens: 0,
-          cost: 0,
-          duration: 0
-        });
-      } else {
-        // First, get the response en envoyant le prompt BRUT (sans system ni instructions)
-        const result = await generateText({
-          model,
-          prompt: rawPrompt,
-          maxTokens: 800,
-          ...generateConfig,
-        });
-        const duration = Date.now() - startTime;
-
-        // Extract tokens from usage
-        const tokens = extractTokensFromUsage(result.usage);
-        
-        // Update API call with actual usage
-        apiUsageTracker.updateCall(callId, {
-          inputTokens: tokens.inputTokens,
-          outputTokens: tokens.outputTokens,
-          cost: estimateCost(normalizedProvider, modelId, tokens.inputTokens, tokens.outputTokens),
-          duration
-        });
-        
-        text = result.text;
+      text = result.text;
+      const sources = result.sources;
+      // Normaliser les sources en objets { url, title? }
+      if (Array.isArray(sources)) {
+        const items: { url: string; title?: string }[] = [];
+        for (const s of sources as unknown[]) {
+          if (typeof s === 'string' && s) {
+            items.push({ url: s });
+          } else if (typeof s === 'object' && s !== null) {
+            const url = (s as Record<string, unknown>).url;
+            const title = (s as Record<string, unknown>).title;
+            if (typeof url === 'string' && url) {
+              items.push({ url, title: typeof title === 'string' ? title : undefined });
+            }
+          }
+        }
+        urlsNormalized = items.length ? items : undefined;
       }
+
+      const duration = Date.now() - startTime;
+      const tokens = extractTokensFromUsage(result.usage);
+      const inputTokens = tokens.inputTokens || Math.ceil(rawPrompt.length / 4);
+      const outputTokens = tokens.outputTokens || Math.ceil(text.length / 4);
+      apiUsageTracker.updateCall(callId, {
+        inputTokens,
+        outputTokens,
+        cost: estimateCost(normalizedProvider, modelId, inputTokens, outputTokens),
+        duration
+      });
     }
-    // Return RAW minimal for non-web-search path
+
     return {
-      provider: provider === 'openai' ? 'OpenAI' : provider,
+      provider: provider,
       prompt: trimmedPrompt,
       response: text,
       timestamp: new Date(),
+      ...(normalizedProvider === 'openai' || normalizedProvider === 'perplexity' || normalizedProvider === 'google') && urlsNormalized
+        ? { urls: urlsNormalized }
+        : {}
     };
   } catch (error) {
     console.error(`Error with ${provider}:`, error);
@@ -289,42 +300,4 @@ export async function detectBrandsInResponse(
 // Export the enhanced function as the default
 export { analyzePromptWithProviderEnhanced as analyzePromptWithProvider };
 
-// Filtre générique similaire à openai-web-search.ts pour éviter des faux positifs
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function filterBrandVariations(coreBrand: string, variations: string[]): string[] {
-  const coreWords = coreBrand.trim().split(/\s+/).filter(Boolean);
-  const isMultiWord = coreWords.length >= 2;
-  const coreLower = coreBrand.toLowerCase();
-  const genericSingles = new Set<string>([
-    'the','and','of','for','group','international','global','worldwide','inc','llc','corp','corporation','ltd','limited','sa','sas','gmbh','plc','bv','ag',
-    'urban','mobility','ecomobility','systems','solutions','technologies','technology'
-  ]);
-
-  const keep = new Set<string>();
-  for (const v of (variations || [])) {
-    if (!v || typeof v !== 'string') continue;
-    const vv = v.trim();
-    if (vv.length <= 1) continue;
-
-    const vvLower = vv.toLowerCase();
-    if (vvLower === coreLower) { keep.add(vv); continue; }
-
-    const wordCount = vv.split(/\s+/).filter(Boolean).length;
-    if (isMultiWord) {
-      if (wordCount === 1) {
-        const isAcronym = /^[A-Z0-9]{2,5}$/.test(vv);
-        if (!isAcronym) continue;
-        if (genericSingles.has(vvLower)) continue;
-      }
-    }
-
-    if (wordCount === 1 && genericSingles.has(vvLower)) continue;
-
-    keep.add(vv);
-  }
-
-  if (![...keep].some(x => x.toLowerCase() === coreLower)) {
-    keep.add(coreBrand);
-  }
-  return Array.from(keep);
-}
+// Note: L'AI SDK actuel ne fournit plus d'index d'annotations; nous renvoyons donc urls: []

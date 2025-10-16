@@ -28,6 +28,7 @@ interface UseSSEHandlerProps {
 }
 
 import { logger } from '@/lib/logger';
+import { useTranslations } from 'next-intl';
 
 type SSEMessage<T = unknown> = Omit<SSEEvent<T>, 'stage'> & { stage?: AnalysisStage };
 
@@ -37,6 +38,7 @@ interface AnalysisCompletePayload {
 }
 
 export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComplete, onApiUsageSummary }: UseSSEHandlerProps) {
+  const tErrors = useTranslations('brandMonitor.errors');
   // Use ref to track current prompt status to avoid closure issues in SSE handler
   const promptCompletionStatusRef = useRef<PromptCompletionStatus>(state.promptCompletionStatus);
   const analyzingPromptsRef = useRef<string[]>(state.analyzingPrompts);
@@ -422,24 +424,27 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
 
       case 'error':
         const errorData = eventData.data as { message?: string };
-        let errorMessage = 'Analysis failed';
-        
+        let rawMessage = 'Analysis failed';
         if (errorData && typeof errorData === 'object') {
           if (errorData.message) {
-            errorMessage = errorData.message;
+            rawMessage = errorData.message;
           } else if (typeof errorData === 'string') {
-            errorMessage = errorData;
+            rawMessage = errorData;
           } else {
-            // Handle case where error data is an object without message
-            errorMessage = JSON.stringify(errorData);
+            rawMessage = JSON.stringify(errorData);
           }
         } else if (typeof errorData === 'string') {
-          errorMessage = errorData;
+          rawMessage = errorData;
         }
-        
+
+        // Map known server messages to i18n keys
+        const mappedMessage = rawMessage === 'Please provide a prompt for the analysis'
+          ? tErrors('promptRequired')
+          : rawMessage;
+
         dispatch({
           type: 'SET_ERROR',
-          payload: errorMessage
+          payload: mappedMessage
         });
         logger.error('Analysis error:', errorData);
         break;

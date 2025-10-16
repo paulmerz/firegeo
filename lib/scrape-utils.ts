@@ -1,5 +1,5 @@
 import { generateObject } from 'ai';
-import type { LanguageModelV1 } from 'ai';
+import type { LanguageModel } from 'ai';
 import { z } from 'zod';
 import { Company } from './types';
 import FirecrawlApp from '@mendable/firecrawl-js';
@@ -293,10 +293,10 @@ async function processScrapedData(markdown: string, metadata: Record<string, unk
           m.name.toLowerCase().includes('haiku')
         );
         const modelId = fastModel?.id || provider.defaultModel;
-        const model = getProviderModel(provider.id, modelId) as unknown as LanguageModelV1 | null;
-        return { provider, model } as { provider: typeof configuredProviders[number]; model: LanguageModelV1 | null };
+        const model = getProviderModel(provider.id, modelId) as unknown as LanguageModel | null;
+        return { provider, model } as { provider: typeof configuredProviders[number]; model: LanguageModel | null };
       })
-      .filter((c): c is { provider: typeof configuredProviders[number]; model: LanguageModelV1 } => !!c.model);
+      .filter((c): c is { provider: typeof configuredProviders[number]; model: LanguageModel } => !!c.model);
 
     if (candidates.length === 0) {
       console.error('❌ [Processor] No working provider/model combination found');

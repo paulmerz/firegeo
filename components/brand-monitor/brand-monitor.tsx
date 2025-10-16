@@ -39,7 +39,7 @@ import { ProviderComparisonMatrix } from './provider-comparison-matrix';
 import { ProviderRankingsTabs } from './provider-rankings-tabs';
 import { WebSearchToggle } from './web-search-toggle';
 import { logger } from '@/lib/logger';
-import { extractAnalysisSources } from '@/lib/brand-monitor-sources';
+import { extractAnalysisSources, extractUrlsFromText } from '@/lib/brand-monitor-sources';
 import { ApiUsageSummary, ApiUsageSummaryData } from './api-usage-summary';
 import {
   CREDIT_COST_URL_ANALYSIS,
@@ -247,11 +247,32 @@ export function BrandMonitor({
     const persisted = selectedAnalysis?.sources ?? null;
 
     if (analysis) {
-      return extractAnalysisSources(analysis, persisted, selectedAnalysis?.id);
+      const structured = extractAnalysisSources(analysis, persisted, selectedAnalysis?.id);
+      if (structured.length > 0) return structured;
+      // Fallback: derive from responses text if structured extraction yields nothing
+      const fallback: Array<{ provider?: string; prompt?: string; url: string; sourceType: string; rank: number }> = [];
+      analysis.responses?.forEach((resp) => {
+        const urls = extractUrlsFromText(resp.response || '');
+        urls.forEach((u, idx) => {
+          fallback.push({ provider: resp.provider, prompt: resp.prompt, url: u, sourceType: 'web_search', rank: idx + 1 });
+        });
+      });
+      return fallback;
     }
 
     if (selectedAnalysis?.analysisData) {
-      return extractAnalysisSources(selectedAnalysis.analysisData, persisted, selectedAnalysis.id);
+      const structured = extractAnalysisSources(selectedAnalysis.analysisData, persisted, selectedAnalysis.id);
+      if (structured.length > 0) return structured;
+      // Fallback from saved analysisData responses
+      const analysisData = selectedAnalysis.analysisData as unknown as { responses?: Array<{ provider?: string; prompt?: string; response?: string }> };
+      const fallback: Array<{ provider?: string; prompt?: string; url: string; sourceType: string; rank: number }> = [];
+      (analysisData.responses || []).forEach((resp) => {
+        const urls = extractUrlsFromText(resp.response || '');
+        urls.forEach((u, idx) => {
+          fallback.push({ provider: resp.provider, prompt: resp.prompt, url: u, sourceType: 'web_search', rank: idx + 1 });
+        });
+      });
+      return fallback;
     }
 
     if (persisted) {

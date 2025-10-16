@@ -11,6 +11,7 @@ import { generateBrandQueryPrompts } from './prompt-generation';
 import { createFallbackBrandPrompts } from './prompt-fallbacks';
 import { logger } from './logger';
 import { cleanProviderResponse } from './provider-response-utils';
+import { extractUrlsFromText } from './brand-monitor-sources';
 import { getMockedRawResponse } from './ai-utils-mock';
 import type { MockMode } from './types';
 
@@ -261,14 +262,18 @@ export async function analyzePromptWithProvider(
       text = getMockedRawResponse(provider, trimmedPrompt);
       usage = { inputTokens: 0, outputTokens: 0 };
     } else {
-      const result = await generateText({
-        model,
-        prompt: trimmedPrompt,
-        // GPT-5: ne pas envoyer temperature/top_p/logprobs
-        maxTokens: 800,
-      });
-      text = result.text;
-      usage = result.usage;
+      try {
+        const result = await generateText({
+          model,
+          prompt: trimmedPrompt,
+          // GPT-5: ne pas envoyer temperature/top_p/logprobs
+        });
+        text = result.text;
+        usage = result.usage;
+      } catch (err: unknown) {
+        console.error(`[${provider}] generateText error (raw response):`, err);
+        throw (err instanceof Error ? err : new Error(String(err)));
+      }
     }
     const duration = Date.now() - startTime;
 
@@ -291,12 +296,23 @@ export async function analyzePromptWithProvider(
       throw new Error(`${provider} returned empty response`);
     }
 
-    // Return RAW response only (analysis handled elsewhere)
+    // Build normalized display name for provider
+    const providerDisplayNameEarly = provider === 'openai' ? 'OpenAI' :
+                                    provider === 'anthropic' ? 'Anthropic' :
+                                    provider === 'google' ? 'Google' :
+                                    provider === 'perplexity' ? 'Perplexity' :
+                                    provider;
+
+    // Structured URLs (from response text for providers without annotations)
+    const extractedUrlsEarly = extractUrlsFromText(text).map((u) => ({ url: u }));
+
+    // Return RAW response with normalized provider and optional urls
     return {
-      provider,
+      provider: providerDisplayNameEarly,
       prompt,
       response: text,
       timestamp: new Date(),
+      urls: extractedUrlsEarly,
     };
 
     // Then analyze it with structured output
@@ -477,12 +493,16 @@ Be concise and direct.`;
             console.log(`[${provider}] Partial mock mode: mocking raw fallback analysis prompt response`);
             fallbackResponse = getMockedRawResponse(provider, simpleFallbackPrompt);
           } else {
-            const { text: fr } = await generateText({
-              model: model as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-              prompt: simpleFallbackPrompt,
-              maxTokens: 200,
-            });
-            fallbackResponse = fr;
+            try {
+              const { text: fr } = await generateText({
+                model: model as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+                prompt: simpleFallbackPrompt,
+              });
+              fallbackResponse = fr;
+            } catch (err: unknown) {
+              console.error(`[${provider}] generateText error (fallback analysis):`, err);
+              throw (err instanceof Error ? err : new Error(String(err)));
+            }
           }
           
           console.log(`[${provider}] Fallback response:`, fallbackResponse);
@@ -618,11 +638,14 @@ Be concise and direct.`;
       });
     }
 
+    const extractedUrls = extractUrlsFromText(text).map((u) => ({ url: u }));
+
     return {
       provider: providerDisplayName,
       prompt,
       response: text,
       timestamp: new Date(),
+      urls: extractedUrls,
     };
   } catch (error: unknown) {
     console.error(`Error with ${provider}:`, error);

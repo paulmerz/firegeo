@@ -24,6 +24,7 @@ test('navbar affiche 25 crédits après inscription', async ({ page }) => {
     const firstSpan = parent.querySelector('span');
     return firstSpan?.textContent?.trim() || null;
   });
+  await page.waitForTimeout(3000);
   expect(balanceText).toBe('25');
 });
 

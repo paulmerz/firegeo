@@ -102,6 +102,7 @@ export interface AIResponse {
   prompt: string;
   response: string;
   timestamp: Date;
+  urls?: { url: string; title?: string; start_index?: number; end_index?: number }[];
 }
 
 // New: structured analysis separate from raw response

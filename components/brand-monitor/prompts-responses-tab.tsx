@@ -4,12 +4,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronsDown, ChevronsUp } from 'lucide-react';
+import { ChevronDown, ChevronsDown, ChevronsUp, ExternalLink } from 'lucide-react';
 import { BrandPrompt, AIResponse, BrandVariation } from '@/lib/types';
 import { HighlightedResponse } from './highlighted-response';
 import { useTranslations } from 'next-intl';
 import { logger } from '@/lib/logger';
 import { detectBrandsInResponse } from '@/lib/brand-detection-service';
+import { extractUrlsFromText } from '@/lib/brand-monitor-sources';
 import { cleanProviderResponse } from '@/lib/provider-response-utils';
 
 type DetectionResult = Awaited<ReturnType<typeof detectBrandsInResponse>>;
@@ -425,8 +426,55 @@ export function PromptsResponsesTab({
                             />
                           )}
                         </div>
-                        
-                        {/* Web Search Sources removed: UI no longer relies on optional AIResponse fields */}
+                        {!hideWebSearchSources && !isFailed && (() => {
+                          // Prefer structured urls from provider; fallback to text extraction
+                          const structured = Array.isArray(response.urls) ? response.urls : [];
+                          let items: { url: string; title?: string }[];
+                          if (structured.length > 0) {
+                            // Deduplicate by URL, preserve order
+                            const seen = new Set<string>();
+                            const dedup: { url: string; title?: string }[] = [];
+                            for (const u of structured) {
+                              const key = (u.url || '').trim().toLowerCase();
+                              if (key && !seen.has(key)) {
+                                seen.add(key);
+                                dedup.push({ url: u.url, title: u.title });
+                              }
+                            }
+                            items = dedup;
+                          } else {
+                            const urls = extractUrlsFromText(response.response || '');
+                            items = urls.map((u) => ({ url: u }));
+                          }
+                          if (!items || items.length === 0) return null;
+                          const display = items.slice(0, 6);
+                          const getHostname = (u: string) => {
+                            try { return new URL(u).hostname.replace(/^www\./i, ''); } catch { return u; }
+                          };
+                          return (
+                            <div className="mt-2">
+                              <div className="text-xs text-gray-500 mb-1">Sources</div>
+                              <div className="flex flex-wrap gap-2">
+                                {display.map((it, i) => {
+                                  const host = getHostname(it.url);
+                                  const title = it.title?.trim() || it.url;
+                                  return (
+                                    <a
+                                      key={`${it.url}-${i}`}
+                                      href={it.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700 break-all"
+                                    >
+                                      <ExternalLink className="h-3.5 w-3.5" />
+                                      {title} ({host})
+                                    </a>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                       );
                     })}

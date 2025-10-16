@@ -704,7 +704,8 @@
       "noCompanyData": "No company data received",
       "failedToExtractCompany": "Failed to extract company information",
       "failedToExtractCompanyWithReason": "Failed to extract company information: {reason}",
-      "analysisPreparationFailed": "Failed to prepare analysis. Please try again."
+      "analysisPreparationFailed": "Failed to prepare analysis. Please try again.",
+      "promptRequired": "Please provide a prompt for the analysis"
     },
     "analysis": {
       "startingAnalysis": "Starting analysis...",

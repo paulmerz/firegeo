@@ -2,6 +2,57 @@ import { AnalysisSource, AIResponse } from './types';
 
 type UnknownObject = Record<string, unknown>;
 
+export function extractUrlsFromText(text: string): string[] {
+  // Match http/https URLs; avoid trailing punctuation
+  const httpRegex = /https?:\/\/[^\s)\]}>'"`]+/gi;
+  const httpMatches = text.match(httpRegex) || [];
+
+  // Match markdown links [label](url)
+  const mdLinkRegex = /\[[^\]]+\]\(((?:https?:\/\/)[^\s)]+)\)/gi;
+  const mdMatches: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = mdLinkRegex.exec(text)) !== null) {
+    if (m[1]) mdMatches.push(m[1]);
+  }
+
+  // Footnote-style definitions: [1]: https://...
+  const footnoteDefRegex = /^\[(?:\d+|[a-zA-Z]+)\]:\s*(https?:\/\/[^\s)]+)\s*$/gim;
+  const footnoteDefs: string[] = [];
+  while ((m = footnoteDefRegex.exec(text)) !== null) {
+    if (m[1]) footnoteDefs.push(m[1]);
+  }
+
+  // Inline citations like: [1] Title (https://...)
+  const inlineCitationRegex = /\[(?:\d+|[a-zA-Z]+)\][^\n]*?\((https?:\/\/[^\s)]+)\)/gim;
+  const inlineCitations: string[] = [];
+  while ((m = inlineCitationRegex.exec(text)) !== null) {
+    if (m[1]) inlineCitations.push(m[1]);
+  }
+
+  // Match bare domains (avoid emails). e.g., example.com/path
+  // Require a real TLD (>=2 letters) to avoid false positives like "f.p"
+  const bareDomainRegex = /\b(?!mailto:)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+(?:\.[a-z]{2,})(?:\/[\w\-._~:\/?#[\]@!$&'()*+,;=%]*)?)\b/gi;
+  const domainMatches = (text.match(bareDomainRegex) || []).filter((s) => s.includes('.'));
+
+  const matches = [...httpMatches, ...mdMatches, ...footnoteDefs, ...inlineCitations, ...domainMatches];
+  const cleaned = matches
+    .map((u) => u.replace(/[),.;:!?]+$/g, ''))
+    .map((u) => u.trim())
+    .filter((u) => u.length > 0);
+  // Deduplicate while preserving order
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const u of cleaned) {
+    const normalized = u.startsWith('http://') || u.startsWith('https://') ? u : `https://${u}`;
+    const key = normalized.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(normalized);
+    }
+  }
+  return result;
+}
+
 function asTrimmedString(value: unknown): string | undefined {
   if (value === null || value === undefined) {
     return undefined;
@@ -11,6 +62,16 @@ function asTrimmedString(value: unknown): string | undefined {
 }
 
 // Removed unused function
+
+function getHostnameFromUrl(url: string): string | undefined {
+  try {
+    const normalized = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+    const { hostname } = new URL(normalized);
+    return hostname.replace(/^www\./i, '') || hostname;
+  } catch {
+    return undefined;
+  }
+}
 
 function determineSourceType(raw: UnknownObject | undefined): string | undefined {
   if (!raw) return undefined;
@@ -31,10 +92,12 @@ function normalizeSource(
     if (!urlCandidate) {
       return undefined;
     }
+    const domain = getHostnameFromUrl(urlCandidate);
     return {
       provider: context.provider,
       prompt: context.prompt,
       url: urlCandidate,
+      domain,
       sourceType: 'web_search',
       rank: context.rank,
     };
@@ -47,12 +110,16 @@ function normalizeSource(
   const provider = context.provider;
   const prompt = context.prompt;
   const url = asTrimmedString(raw['url'] || raw['link'] || raw['source']);
-  const domain = asTrimmedString(raw['domain'] || raw['hostname']);
+  const title = asTrimmedString(raw['title']);
   // Note: snippet field removed from database schema
   const sourceType = determineSourceType(raw) || 'web_search';
   const metadata = raw as UnknownObject;
   const id = asTrimmedString(raw['id'] || raw['sourceId']);
   const createdAt = asTrimmedString(raw['createdAt']);
+
+  // Déduire le domaine à partir de l'URL si pas fourni explicitement
+  const domain = asTrimmedString(raw['domain'] || raw['hostname']) || 
+    (url ? getHostnameFromUrl(url) : undefined);
 
   if (!url && !domain) {
     return undefined;
@@ -65,6 +132,7 @@ function normalizeSource(
     prompt,
     domain,
     url,
+    title,
     sourceType,
     metadata,
     rank: context.rank,
@@ -176,9 +244,48 @@ export function extractAnalysisSources(
       const provider = asTrimmedString(responseObj['provider']);
       const prompt = asTrimmedString(responseObj['prompt']);
       const webSearchSources = responseObj['webSearchSources'];
-      
-      // Debug logs removed
+
+      // 1) Sources structurées si disponibles (chemin historique)
       addRawSources(webSearchSources, { provider, prompt, analysisId: currentAnalysisId });
+
+      // 1.b) Nouvelles URLs structurées extraites des réponses (AIResponse.urls)
+      const structuredUrls = responseObj['urls'];
+      if (Array.isArray(structuredUrls)) {
+        structuredUrls.forEach((u: unknown, index: number) => {
+          if (u && typeof u === 'object') {
+            const url = asTrimmedString((u as Record<string, unknown>)['url']);
+            const title = asTrimmedString((u as Record<string, unknown>)['title']);
+            if (url) {
+              registerSource(
+                normalizeSource({ url, title } as UnknownObject, {
+                  provider: provider,
+                  prompt: prompt,
+                  rank: index + 1,
+                  analysisId: currentAnalysisId,
+                })
+              );
+            }
+          }
+        });
+      }
+
+      // 2) Fallback: extraire des URLs directement du texte de réponse
+      const responseText = asTrimmedString(responseObj['response']);
+      if (responseText) {
+        const urls = extractUrlsFromText(responseText);
+        if (urls.length > 0) {
+          urls.forEach((url, index) => {
+            registerSource(
+              normalizeSource(url, {
+                provider: provider,
+                prompt: prompt,
+                rank: index + 1,
+                analysisId: currentAnalysisId,
+              })
+            );
+          });
+        }
+      }
     });
   }
 
