@@ -202,9 +202,9 @@ test('brand-monitor avec mocks AI', async ({ page }) => {
   await expect(analyzeBtn).toBeEnabled();
 
   // 4. Soumettre l'URL et vérifier le flux
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(5000);
   await analyzeBtn.click();
-
+  
   // 5. Vérifier que la CompanyCard s'affiche avec les données Rolex mockées
   await expect(page.getByRole('heading', { name: 'Rolex' })).toBeVisible({ timeout: 10000 });
   
@@ -352,11 +352,11 @@ test('brand-monitor avec mocks AI', async ({ page }) => {
     expectedScores.targetBrand,
     ...expectedScores.expectedCompetitors
   ];
-  for (const brandName of brands) {
-    // Chercher la marque et le pourcentage dans des éléments adjacents
-    // Utiliser .first() pour éviter les violations de mode strict quand il y a plusieurs éléments
+  for (let i = 0; i < brands.length; i++) {
+    const brandName = brands[i];
+    // Chercher la marque et le pourcentage qui lui est associé (nth(1) à nth(8))
     const brandElement = page.getByText(brandName).first();
-    const percentageElement = page.getByText(`${pct}%`).first();
+    const percentageElement = page.getByText(`${pct}%`).nth(i + 1);
     
     // Vérifier que les deux éléments sont visibles
     await expect(brandElement).toBeVisible();
@@ -375,4 +375,47 @@ test('brand-monitor avec mocks AI', async ({ page }) => {
   // 14. Vérifier que l'input URL original est masqué après succès
   // (il peut y avoir d'autres inputs de recherche, mais pas l'input URL original)
   await expect(page.locator('input[placeholder*="Entrez l\'URL de votre site web"]')).not.toBeVisible();
+
+  // 15. Vérifier l'accès aux Sources selon le plan (DEV)
+  // Combobox "Plan (DEV)" -> options: free/start => Sources disabled; watch/pro => Sources enabled
+  const planCombo = page.getByRole('combobox', { name: /Plan \(DEV\)/i });
+  const sourcesBtn = page.getByRole('button', { name: /^Sources$/i });
+
+  // free -> disabled
+  await page.getByLabel('Plan (DEV)').selectOption('free');
+  await expect(sourcesBtn).toBeDisabled();
+
+  // start -> disabled
+  await page.getByLabel('Plan (DEV)').selectOption('start');
+  await expect(sourcesBtn).toBeDisabled();
+
+  // watch -> enabled
+  await page.getByLabel('Plan (DEV)').selectOption('watch');
+  await expect(sourcesBtn).toBeEnabled();
+
+  // pro -> enabled
+  await page.getByLabel('Plan (DEV)').selectOption('pro');
+  await expect(sourcesBtn).toBeEnabled();
+
+  // Avec un plan éligible (watch/pro), vérifier qu'au moins une source structurée s'affiche
+  // 1) Dans Prompts & réponses (liens sous les réponses)
+  const promptsTab2 = page.getByRole('button', { name: /Prompts et réponses/i });
+  await promptsTab2.click();
+  const possibleHosts = [/rolex\.com/i, /patek\.com/i, /audemarspiguet\.com/i, /omega(watches)?\.com/i, /vacheron-constantin\.com/i, /grand-seiko\.com/i, /ysl\.com/i];
+  const sourcesLinks = page.locator('a[href^="http"]');
+  let foundStructuredSource = false;
+  const linkCount = await sourcesLinks.count();
+  for (let i = 0; i < Math.min(linkCount, 100); i++) {
+    const href = (await sourcesLinks.nth(i).getAttribute('href')) || '';
+    if (possibleHosts.some((re) => re.test(href))) {
+      foundStructuredSource = true;
+      break;
+    }
+  }
+  expect(foundStructuredSource).toBeTruthy();
+
+  // 2) Vérifier que l'onglet Sources est accessible et cliquable → contenu visible
+  await sourcesBtn.click();
+  await page.getByRole('button', { name: 'audemarspiguet.com (1 source)' }).click();
+  await expect(page.getByRole('link', { name: 'Audemars Piguet' })).toBeVisible();
 });

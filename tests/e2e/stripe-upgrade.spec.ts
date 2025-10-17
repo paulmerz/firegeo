@@ -76,15 +76,15 @@ async function completeStripeCheckoutIfPresent(page: Page) {
 
   // Adresse de facturation améliorée
   await page.getByLabel('Pays ou région').selectOption('FR');
-  await page.getByRole('combobox', { name: 'Adresse' }).click();
-  await page.getByRole('combobox', { name: 'Adresse' }).fill('Avenue des Champs-Elysées');
-  await page.getByRole('option', { name: 'Avenue des Champs-Élysées,' }).click();
+  await page.getByRole('button', { name: 'Saisir l\'adresse manuellement' }).click();
+  await page.getByRole('textbox', { name: 'Ligne d\'adresse n°1' }).fill('Avenue des Champs-Elysées 11');
+  await page.getByRole('textbox', { name: 'Code postal' }).fill('75008');
+  await page.getByRole('textbox', { name: 'Ville' }).fill('Paris');
 
   // Bouton payer: préférer le bouton ARIA "Payer et s'abonner", puis fallback testId, puis conteneur texte
-  const payBtnByRole = page.getByRole('button', { name: /Payer et s'abonner/i }).first();
-  await page.waitForTimeout(6000);
+  const payBtnByRole = page.getByRole('button', { name: /S'abonner/i }).first();
+  await page.waitForTimeout(12000);
   await payBtnByRole.click();
-  // Attendre retour à l'app
   await expect.poll(async () => page.url(), { timeout: 150000, intervals: [500, 1000, 2500, 5000] })
     .not.toContain('checkout.stripe.com');
   return true;
@@ -92,6 +92,7 @@ async function completeStripeCheckoutIfPresent(page: Page) {
 
 
 test('Upgrade de plan: Start puis Watch via Stripe', async ({ page }) => {
+  test.setTimeout(200000); // 200 secondes pour permettre le poll de 150s
   await registerAndLogin(page, 'fr');
 
   // Naviguer dashboard

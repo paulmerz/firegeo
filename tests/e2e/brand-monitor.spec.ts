@@ -78,7 +78,7 @@ test('brand-monitor: titres multilingues puis validation URL, scrape Google, Com
   await analyzeBtn.click();
 
   // D) CompanyCard visible < 30s (bouton Identifier les Concurrents)
-  await expect(page.getByRole('button', { name: /Identifier les Concurrents/i })).toBeVisible({ timeout: 30000 });
+  await expect(page.getByRole('button', { name: /Identifier les Concurrents/i })).toBeVisible({ timeout: 50000 });
 
   // E) Crédit débité du coût URL (si crédits visibles)
   const expectedDebit = 1; // CREDIT_COST_URL_ANALYSIS

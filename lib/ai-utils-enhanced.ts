@@ -7,7 +7,7 @@ import { getProviderModel, normalizeProviderName, getProviderConfig, PROVIDER_CO
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
 import { detectMultipleBrands, type BrandDetectionMatch } from './brand-detection-service';
 import { cleanProviderResponse } from './provider-response-utils';
-import { getMockedRawResponse } from './ai-utils-mock';
+import { getMockedRawResponse, getMockedSources } from './ai-utils-mock';
 
 const OPENAI_WEB_MODEL_ID = 'gpt-5' as const;
 
@@ -136,6 +136,8 @@ export async function analyzePromptWithProviderEnhanced(
     if (mockMode === 'raw') {
       // Mock de la réponse LLM
       text = getMockedRawResponse(provider, rawPrompt);
+      const mockUrls = getMockedSources(provider, rawPrompt);
+      urlsNormalized = mockUrls.length ? mockUrls : undefined;
       apiUsageTracker.updateCall(callId, { inputTokens: 0, outputTokens: 0, cost: 0, duration: 0 });
     } else {
       const result = await generateText({
