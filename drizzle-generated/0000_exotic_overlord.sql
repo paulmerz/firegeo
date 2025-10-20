@@ -1,6 +1,16 @@
-CREATE TYPE "public"."role" AS ENUM('user', 'assistant');--> statement-breakpoint
-CREATE TYPE "public"."theme" AS ENUM('light', 'dark');--> statement-breakpoint
-CREATE TABLE "brand_analyses" (
+DO $$ BEGIN
+    CREATE TYPE "public"."role" AS ENUM('user', 'assistant');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+    CREATE TYPE "public"."theme" AS ENUM('light', 'dark');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+CREATE TABLE IF NOT EXISTS "brand_analyses" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" text NOT NULL,
 	"url" text NOT NULL,
@@ -14,7 +24,7 @@ CREATE TABLE "brand_analyses" (
 	"updated_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "brand_analysis_sources" (
+CREATE TABLE IF NOT EXISTS "brand_analysis_sources" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"analysis_id" uuid NOT NULL,
 	"provider" text,
@@ -27,7 +37,7 @@ CREATE TABLE "brand_analysis_sources" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "conversations" (
+CREATE TABLE IF NOT EXISTS "conversations" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" text NOT NULL,
 	"title" text,
@@ -36,7 +46,7 @@ CREATE TABLE "conversations" (
 	"updated_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "message_feedback" (
+CREATE TABLE IF NOT EXISTS "message_feedback" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"message_id" uuid NOT NULL,
 	"user_id" text NOT NULL,
@@ -45,7 +55,7 @@ CREATE TABLE "message_feedback" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "messages" (
+CREATE TABLE IF NOT EXISTS "messages" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"conversation_id" uuid NOT NULL,
 	"user_id" text NOT NULL,
@@ -55,7 +65,7 @@ CREATE TABLE "messages" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "user_profile" (
+CREATE TABLE IF NOT EXISTS "user_profile" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" text NOT NULL,
 	"display_name" text,
@@ -67,7 +77,7 @@ CREATE TABLE "user_profile" (
 	CONSTRAINT "user_profile_user_id_unique" UNIQUE("user_id")
 );
 --> statement-breakpoint
-CREATE TABLE "user_settings" (
+CREATE TABLE IF NOT EXISTS "user_settings" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" text NOT NULL,
 	"theme" "theme" DEFAULT 'light',
@@ -80,6 +90,20 @@ CREATE TABLE "user_settings" (
 	CONSTRAINT "user_settings_user_id_unique" UNIQUE("user_id")
 );
 --> statement-breakpoint
-ALTER TABLE "brand_analysis_sources" ADD CONSTRAINT "brand_analysis_sources_analysis_id_brand_analyses_id_fk" FOREIGN KEY ("analysis_id") REFERENCES "public"."brand_analyses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "message_feedback" ADD CONSTRAINT "message_feedback_message_id_messages_id_fk" FOREIGN KEY ("message_id") REFERENCES "public"."messages"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "messages" ADD CONSTRAINT "messages_conversation_id_conversations_id_fk" FOREIGN KEY ("conversation_id") REFERENCES "public"."conversations"("id") ON DELETE cascade ON UPDATE no action;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'brand_analysis_sources_analysis_id_brand_analyses_id_fk') THEN
+        ALTER TABLE "brand_analysis_sources" ADD CONSTRAINT "brand_analysis_sources_analysis_id_brand_analyses_id_fk" FOREIGN KEY ("analysis_id") REFERENCES "public"."brand_analyses"("id") ON DELETE cascade ON UPDATE no action;
+    END IF;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'message_feedback_message_id_messages_id_fk') THEN
+        ALTER TABLE "message_feedback" ADD CONSTRAINT "message_feedback_message_id_messages_id_fk" FOREIGN KEY ("message_id") REFERENCES "public"."messages"("id") ON DELETE cascade ON UPDATE no action;
+    END IF;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'messages_conversation_id_conversations_id_fk') THEN
+        ALTER TABLE "messages" ADD CONSTRAINT "messages_conversation_id_conversations_id_fk" FOREIGN KEY ("conversation_id") REFERENCES "public"."conversations"("id") ON DELETE cascade ON UPDATE no action;
+    END IF;
+END $$;

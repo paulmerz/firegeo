@@ -114,6 +114,7 @@ function normalizeScrapedCompany(input: RawCompany): Company {
     id,
     name,
     url,
+    originalUrl: input.originalUrl, // Préserver originalUrl
     description: input.description,
     industry: input.industry,
     logo: input.logo,

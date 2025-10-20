@@ -53,6 +53,7 @@ export interface Company {
   id: string;
   name: string;
   url: string;
+  originalUrl?: string; // NOUVEAU: URL originale saisie par l'utilisateur
   description?: string;
   industry?: string;
   logo?: string;

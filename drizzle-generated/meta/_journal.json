@@ -8,6 +8,20 @@
       "when": 1758877496938,
       "tag": "0000_exotic_overlord",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1760984474069,
+      "tag": "0001_add_workspace_trigger",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1760989500000,
+      "tag": "0002_add_companies_name_unique",
+      "breakpoints": true
     }
   ]
 }

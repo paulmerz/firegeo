@@ -96,7 +96,7 @@ export function CompanyCard({
           
           {/* Website link overlay on image */}
           <a
-            href={company.url}
+            href={company.originalUrl || company.url}
             target="_blank"
             rel="noopener noreferrer"
             className="absolute top-4 right-4 p-2 rounded-lg bg-white/90 backdrop-blur-sm hover:bg-white transition-all shadow-md group"
@@ -118,7 +118,7 @@ export function CompanyCard({
                 )}
                 <span className="text-sm text-gray-500 flex items-center gap-1">
                   <Globe className="h-3 w-3" />
-                  {new URL(company.url).hostname}
+                  {new URL(company.originalUrl || company.url).hostname}
                 </span>
               </div>
             </div>

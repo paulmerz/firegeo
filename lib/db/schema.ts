@@ -156,3 +156,6 @@ export type NewBrandAnalysisSource = typeof brandAnalysisSources.$inferInsert;
 export type BrandAnalysisWithSources = BrandAnalysis & {
   sources: BrandAnalysisSource[];
 };
+
+// Export all company-related schemas and types
+export * from './schema/companies';

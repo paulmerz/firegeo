@@ -167,6 +167,29 @@ export async function findCompetitorsWithAIWebSearch(
     const processingTime = Date.now() - startTime;
     console.log(`✅ [AIWebSearch] Found ${competitors.length} competitors via Perplexity in ${processingTime}ms`);
     
+    // Save competitors to database if company has an ID
+    if (company.id && competitors.length > 0) {
+      try {
+        const { upsertCompetitorEdge } = await import('@/lib/db/competitors-service');
+        for (const comp of competitors) {
+          await upsertCompetitorEdge({
+            companyId: company.id,
+            competitorName: comp.name,
+            competitorUrl: comp.domain || comp.url,
+            score: comp.competitionScore || (comp.confidence * 10) || 5,
+            source: 'scrape',
+            scope: 'global',
+            workspaceId: null,
+            userId: null
+          });
+        }
+        console.log(`💾 [AIWebSearch] Saved ${competitors.length} competitors to database`);
+      } catch (dbError) {
+        console.error('⚠️ [AIWebSearch] Failed to save competitors to database:', dbError);
+        // Continue execution even if DB save fails
+      }
+    }
+    
     return competitors;
     
   } catch (error) {

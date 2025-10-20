@@ -416,6 +416,7 @@ async function processScrapedData(markdown: string, metadata: Record<string, unk
     return {
       id: crypto.randomUUID(),
       url: url,
+      originalUrl: url, // NOUVEAU: Préserver l'URL originale
       name: validatedData.name,
       description: validatedData.description,
       industry: validatedData.industry,
@@ -460,6 +461,7 @@ async function processScrapedData(markdown: string, metadata: Record<string, unk
     return {
       id: crypto.randomUUID(),
       url: url,
+      originalUrl: url, // NOUVEAU: Préserver l'URL originale dans le fallback aussi
       name: formattedName,
       description: `Information about ${formattedName}`,
       industry: 'technology',
