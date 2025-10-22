@@ -654,7 +654,7 @@
     "searchPromptsPlaceholder": "Search prompts and responses...",
     "legendTargetBrand": "Target brand mentions",
     "legendCompetitorBrand": "Competitor mentions",
-    "enterUrlPlaceholder": "Enter your website URL (e.g., example.com)",
+    "enterUrlPlaceholder": "Enter the website URL of the brand to analyze (e.g., example.com)",
     "enterUrlPlaceholderShort": "example.com",
     "competitorNamePlaceholder": "e.g., Anthropic",
     "competitorUrlPlaceholder": "e.g., anthropic.com",

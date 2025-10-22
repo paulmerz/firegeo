@@ -654,7 +654,7 @@
     "searchPromptsPlaceholder": "Prompts und Antworten durchsuchen...",
     "legendTargetBrand": "Erwähnungen der Zielmarke",
     "legendCompetitorBrand": "Erwähnungen von Wettbewerbern",
-    "enterUrlPlaceholder": "Geben Sie die URL Ihrer Website ein (z. B. beispiel.com)",
+    "enterUrlPlaceholder": "Geben Sie die URL des Websites der Marke zur Analyse ein (z. B. beispiel.com)",
     "enterUrlPlaceholderShort": "beispiel.com",
     "competitorNamePlaceholder": "z. B. Anthropic",
     "competitorUrlPlaceholder": "z. B. anthropic.com",

@@ -39,7 +39,8 @@ export type BrandMonitorAction =
   | { type: 'SET_USE_INTELLISEARCH'; payload: boolean }
   | { type: 'RESET_STATE' }
   | { type: 'SCRAPE_SUCCESS'; payload: Company }
-  | { type: 'ANALYSIS_COMPLETE'; payload: Analysis };
+  | { type: 'ANALYSIS_COMPLETE'; payload: Analysis }
+  | { type: 'LOAD_FROM_TEMPLATE'; payload: any };
 
 // State Interfaces
 export interface IdentifiedCompetitor {
@@ -389,6 +390,17 @@ export function brandMonitorReducer(
         ...state,
         analysis: action.payload,
         analyzing: false
+      };
+      
+    case 'LOAD_FROM_TEMPLATE':
+      return {
+        ...state,
+        company: action.payload.analysisData?.company || null,
+        identifiedCompetitors: action.payload.competitors || [],
+        showCompanyCard: true,
+        showCompetitors: true,
+        showPromptsList: false,
+        showInput: false,
       };
       
     default:

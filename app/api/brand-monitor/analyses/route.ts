@@ -5,6 +5,7 @@ import { brandAnalyses, brandAnalysisSources } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { extractAnalysisSources } from '@/lib/brand-monitor-sources';
 import { handleApiError, AuthenticationError, ValidationError } from '@/lib/api-errors';
+import { getUserDefaultWorkspace } from '@/lib/db/workspace-service';
 
 // GET /api/brand-monitor/analyses - Get user's brand analyses
 export async function GET(request: NextRequest) {
@@ -69,9 +70,11 @@ export async function POST(request: NextRequest) {
       throw new ValidationError('Invalid request', fields);
     }
 
+    const workspaceId = await getUserDefaultWorkspace(sessionResponse.user.id);
 
     const [analysis] = await db.insert(brandAnalyses).values({
       userId: sessionResponse.user.id,
+      workspaceId, // NOUVEAU
       url: body.url,
       companyName: body.companyName,
       industry: body.industry,

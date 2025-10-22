@@ -81,3 +81,29 @@ export function useDeleteBrandAnalysis() {
     },
   });
 }
+
+export function useAnalysisTemplates() {
+  const { data: session } = useSession();
+  
+  return useQuery<Array<{
+    id: string;
+    url: string;
+    companyName: string | null;
+    industry: string | null;
+    logo: string | null;
+    locale: string;
+    competitorCount: number;
+    lastAnalyzedAt: Date;
+  }>>({
+    queryKey: ['analysisTemplates', session?.user?.id],
+    queryFn: async () => {
+      const res = await fetch('/api/brand-monitor/analysis-templates');
+      if (!res.ok) {
+        throw new Error('Failed to fetch templates');
+      }
+      const data = await res.json();
+      return data.templates;
+    },
+    enabled: !!session?.user?.id,
+  });
+}

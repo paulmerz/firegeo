@@ -198,3 +198,4 @@ async function monitorConstraints() {
 - [Documentation PostgreSQL - Constraints](https://www.postgresql.org/docs/current/ddl-constraints.html)
 - [Documentation Drizzle - Unique Indexes](https://orm.drizzle.team/docs/indexes#unique-indexes)
 - [Migration 004](../migrations/004_add_companies_competitors_aliases.sql)
+

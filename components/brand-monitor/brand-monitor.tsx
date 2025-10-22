@@ -22,10 +22,11 @@ import {
   validateCompetitorUrl
 } from '@/lib/brand-monitor-utils';
 import { getEnabledProviders } from '@/lib/provider-config';
-import { useSaveBrandAnalysis } from '@/hooks/useBrandAnalyses';
+import { useSaveBrandAnalysis, useAnalysisTemplates } from '@/hooks/useBrandAnalyses';
 
 // Components
 import { UrlInputSection } from './url-input-section';
+import { AnalysisTemplatesSection } from './analysis-templates-section';
 import { CompanyCard } from './company-card';
 import { AnalysisProgressSection } from './analysis-progress-section';
 import { ResultsNavigation } from './results-navigation';
@@ -167,7 +168,12 @@ export function BrandMonitor({
   const hasSavedRef = useRef(false);
   const [isRefreshingMatrix, setIsRefreshingMatrix] = useState(false);
   const [apiUsageSummary, setApiUsageSummary] = useState<ApiUsageSummaryData | null>(null);
+  const [showTemplates, setShowTemplates] = useState(true);
+  const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
   const { updateCreditsCache } = useCreditsInvalidation();
+  
+  // Hook pour récupérer les templates d'analyses
+  const { data: templates, isLoading: templatesLoading } = useAnalysisTemplates();
   
   const { startSSEConnection } = useSSEHandler({ 
     state, 
@@ -244,6 +250,11 @@ export function BrandMonitor({
     useWebSearch,
     useIntelliSearch
   } = state;
+  
+  // Détermine ce qui doit être affiché
+  const shouldShowTemplates = showTemplates && templates && templates.length > 0 && !templatesLoading && !company && showInput;
+  const shouldShowTemplatesLoading = showTemplates && templatesLoading && !company && showInput;
+  
   const displaySources = useMemo(() => {
     const persisted = selectedAnalysis?.sources ?? null;
 
@@ -582,12 +593,15 @@ export function BrandMonitor({
       // Handle AI web search results
       const foundCompetitors: IdentifiedCompetitor[] = data.competitors.map((comp) => ({ name: comp.name, url: comp.url ?? undefined }));
 
-      // Utiliser uniquement les concurrents de la BDD (déjà filtrés par les overrides)
-      // Le cache de recherche ne connaît pas les overrides, donc on ne l'utilise pas
-      const finalCompetitors = dbCompetitors;
+      // Combiner les concurrents de la BDD et ceux trouvés par l'API
+      // Si on a des concurrents en BDD, on les utilise (déjà filtrés par les overrides)
+      // Sinon, on utilise ceux trouvés par l'API
+      const finalCompetitors = dbCompetitors.length > 0 ? dbCompetitors : foundCompetitors;
 
-      logger.info('🎯 Competitors (DB only, overrides applied):', finalCompetitors);
+      logger.info('🎯 Competitors (DB + API combined):', finalCompetitors);
       logger.debug('📊 Stats:', data.stats);
+      logger.debug('🗄️ DB competitors:', dbCompetitors);
+      logger.debug('🔍 API competitors:', foundCompetitors);
       
       if (data.warning) {
         logger.warn('⚠️ Warning:', data.warning);
@@ -771,10 +785,63 @@ export function BrandMonitor({
   const handleRestart = useCallback(() => {
     dispatch({ type: 'RESET_STATE' });
     hasSavedRef.current = false;
+    setShowTemplates(true);
   }, []);
   
   const handleWebSearchToggle = useCallback((enabled: boolean) => {
     dispatch({ type: 'SET_USE_WEB_SEARCH', payload: enabled });
+  }, []);
+  
+  const handleSelectTemplate = useCallback(async (analysisId: string) => {
+    setShowTemplates(false);
+    setIsLoadingTemplate(true);
+    
+    try {
+      // Charger l'analyse complète
+      const res = await fetch(`/api/brand-monitor/analyses/${analysisId}`);
+      if (!res.ok) return;
+      
+      const analysis = await res.json();
+      
+      // Charger la company avec les concurrents filtrés par les overrides
+      // Utiliser la même logique que le bouton "Identifier les Concurrents"
+      const resolveRes = await fetch('/api/company/resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: analysis.url })
+      });
+      
+      let filteredCompetitors: IdentifiedCompetitor[] = [];
+      if (resolveRes.ok) {
+        const resolveData = await resolveRes.json();
+        if (Array.isArray(resolveData.competitors)) {
+          filteredCompetitors = resolveData.competitors.map((c: { name: string; url?: string | null }) => ({
+            name: c.name,
+            url: c.url ?? undefined,
+          }));
+        }
+      }
+      
+      // Dispatcher pour charger company + concurrents filtrés
+      dispatch({ 
+        type: 'LOAD_FROM_TEMPLATE', 
+        payload: {
+          ...analysis,
+          competitors: filteredCompetitors
+        }
+      });
+      
+      // Afficher la CompanyCard avec les concurrents (pas directement aux prompts)
+      dispatch({ type: 'SET_SHOW_COMPANY_CARD', payload: true });
+      dispatch({ type: 'SET_SHOW_COMPETITORS', payload: true });
+    } finally {
+      setIsLoadingTemplate(false);
+    }
+  }, []);
+  
+  const handleNewAnalysis = useCallback(() => {
+    setShowTemplates(false);
+    dispatch({ type: 'SET_SHOW_INPUT', payload: true });
   }, []);
   
   const handleRefreshMatrix = useCallback(async () => {
@@ -867,8 +934,37 @@ export function BrandMonitor({
   return (
     <div className="flex flex-col">
 
-      {/* URL Input Section */}
-      {showInput && (
+      {/* Section templates - affichée au-dessus de l'UrlInputSection */}
+      {shouldShowTemplates && (
+        <div className="flex items-center justify-center py-8">
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+            <AnalysisTemplatesSection
+              onSelectTemplate={handleSelectTemplate}
+              onNewAnalysis={handleNewAnalysis}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Loading state pour les templates */}
+      {shouldShowTemplatesLoading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center py-4">Chargement des analyses récentes...</div>
+        </div>
+      )}
+
+      {/* Loader pour la sélection de template */}
+      {isLoadingTemplate && (
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Chargement du template...</p>
+          </div>
+        </div>
+      )}
+
+      {/* URL Input Section - toujours affiché en dessous des templates */}
+      {showInput && !isLoadingTemplate && (
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
             <UrlInputSection
@@ -1182,5 +1278,6 @@ export function BrandMonitor({
     </div>
   );
 }
+
 
 

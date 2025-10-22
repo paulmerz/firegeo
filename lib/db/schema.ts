@@ -1,5 +1,6 @@
 import { pgTable, text, timestamp, uuid, boolean, jsonb, integer, pgEnum } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import { workspaces } from './schema/companies';
 
 // Enums
 export const roleEnum = pgEnum('role', ['user', 'assistant']);
@@ -94,6 +95,7 @@ export const messageFeedbackRelations = relations(messageFeedback, ({ one }) => 
 export const brandAnalyses = pgTable('brand_analyses', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: text('user_id').notNull(),
+  workspaceId: uuid('workspace_id').references(() => workspaces.id),
   url: text('url').notNull(),
   companyName: text('company_name'),
   industry: text('industry'),
