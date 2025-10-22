@@ -15,13 +15,6 @@
       "when": 1760984474069,
       "tag": "0001_add_workspace_trigger",
       "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1760989500000,
-      "tag": "0002_add_companies_name_unique",
-      "breakpoints": true
     }
   ]
 }

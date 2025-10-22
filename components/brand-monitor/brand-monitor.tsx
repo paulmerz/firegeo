@@ -488,6 +488,30 @@ export function BrandMonitor({
 
     dispatch({ type: 'SET_PREPARING_ANALYSIS', payload: true });
     
+    // Précharger les concurrents existants (global + workspace) depuis la BDD
+    let dbCompetitors: IdentifiedCompetitor[] = [];
+    try {
+      const resolveRes = await fetch('/api/company/resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: company.url })
+      });
+      if (resolveRes.ok) {
+        const resolveData = await resolveRes.json();
+        if (Array.isArray(resolveData.competitors)) {
+          dbCompetitors = resolveData.competitors.map((c: { name: string; url?: string | null }) => ({
+            name: c.name,
+            url: c.url ?? undefined,
+          }));
+          if (dbCompetitors.length > 0) {
+            dispatch({ type: 'SET_IDENTIFIED_COMPETITORS', payload: dbCompetitors });
+          }
+        }
+      }
+    } catch {
+      // silencieux: si l'appel échoue, on continue avec la recherche
+    }
+
     // Check which providers are available
     try {
       const response = await fetch('/api/brand-monitor/check-providers', {
@@ -556,20 +580,21 @@ export function BrandMonitor({
       }
       
       // Handle AI web search results
-      const foundCompetitors: IdentifiedCompetitor[] = data.competitors.map((comp) => ({
-        name: comp.name,
-        url: comp.url ?? undefined
-      }));
-      
-      logger.info('ðŸ† Found competitors:', foundCompetitors);
+      const foundCompetitors: IdentifiedCompetitor[] = data.competitors.map((comp) => ({ name: comp.name, url: comp.url ?? undefined }));
+
+      // Utiliser uniquement les concurrents de la BDD (déjà filtrés par les overrides)
+      // Le cache de recherche ne connaît pas les overrides, donc on ne l'utilise pas
+      const finalCompetitors = dbCompetitors;
+
+      logger.info('🎯 Competitors (DB only, overrides applied):', finalCompetitors);
       logger.debug('📊 Stats:', data.stats);
       
       if (data.warning) {
         logger.warn('⚠️ Warning:', data.warning);
       }
       
-      dispatch({ type: 'SET_IDENTIFIED_COMPETITORS', payload: foundCompetitors });
-      logger.info('Final identified competitors:', foundCompetitors);
+      dispatch({ type: 'SET_IDENTIFIED_COMPETITORS', payload: finalCompetitors });
+      logger.info('Final identified competitors:', finalCompetitors);
     } catch (unknownError) {
       logger.error('❌ Error in competitor search:', unknownError);
       dispatch({ type: 'SET_ERROR', payload: tErrors('failedToFindCompetitors') });
@@ -580,24 +605,78 @@ export function BrandMonitor({
     dispatch({ type: 'SET_PREPARING_ANALYSIS', payload: false });
   }, [company, useIntelliSearch, tErrors, creditsAvailable, updateCreditsCache]);
   
-  const handleProceedToPrompts = useCallback(() => {
+  const handleProceedToPrompts = useCallback(async () => {
     // Add a fade-out class to the current view
     const currentView = document.querySelector('.animate-panel-in');
     if (currentView) {
       currentView.classList.add('opacity-0');
     }
     
-    setTimeout(() => {
+    setTimeout(async () => {
       // Require credits for prompt generation; show specific error if missing and do not proceed
       if (creditsAvailable < CREDIT_COST_PROMPT_GENERATION) {
         dispatch({ type: 'SET_ERROR', payload: tErrors('insufficientCreditsPromptGen', { credits: CREDIT_COST_PROMPT_GENERATION }) });
         return;
       }
 
+      // Note: la persistance des concurrents manuels est désormais faite à l'ajout,
+      // pas au moment de "Continuer vers l'Analyse".
+
+      // NOUVEAU: Générer les variations pour target + competitors (asynchrone)
+      if (company) {
+        // Récupérer les competitors avec leurs IDs depuis la BDD
+        fetch('/api/company/resolve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            url: company.url,
+            locale: 'en'
+          })
+        })
+        .then(async response => {
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          const data = await response.json();
+          
+          // Construire la liste des brands avec leurs IDs
+          const allBrands = [
+            { name: company.name, id: company.id },
+            ...data.competitors.map((c: any) => ({ name: c.name, id: c.id }))
+          ];
+          
+          logger.info('[Brand Monitor] Starting async brand variations generation', {
+            targetBrand: company.name,
+            competitorsCount: data.competitors.length,
+            totalBrands: allBrands.length
+          });
+          
+          // Lancer la génération des variations en arrière-plan
+          return fetch('/api/brand-variations/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ brands: allBrands })
+          });
+        })
+        .then(async response => {
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          const result = await response.json();
+          logger.info('[Brand Monitor] Brand variations generated successfully', {
+            summary: result.summary
+          });
+        })
+        .catch(error => {
+          logger.warn('[Brand Monitor] Failed to pre-generate brand variations:', error);
+          // Continue anyway - variations can be generated during analysis if needed
+        });
+      }
+
       dispatch({ type: 'SET_SHOW_COMPETITORS', payload: false });
       dispatch({ type: 'SET_SHOW_PROMPTS_LIST', payload: true });
     }, 300);
-  }, [creditsAvailable, tErrors]);
+  }, [company, identifiedCompetitors, creditsAvailable, tErrors]);
   
   const handleAnalyze = useCallback(async (displayPrompts: string[]) => {
     if (!company) return;
@@ -1065,6 +1144,33 @@ export function BrandMonitor({
             // Batch scrape and validate the new competitor if it has a URL
             if (newCompetitor.url) {
               await batchScrapeAndValidateCompetitors([newCompetitor]);
+
+              // Enregistrer immédiatement en BDD la relation manuelle (scope workspace)
+              try {
+                if (company?.url) {
+                  const workspaceRes = await fetch('/api/user/workspace', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                  });
+                  if (workspaceRes.ok) {
+                    const { workspaceId } = await workspaceRes.json();
+                    if (workspaceId) {
+                      await fetch('/api/company/save-manual-competitor', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          companyUrl: company.url,
+                          competitorName: newCompetitor.name,
+                          competitorUrl: newCompetitor.url,
+                          workspaceId,
+                        })
+                      });
+                    }
+                  }
+                }
+              } catch (err) {
+                logger.warn('[Brand Monitor] Échec de la persistance immédiate du concurrent manuel:', err);
+              }
             }
           }
         }}

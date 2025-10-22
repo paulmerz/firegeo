@@ -5,10 +5,11 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Globe, Building2, ExternalLink, Plus, Trash2 } from 'lucide-react';
+import { Globe, Building2, ExternalLink, Plus, Trash2, MoreVertical } from 'lucide-react';
 import { Company } from '@/lib/types';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 interface CompanyCardProps {
   company: Company;
@@ -44,6 +45,9 @@ export function CompanyCard({
   const t = useTranslations('brandMonitor');
   const [logoError, setLogoError] = React.useState(false);
   const [faviconError, setFaviconError] = React.useState(false);
+  const [menuOpenIdx, setMenuOpenIdx] = React.useState<number | null>(null);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [pendingRemoval, setPendingRemoval] = React.useState<{ name: string; url?: string } | null>(null);
   
   // Validate URLs
   const isValidUrl = (url: string | undefined): boolean => {
@@ -60,6 +64,7 @@ export function CompanyCard({
   const validFaviconUrl = isValidUrl(company.favicon) ? company.favicon : null;
 
   return (
+    <>
     <Card className="p-2 bg-card text-card-foreground gap-6 rounded-xl border py-6 shadow-sm border-gray-200 overflow-hidden transition-all hover:shadow-lg">
       <div className="flex">
         {/* Left side - OG Image */}
@@ -227,15 +232,48 @@ export function CompanyCard({
                       </div>
                     </div>
                     
-                    {/* Remove button */}
-                    {onRemoveCompetitor && (
-                      <button
-                        onClick={() => onRemoveCompetitor(idx)}
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-50"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-red-600" />
-                      </button>
-                    )}
+                    {/* Actions top-right */}
+                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-100 transition-opacity">
+                      {/* Kebab menu for workspace edges removal from DB */}
+                      {competitor.url && (
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMenuOpenIdx(menuOpenIdx === idx ? null : idx);
+                            }}
+                            className="p-1 rounded hover:bg-gray-100"
+                          >
+                            <MoreVertical className="w-3.5 h-3.5 text-gray-600" />
+                          </button>
+                          {menuOpenIdx === idx && (
+                            <div className="absolute right-0 mt-1 w-44 bg-white border rounded shadow-md z-10">
+                              <button
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPendingRemoval({ name: competitor.name, url: competitor.url });
+                                  setConfirmOpen(true);
+                                  setMenuOpenIdx(null);
+                                }}
+                              >
+                                Retirer des suggestions
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Remove from selection (UI only) */}
+                      {onRemoveCompetitor && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onRemoveCompetitor(idx); }}
+                          className="p-1 rounded hover:bg-red-50"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -268,5 +306,39 @@ export function CompanyCard({
         </div>
       )}
     </Card>
+
+    {/* Confirmation dialog for DB removal */}
+    <ConfirmationDialog
+      open={confirmOpen}
+      onOpenChange={setConfirmOpen}
+      title={"Retirer des suggestions"}
+      description={"Cette marque ne sera plus suggérée automatiquement pour ce workspace."}
+      confirmText={"Retirer"}
+      cancelText={"Annuler"}
+      onConfirm={async () => {
+        try {
+          if (!pendingRemoval?.url) return;
+          
+          // Retirer de l'UI immédiatement
+          const competitorIndex = identifiedCompetitors.findIndex(comp => comp.url === pendingRemoval.url);
+          if (competitorIndex !== -1 && onRemoveCompetitor) {
+            onRemoveCompetitor(competitorIndex);
+          }
+          
+          // Résoudre workspace et supprimer l'edge workspace
+          const workspaceRes = await fetch('/api/user/workspace', { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+          if (!workspaceRes.ok) return;
+          const { workspaceId } = await workspaceRes.json();
+          await fetch('/api/company/remove-manual-competitor', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ companyUrl: company.url, competitorUrl: pendingRemoval.url, workspaceId })
+          });
+        } finally {
+          setPendingRemoval(null);
+        }
+      }}
+    />
+    </>
   );
 }

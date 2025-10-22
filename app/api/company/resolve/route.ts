@@ -8,7 +8,7 @@ import {
 import { logger } from '@/lib/logger';
 import { getOrCreateCompanyByUrl, dbCompanyToAppCompany } from '@/lib/db/companies-service';
 import { mergeCompetitorsForWorkspace } from '@/lib/db/competitors-service';
-import { getAliasesForWorkspace } from '@/lib/db/aliases-service';
+import { getAliasesForCompany } from '@/lib/db/aliases-service';
 import { getUserDefaultWorkspace } from '@/lib/db/workspace-service';
 
 export async function POST(request: NextRequest) {
@@ -60,10 +60,7 @@ export async function POST(request: NextRequest) {
         workspaceId,
         locale,
       }),
-      getAliasesForWorkspace({
-        companyId: dbCompany.id,
-        workspaceId,
-      }),
+      getAliasesForCompany(dbCompany.id),
     ]);
 
     logger.info('[Company Resolve API] Resolved company', {
@@ -75,7 +72,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       company: dbCompanyToAppCompany(dbCompany),
       competitors,
-      aliases,
+      aliases: { [dbCompany.name]: aliases },
       isNew: false,
     });
   } catch (error) {

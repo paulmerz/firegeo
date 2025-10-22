@@ -5,14 +5,17 @@
 
 /**
  * Normalizes a URL to a canonical domain format
+ * Extracts the base domain by removing subdomains (including www)
  * 
  * @param url - The URL to normalize (can include protocol, www, paths, etc.)
- * @returns The canonical domain (e.g., "example.com" from "https://www.example.com/path")
+ * @returns The canonical base domain (e.g., "example.com" from "https://www.example.com/path")
  * 
  * @example
  * canonicalizeUrl("https://www.example.com/path?query=1") // "example.com"
  * canonicalizeUrl("http://example.com:8080") // "example.com"
  * canonicalizeUrl("www.example.com") // "example.com"
+ * canonicalizeUrl("https://campaign.jaeger-lecoultre.com") // "jaeger-lecoultre.com"
+ * canonicalizeUrl("https://api.stripe.com") // "stripe.com"
  */
 export function canonicalizeUrl(url: string): string {
   try {
@@ -25,28 +28,25 @@ export function canonicalizeUrl(url: string): string {
     const parsed = new URL(normalizedUrl);
     let domain = parsed.hostname.toLowerCase();
 
-    // Remove www. prefix if present
-    if (domain.startsWith('www.')) {
-      domain = domain.substring(4);
-    }
-
     // Remove trailing dots
     domain = domain.replace(/\.+$/, '');
 
-    return domain;
+    // Extract the base domain (removes all subdomains including www)
+    return extractBaseDomain(domain);
   } catch {
     // If URL parsing fails, attempt basic domain extraction
     const cleaned = url
       .trim()
       .toLowerCase()
       .replace(/^https?:\/\//i, '')
-      .replace(/^www\./i, '')
       .split('/')[0]
       .split('?')[0]
       .split('#')[0]
-      .split(':')[0];
+      .split(':')[0]
+      .replace(/\.+$/, '');
 
-    return cleaned;
+    // Extract the base domain from the cleaned string
+    return extractBaseDomain(cleaned);
   }
 }
 

@@ -13,6 +13,7 @@ import {
 import { cleanProviderResponse } from '@/lib/provider-response-utils';
 import { detectBrandsInResponse } from '@/lib/brand-detection-service';
 import { useBrandDetection } from '@/hooks/useBrandDetection';
+import { maskUrlsInText } from '@/lib/text-url-masking';
 
 // Simple in-memory cache to avoid redundant brand detection calls
 // Keyed by JSON.stringify of { text, brands }
@@ -26,6 +27,7 @@ interface HighlightedResponseProps {
   highlightClassName?: string;
   renderMarkdown?: boolean;
   brandVariations?: Record<string, BrandVariation>;
+  hideWebSearchSources?: boolean;
 }
 
 const TARGET_HIGHLIGHT_CLASS = 'bg-orange-100 text-orange-900 font-semibold px-1 rounded-sm border border-orange-200';
@@ -39,9 +41,11 @@ export function HighlightedResponse({
   showHighlighting = true,
   highlightClassName = DEFAULT_HIGHLIGHT_CLASS,
   renderMarkdown = true,
-  brandVariations
+  brandVariations,
+  hideWebSearchSources = false
 }: HighlightedResponseProps) {
   const cleanedResponse = cleanProviderResponse(response.response, { providerName: response.provider });
+  const maskedResponse = maskUrlsInText(cleanedResponse, hideWebSearchSources);
   const [enhancedDetectionResults, setEnhancedDetectionResults] = React.useState<Map<string, BrandDetectionResult>>(new Map());
 
   const normalizedTargetBrand = React.useMemo(() => brandName.trim().toLowerCase(), [brandName]);
@@ -76,30 +80,19 @@ export function HighlightedResponse({
   // Enhanced detection with intelligent AI variations
   const cacheKey = React.useMemo(() => {
     // Stable cache key for this response + candidates
-    return JSON.stringify({ text: cleanedResponse, brands: allBrandCandidates });
-  }, [cleanedResponse, allBrandCandidates]);
+    return JSON.stringify({ text: maskedResponse, brands: allBrandCandidates });
+  }, [maskedResponse, allBrandCandidates]);
 
   React.useEffect(() => {
-    // Decide if we need enhanced detection:
-    // - No highlighting → skip
-    // - If provider supplied detection details AND competitor matches, skip
-    const hasProviderDetails = Boolean(response.detectionDetails);
-
     // Impossible d'exécuter la détection locale sans variations pré-calculées (pas de clé API côté client)
     if (!brandVariations || Object.keys(brandVariations).length === 0) {
       detectionResultsCache.delete(cacheKey);
       setEnhancedDetectionResults(new Map());
       return;
     }
-    const providerHasCompetitors = hasProviderDetails && Boolean(
-      response.detectionDetails?.competitorMatches &&
-      (response.detectionDetails.competitorMatches instanceof Map
-        ? response.detectionDetails.competitorMatches.size > 0
-        : Object.keys(response.detectionDetails.competitorMatches).length > 0)
-    );
 
-    if (!showHighlighting || (hasProviderDetails && providerHasCompetitors)) {
-      // Skip if highlighting is disabled or provider already supplied competitor matches
+    if (!showHighlighting) {
+      // Skip if highlighting is disabled
       return;
     }
 
@@ -112,7 +105,7 @@ export function HighlightedResponse({
         }
 
         const detection = await detectBrandsInResponse(
-          cleanedResponse,
+          maskedResponse,
           brandName,
           competitors,
           {
@@ -148,76 +141,27 @@ export function HighlightedResponse({
     };
 
     performDetection();
-  }, [cacheKey, cleanedResponse, showHighlighting, brandName, competitors, response.detectionDetails, brandVariations]);
+  }, [cacheKey, maskedResponse, showHighlighting, brandName, competitors, brandVariations]);
 
   const detectionResults = React.useMemo(() => {
     if (!showHighlighting) return new Map();
 
     const results = new Map<string, BrandDetectionResult>();
 
-    // Seed from provider details if present
-    if (response.detectionDetails) {
-      if (response.detectionDetails.brandMatches && response.detectionDetails.brandMatches.length > 0) {
-        const convertedMatches: BrandDetectionMatch[] = response.detectionDetails.brandMatches.map(match => ({
-          text: match.text,
-          index: match.index,
-          brandName: brandName,
-          variation: brandName, // legacy
-          confidence: match.confidence
-        }));
-        results.set(brandName, {
-          mentioned: true,
-          matches: convertedMatches,
-          confidence: Math.max(...response.detectionDetails.brandMatches.map((m) => m.confidence))
-        });
-      }
-
-      const cm = response.detectionDetails?.competitorMatches;
-      if (cm) {
-        const processMatches = (matches: { text: string; index: number; confidence: number }[], competitor: string) => {
-          if (Array.isArray(matches) && matches.length > 0) {
-            const convertedMatches: BrandDetectionMatch[] = matches.map((match) => ({
-              text: match.text,
-              index: match.index,
-              brandName: competitor,
-              variation: competitor, // legacy
-              confidence: match.confidence,
-            }));
-            results.set(competitor, {
-              mentioned: true,
-              matches: convertedMatches,
-              confidence: Math.max(...convertedMatches.map((m) => m.confidence)),
-            });
-          }
-        };
-
-        if (cm instanceof Map) {
-          cm.forEach(processMatches);
-        } else {
-          Object.entries(cm).forEach(([competitor, matches]) => {
-            processMatches(matches, competitor);
-          });
-        }
-      }
-    }
-
-    // Merge in enhanced results to fill missing competitors (e.g., Perplexity)
+    // Use enhanced results for all detection
     if (enhancedDetectionResults.size > 0) {
       enhancedDetectionResults.forEach((enh, name) => {
-        const existing = results.get(name);
-        if (!existing || existing.matches.length === 0) {
-          results.set(name, enh);
-        }
+        results.set(name, enh);
       });
     }
 
     return results;
-  }, [brandName, response, showHighlighting, enhancedDetectionResults]);
+  }, [showHighlighting, enhancedDetectionResults]);
 
   const segments = React.useMemo(() => {
     if (!showHighlighting || renderMarkdown) return [];
-    return highlightBrandMentions(cleanedResponse, detectionResults);
-  }, [cleanedResponse, detectionResults, showHighlighting, renderMarkdown]);
+    return highlightBrandMentions(maskedResponse, detectionResults);
+  }, [maskedResponse, detectionResults, showHighlighting, renderMarkdown]);
 
   const highlightClassResolver = React.useCallback((segment: HighlightedSegment) => {
     const matchedBrand = segment.brandName?.trim().toLowerCase();
@@ -288,14 +232,14 @@ export function HighlightedResponse({
               )
             }}
           >
-            {cleanedResponse}
+            {maskedResponse}
           </ReactMarkdown>
         </div>
       );
     }
 
     return (
-      <div>{cleanedResponse}</div>
+      <div>{maskedResponse}</div>
     );
   }
 
@@ -351,7 +295,7 @@ export function HighlightedResponse({
             )
           }}
         >
-          {cleanedResponse}
+          {maskedResponse}
         </ReactMarkdown>
       </div>
     );
@@ -368,14 +312,17 @@ export function HighlightedText({
   brandName,
   competitors = [],
   highlightClassName = DEFAULT_HIGHLIGHT_CLASS,
-  brandVariations
+  brandVariations,
+  hideWebSearchSources = false
 }: {
   text: string;
   brandName: string;
   competitors?: string[];
   highlightClassName?: string;
   brandVariations?: Record<string, BrandVariation>;
+  hideWebSearchSources?: boolean;
 }) {
+  const maskedText = maskUrlsInText(text, hideWebSearchSources);
   const { detectMultipleBrands } = useBrandDetection();
   const normalizedTargetBrand = React.useMemo(() => brandName.trim().toLowerCase(), [brandName]);
 
@@ -441,7 +388,7 @@ export function HighlightedText({
                 const index = textLower.indexOf(variationText.toLowerCase());
                 if (index !== -1) {
                   matches.push({
-                    text: text.substring(index, index + variationText.length),
+                    text: maskedText.substring(index, index + variationText.length),
                     index,
                     brandName,
                     variation: variationText,
@@ -461,7 +408,7 @@ export function HighlightedText({
           setDetectionResults(results);
         } else {
           // Fallback to full AI detection
-          const results = await detectMultipleBrands(text, brandCandidates, {
+          const results = await detectMultipleBrands(maskedText, brandCandidates, {
             caseSensitive: false,
             excludeNegativeContext: false,
             minConfidence: 0.3
@@ -475,9 +422,9 @@ export function HighlightedText({
     };
 
     performDetection();
-  }, [brandCandidates, text, brandVariations, detectMultipleBrands]);
+  }, [brandCandidates, maskedText, brandVariations, detectMultipleBrands]);
 
-  const segments = React.useMemo(() => highlightBrandMentions(text, detectionResults), [text, detectionResults]);
+  const segments = React.useMemo(() => highlightBrandMentions(maskedText, detectionResults), [maskedText, detectionResults]);
 
   const elements = React.useMemo(
     () => segmentsToReactElements(segments, highlightClassResolver),

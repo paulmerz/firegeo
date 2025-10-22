@@ -4,9 +4,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronsDown, ChevronsUp, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronsDown, ChevronsUp } from 'lucide-react';
 import { BrandPrompt, AIResponse, BrandVariation } from '@/lib/types';
 import { HighlightedResponse } from './highlighted-response';
+import { SourcesList } from './sources-list';
 import { useTranslations } from 'next-intl';
 import { logger } from '@/lib/logger';
 import { detectBrandsInResponse } from '@/lib/brand-detection-service';
@@ -423,6 +424,7 @@ export function PromptsResponsesTab({
                               brandVariations={brandVariations}
                               showHighlighting={true}
                               renderMarkdown={true}
+                              hideWebSearchSources={hideWebSearchSources}
                             />
                           )}
                         </div>
@@ -447,32 +449,12 @@ export function PromptsResponsesTab({
                             items = urls.map((u) => ({ url: u }));
                           }
                           if (!items || items.length === 0) return null;
-                          const display = items.slice(0, 6);
-                          const getHostname = (u: string) => {
-                            try { return new URL(u).hostname.replace(/^www\./i, ''); } catch { return u; }
-                          };
+                          
                           return (
-                            <div className="mt-2">
-                              <div className="text-xs text-gray-500 mb-1">Sources</div>
-                              <div className="flex flex-wrap gap-2">
-                                {display.map((it, i) => {
-                                  const host = getHostname(it.url);
-                                  const title = it.title?.trim() || it.url;
-                                  return (
-                                    <a
-                                      key={`${it.url}-${i}`}
-                                      href={it.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700 break-all"
-                                    >
-                                      <ExternalLink className="h-3.5 w-3.5" />
-                                      {title} ({host})
-                                    </a>
-                                  );
-                                })}
-                              </div>
-                            </div>
+                            <SourcesList 
+                              sources={items}
+                              maxVisible={3}
+                            />
                           );
                         })()}
                       </div>

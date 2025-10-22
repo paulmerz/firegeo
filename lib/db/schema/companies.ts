@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, numeric, pgEnum, index, uniqueIndex, check } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, numeric, pgEnum, index, uniqueIndex, check, boolean } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 
 // Enums
@@ -13,6 +13,25 @@ export const workspaces = pgTable('workspaces', {
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
+
+// Workspace overrides for competitor visibility/preferences
+export const competitorEdgeOverrides = pgTable('competitor_edge_overrides', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  competitorId: uuid('competitor_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  workspaceId: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
+  hidden: boolean('hidden').default(false).notNull(),
+  pinned: boolean('pinned').default(false).notNull(),
+  createdByUserId: text('created_by_user_id'),
+  updatedByUserId: text('updated_by_user_id'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => ({
+  uq: uniqueIndex('uq_competitor_edge_override').on(table.companyId, table.competitorId, table.workspaceId),
+  companyIdx: index('idx_competitor_edge_overrides_company').on(table.companyId),
+  competitorIdx: index('idx_competitor_edge_overrides_competitor').on(table.competitorId),
+  workspaceIdx: index('idx_competitor_edge_overrides_workspace').on(table.workspaceId),
+}));
 
 // Workspace members table
 export const workspaceMembers = pgTable('workspace_members', {
@@ -126,46 +145,21 @@ export const competitorEdges = pgTable('competitor_edges', {
   ),
 }));
 
-// Brand alias sets table
-export const brandAliasSets = pgTable('brand_alias_sets', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
-  original: text('original').notNull(),
-  confidence: numeric('confidence', { precision: 4, scale: 2 }).default('1.00'),
-  scope: scopeEnum('scope').notNull().default('global'),
-  workspaceId: uuid('workspace_id').references(() => workspaces.id, { onDelete: 'cascade' }),
-  createdByUserId: text('created_by_user_id'),
-  updatedByUserId: text('updated_by_user_id'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-}, (table) => ({
-  companyIdx: index('idx_brand_alias_sets_company').on(table.companyId),
-  uniqueScope: uniqueIndex('uq_alias_set_scope').on(
-    table.companyId,
-    table.original,
-    table.scope,
-    table.workspaceId
-  ),
-  scopeConsistency: check('chk_alias_scope_consistency',
-    sql`(scope = 'global' AND workspace_id IS NULL) OR (scope = 'workspace' AND workspace_id IS NOT NULL)`
-  ),
-}));
-
-// Brand aliases table
+// Brand aliases table - simplified to point directly to companies
 export const brandAliases = pgTable('brand_aliases', {
   id: uuid('id').primaryKey().defaultRandom(),
-  aliasSetId: uuid('alias_set_id').notNull().references(() => brandAliasSets.id, { onDelete: 'cascade' }),
+  companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
   alias: text('alias').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
 }, (table) => ({
-  setIdx: index('idx_brand_aliases_set').on(table.aliasSetId),
-  uniqueAlias: uniqueIndex('brand_aliases_alias_set_id_alias_key').on(table.aliasSetId, table.alias),
+  companyIdx: index('idx_brand_aliases_company').on(table.companyId),
+  uniqueAlias: uniqueIndex('uq_brand_aliases_company_alias').on(table.companyId, table.alias),
 }));
 
 // Relations
 export const workspacesRelations = relations(workspaces, ({ many }) => ({
   members: many(workspaceMembers),
   competitorEdges: many(competitorEdges),
-  brandAliasSets: many(brandAliasSets),
 }));
 
 export const workspaceMembersRelations = relations(workspaceMembers, ({ one }) => ({
@@ -181,7 +175,7 @@ export const companiesRelations = relations(companies, ({ many }) => ({
   snapshots: many(scrapeSnapshots),
   competitorEdges: many(competitorEdges),
   competitorOf: many(competitorEdges, { relationName: 'competitor' }),
-  brandAliasSets: many(brandAliasSets),
+  brandAliases: many(brandAliases),
 }));
 
 export const companyLocalesRelations = relations(companyLocales, ({ one }) => ({
@@ -222,22 +216,10 @@ export const competitorEdgesRelations = relations(competitorEdges, ({ one }) => 
   }),
 }));
 
-export const brandAliasSetsRelations = relations(brandAliasSets, ({ one, many }) => ({
-  company: one(companies, {
-    fields: [brandAliasSets.companyId],
-    references: [companies.id],
-  }),
-  workspace: one(workspaces, {
-    fields: [brandAliasSets.workspaceId],
-    references: [workspaces.id],
-  }),
-  aliases: many(brandAliasSets),
-}));
-
 export const brandAliasesRelations = relations(brandAliases, ({ one }) => ({
-  aliasSet: one(brandAliasSets, {
-    fields: [brandAliases.aliasSetId],
-    references: [brandAliasSets.id],
+  company: one(companies, {
+    fields: [brandAliases.companyId],
+    references: [companies.id],
   }),
 }));
 
@@ -262,9 +244,6 @@ export type NewScrapeSnapshot = typeof scrapeSnapshots.$inferInsert;
 
 export type CompetitorEdge = typeof competitorEdges.$inferSelect;
 export type NewCompetitorEdge = typeof competitorEdges.$inferInsert;
-
-export type BrandAliasSet = typeof brandAliasSets.$inferSelect;
-export type NewBrandAliasSet = typeof brandAliasSets.$inferInsert;
 
 export type BrandAlias = typeof brandAliases.$inferSelect;
 export type NewBrandAlias = typeof brandAliases.$inferInsert;

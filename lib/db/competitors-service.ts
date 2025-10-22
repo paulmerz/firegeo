@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import {
   competitorEdges,
   companies,
+  competitorEdgeOverrides,
   type CompetitorEdge,
   type NewCompetitorEdge,
 } from '@/lib/db/schema/companies';
@@ -37,6 +38,7 @@ export async function upsertCompetitorEdge({
     const { company: competitor } = await getOrCreateCompanyByUrl({
       url: competitorUrl,
       workspaceId: workspaceId || undefined,
+      preferredName: competitorName, // Passe le nom original de l'API
     });
     competitorId = competitor.id;
   } else {
@@ -52,7 +54,7 @@ export async function upsertCompetitorEdge({
       const [newCompetitor] = await db
         .insert(companies)
         .values({
-          name: competitorName,
+          name: competitorName, // Utilise le nom original de l'API
           url: '',
           canonicalDomain: competitorName.toLowerCase().replace(/\s+/g, '-'),
           enrichmentStatus: 'stub',
@@ -110,15 +112,16 @@ export async function mergeCompetitorsForWorkspace({
   const conditions = [eq(competitorEdges.companyId, companyId)];
 
   if (workspaceId) {
-    conditions.push(
-      or(
-        eq(competitorEdges.scope, 'global'),
-        and(
-          eq(competitorEdges.scope, 'workspace'),
-          eq(competitorEdges.workspaceId, workspaceId)
-        )
+    const workspaceCondition = or(
+      eq(competitorEdges.scope, 'global'),
+      and(
+        eq(competitorEdges.scope, 'workspace'),
+        eq(competitorEdges.workspaceId, workspaceId)
       )
     );
+    if (workspaceCondition) {
+      conditions.push(workspaceCondition);
+    }
   } else {
     conditions.push(eq(competitorEdges.scope, 'global'));
   }
@@ -133,6 +136,34 @@ export async function mergeCompetitorsForWorkspace({
     .where(and(...conditions))
     .orderBy(desc(competitorEdges.competitionScore));
 
+  // Récupérer les overrides pour ce workspace
+  let visibleCompetitorIds = new Set<string>();
+  let hiddenCompetitorIds = new Set<string>();
+  
+  if (workspaceId) {
+    const overrides = await db
+      .select()
+      .from(competitorEdgeOverrides)
+      .where(and(
+        eq(competitorEdgeOverrides.companyId, companyId),
+        eq(competitorEdgeOverrides.workspaceId, workspaceId)
+      ));
+
+    console.log('[DEBUG] Overrides found:', overrides.length, 'for workspace:', workspaceId, 'company:', companyId);
+    for (const ov of overrides) {
+      console.log('[DEBUG] Override:', { competitorId: ov.competitorId, hidden: ov.hidden, pinned: ov.pinned });
+      if (ov.hidden === true) {
+        hiddenCompetitorIds.add(ov.competitorId);
+        console.log('[DEBUG] Added to hidden set:', ov.competitorId);
+      } else if (ov.hidden === false) {
+        visibleCompetitorIds.add(ov.competitorId);
+        console.log('[DEBUG] Added to visible set:', ov.competitorId);
+      }
+    }
+    console.log('[DEBUG] Hidden competitor IDs:', Array.from(hiddenCompetitorIds));
+    console.log('[DEBUG] Visible competitor IDs:', Array.from(visibleCompetitorIds));
+  }
+
   const competitorMap = new Map<
     string,
     {
@@ -145,6 +176,17 @@ export async function mergeCompetitorsForWorkspace({
   >();
 
   for (const { edge, competitor } of edges) {
+    // Si le concurrent a un override explicite, respecter cet override
+    if (workspaceId && (visibleCompetitorIds.has(competitor.id) || hiddenCompetitorIds.has(competitor.id))) {
+      if (hiddenCompetitorIds.has(competitor.id)) {
+        console.log('[DEBUG] Skipping hidden competitor (override):', competitor.name, competitor.id);
+        continue;
+      }
+      if (visibleCompetitorIds.has(competitor.id)) {
+        console.log('[DEBUG] Including visible competitor (override):', competitor.name, competitor.id);
+      }
+    }
+
     if (!competitorMap.has(competitor.id)) {
       competitorMap.set(competitor.id, {
         id: competitor.id,
@@ -166,15 +208,16 @@ export async function getCompetitorEdges(
   const conditions = [eq(competitorEdges.companyId, companyId)];
 
   if (workspaceId) {
-    conditions.push(
-      or(
-        eq(competitorEdges.scope, 'global'),
-        and(
-          eq(competitorEdges.scope, 'workspace'),
-          eq(competitorEdges.workspaceId, workspaceId)
-        )
+    const workspaceCondition = or(
+      eq(competitorEdges.scope, 'global'),
+      and(
+        eq(competitorEdges.scope, 'workspace'),
+        eq(competitorEdges.workspaceId, workspaceId)
       )
     );
+    if (workspaceCondition) {
+      conditions.push(workspaceCondition);
+    }
   } else {
     conditions.push(eq(competitorEdges.scope, 'global'));
   }
@@ -225,4 +268,54 @@ export async function getCompetitorsFromCache(
     console.error('❌ [CompetitorsCache] Error retrieving competitors from cache:', error);
     return null;
   }
+}
+
+/**
+ * Sauvegarde un concurrent ajouté manuellement par l'utilisateur.
+ * Utilise uniquement competitor_edge_overrides avec hidden=false (visible).
+ * Si le concurrent était masqué (hidden=true), il devient visible (hidden=false).
+ */
+export async function saveManualCompetitor({
+  companyId,
+  competitorName,
+  competitorUrl,
+  workspaceId,
+  userId,
+}: {
+  companyId: string;
+  competitorName: string;
+  competitorUrl: string;
+  workspaceId: string;
+  userId: string;
+}): Promise<void> {
+  const { company: competitor } = await getOrCreateCompanyByUrl({
+    url: competitorUrl,
+    workspaceId,
+    preferredName: competitorName,
+  });
+
+  // Upsert dans competitor_edge_overrides avec hidden=false (visible)
+  await db
+    .insert(competitorEdgeOverrides)
+    .values({
+      companyId,
+      competitorId: competitor.id,
+      workspaceId,
+      hidden: false, // Visible
+      pinned: false,
+      createdByUserId: userId,
+      updatedByUserId: userId,
+    })
+    .onConflictDoUpdate({
+      target: [
+        competitorEdgeOverrides.companyId,
+        competitorEdgeOverrides.competitorId,
+        competitorEdgeOverrides.workspaceId,
+      ],
+      set: {
+        hidden: false, // Rendre visible (réafficher si masqué)
+        updatedByUserId: userId,
+        updatedAt: new Date(),
+      },
+    });
 }

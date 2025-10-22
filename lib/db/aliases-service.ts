@@ -1,165 +1,83 @@
 /**
- * Aliases service - Brand alias variation management
+ * Aliases service - Brand alias management (simplified)
  */
 
 import { db } from '@/lib/db';
 import {
-  brandAliasSets,
   brandAliases,
   type BrandAlias,
-  type NewBrandAliasSet,
   type NewBrandAlias,
 } from '@/lib/db/schema/companies';
-import { eq, and, or } from 'drizzle-orm';
-import type { BrandVariation } from '@/lib/types';
+import { eq, inArray } from 'drizzle-orm';
 
-export async function upsertAliasSet({
-  companyId,
-  original,
-  variations,
-  confidence,
-  scope,
-  workspaceId,
-  userId,
-}: {
-  companyId: string;
-  original: string;
-  variations: string[];
-  confidence?: number;
-  scope: 'global' | 'workspace';
-  workspaceId?: string | null;
-  userId?: string | null;
-}): Promise<void> {
-  const setData: NewBrandAliasSet = {
+/**
+ * Ajoute des variations pour une company donnée
+ */
+export async function upsertBrandAliases(
+  companyId: string,
+  aliases: string[]
+): Promise<void> {
+  if (aliases.length === 0) return;
+
+  // Supprimer les alias existants pour cette company
+  await db.delete(brandAliases).where(eq(brandAliases.companyId, companyId));
+
+  // Insérer les nouveaux alias
+  const aliasData: NewBrandAlias[] = aliases.map((alias) => ({
     companyId,
-    original,
-    confidence: confidence?.toString() || '1.00',
-    scope,
-    workspaceId: scope === 'workspace' ? workspaceId || null : null,
-    createdByUserId: userId,
-    updatedByUserId: userId,
-  };
+    alias,
+  }));
 
-  const [aliasSet] = await db
-    .insert(brandAliasSets)
-    .values(setData)
-    .onConflictDoUpdate({
-      target: [
-        brandAliasSets.companyId,
-        brandAliasSets.original,
-        brandAliasSets.scope,
-        brandAliasSets.workspaceId,
-      ],
-      set: {
-        confidence: setData.confidence,
-        updatedByUserId: userId,
-        updatedAt: new Date(),
-      },
-    })
-    .returning();
-
-  await db.delete(brandAliases).where(eq(brandAliases.aliasSetId, aliasSet.id));
-
-  if (variations.length > 0) {
-    const aliasData: NewBrandAlias[] = variations.map((alias) => ({
-      aliasSetId: aliasSet.id,
-      alias,
-    }));
-
-    await db.insert(brandAliases).values(aliasData);
-  }
+  await db.insert(brandAliases).values(aliasData);
 }
 
-export async function getAliasesForWorkspace({
-  companyId,
-  workspaceId,
-}: {
-  companyId: string;
-  workspaceId?: string | null;
-}): Promise<Record<string, BrandVariation>> {
-  const conditions = [eq(brandAliasSets.companyId, companyId)];
+/**
+ * Récupère toutes les variations d'une company
+ */
+export async function getAliasesForCompany(
+  companyId: string
+): Promise<string[]> {
+  const aliases = await db
+    .select({ alias: brandAliases.alias })
+    .from(brandAliases)
+    .where(eq(brandAliases.companyId, companyId));
 
-  if (workspaceId) {
-    conditions.push(
-      or(
-        eq(brandAliasSets.scope, 'global'),
-        and(
-          eq(brandAliasSets.scope, 'workspace'),
-          eq(brandAliasSets.workspaceId, workspaceId)
-        )
-      )
-    );
-  } else {
-    conditions.push(eq(brandAliasSets.scope, 'global'));
-  }
+  return aliases.map(a => a.alias);
+}
 
-  const sets = await db
-    .select()
-    .from(brandAliasSets)
-    .where(and(...conditions));
+/**
+ * Récupère les variations de plusieurs companies
+ */
+export async function getBulkAliases(
+  companyIds: string[]
+): Promise<Record<string, string[]>> {
+  if (companyIds.length === 0) return {};
 
-  const result: Record<string, BrandVariation> = {};
+  const aliases = await db
+    .select({
+      companyId: brandAliases.companyId,
+      alias: brandAliases.alias,
+    })
+    .from(brandAliases)
+    .where(inArray(brandAliases.companyId, companyIds));
 
-  for (const set of sets) {
-    const aliases = await db
-      .select()
-      .from(brandAliases)
-      .where(eq(brandAliases.aliasSetId, set.id));
-
-    const variationList = aliases.map((a: BrandAlias) => a.alias);
-
-    if (result[set.original]) {
-      result[set.original].variations.push(...variationList);
-      result[set.original].variations = Array.from(
-        new Set(result[set.original].variations)
-      );
-    } else {
-      result[set.original] = {
-        original: set.original,
-        variations: variationList,
-        confidence: parseFloat(set.confidence || '1.00'),
-      };
+  // Grouper par companyId
+  const result: Record<string, string[]> = {};
+  for (const alias of aliases) {
+    if (!result[alias.companyId]) {
+      result[alias.companyId] = [];
     }
+    result[alias.companyId].push(alias.alias);
   }
 
   return result;
 }
 
-export async function getAllAliasesForCompany(
-  companyId: string,
-  workspaceId?: string | null
-): Promise<string[]> {
-  const aliasVariations = await getAliasesForWorkspace({
-    companyId,
-    workspaceId,
-  });
-
-  const allAliases: string[] = [];
-  for (const variation of Object.values(aliasVariations)) {
-    allAliases.push(variation.original);
-    allAliases.push(...variation.variations);
-  }
-
-  return Array.from(new Set(allAliases));
-}
-
-export async function deleteAliasSet(
-  setId: string
+/**
+ * Supprime tous les alias d'une company
+ */
+export async function deleteAliasesForCompany(
+  companyId: string
 ): Promise<void> {
-  await db.delete(brandAliasSets).where(eq(brandAliasSets.id, setId));
-}
-
-export async function searchAliases(
-  query: string,
-  limit = 10
-): Promise<BrandAlias[]> {
-  const searchTerm = `%${query.toLowerCase()}%`;
-  
-  const results = await db
-    .select()
-    .from(brandAliases)
-    .where(eq(brandAliases.alias, searchTerm))
-    .limit(limit);
-
-  return results;
+  await db.delete(brandAliases).where(eq(brandAliases.companyId, companyId));
 }

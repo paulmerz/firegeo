@@ -761,6 +761,11 @@
       "empty": "Keine Quellen für diese Analyse gespeichert.",
       "showMore": "weitere Quellen",
       "showLess": "Weniger anzeigen"
+    },
+    "sourcesList": {
+      "title": "Quellen",
+      "showMore": "{count} weitere anzeigen",
+      "showLess": "Weniger anzeigen"
     }
   },
   "pricing": {

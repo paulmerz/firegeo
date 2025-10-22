@@ -52,10 +52,12 @@ export function normalizeUrlForStorage(url: string): string {
 export async function getOrCreateCompanyByUrl({
   url,
   locale,
+  preferredName,
 }: {
   url: string;
   locale?: string;
   workspaceId?: string;
+  preferredName?: string;
 }): Promise<{ company: DBCompany; isNew: boolean }> {
   const canonical = canonicalizeUrl(url);
 
@@ -84,7 +86,7 @@ export async function getOrCreateCompanyByUrl({
   }
 
   // 3. NOUVEAU : Chercher par nom de marque similaire AVANT création
-  const brandName = extractBrandNameFromDomain(url);
+  const brandName = preferredName || extractBrandNameFromDomain(url);
   const normalizedBrand = normalizeCompanyName(brandName);
   
   // Chercher des companies existantes avec un nom similaire
@@ -179,7 +181,8 @@ export async function upsertCompanyFromScrape(
   // NOUVEAU : Chercher si données locale existent déjà
   const { company: existingCompany } = await getOrCreateCompanyByUrl({
     url: scrapedCompany.url,
-    locale
+    locale,
+    preferredName: scrapedCompany.name
   });
 
   // Si la company existe ET la locale existe, retourner l'ID sans écraser

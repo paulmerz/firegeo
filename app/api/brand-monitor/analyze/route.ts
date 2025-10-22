@@ -98,18 +98,8 @@ export async function POST(request: NextRequest) {
         const urlMock = (request as NextRequest).nextUrl?.searchParams?.get('mockMode') as MockMode | null;
         const mockMode = (headerMock || urlMock || 'none') as MockMode;
         
-        // Get or create workspace and fetch existing aliases
-        const { getUserDefaultWorkspace } = await import('@/lib/db/workspace-service');
-        const { getAliasesForWorkspace, upsertAliasSet } = await import('@/lib/db/aliases-service');
-        const workspaceId = await getUserDefaultWorkspace(sessionResponse.user.id);
-        
-        let brandVariations = {};
-        if (company.id) {
-          brandVariations = await getAliasesForWorkspace({
-            companyId: company.id,
-            workspaceId
-          });
-        }
+        // Brand variations are now pre-generated before analysis starts
+        // No need to fetch them here anymore
         
         // Perform the analysis using common logic
         const analysisResult = await performAnalysis({
@@ -122,20 +112,8 @@ export async function POST(request: NextRequest) {
           mockMode
         });
 
-        // Save brand variations if they were generated and didn't exist before
-        if (analysisResult.brandVariations && Object.keys(brandVariations).length === 0 && company.id) {
-          for (const [original, variation] of Object.entries(analysisResult.brandVariations)) {
-            await upsertAliasSet({
-              companyId: company.id,
-              original,
-              variations: variation.variations,
-              confidence: variation.confidence,
-              scope: 'global',
-              workspaceId: null,
-              userId: null
-            });
-          }
-        }
+        // Brand variations are now pre-generated before analysis starts
+        // No need to save them here anymore
         
         // Send final complete event with all data
         // Log API usage summary
