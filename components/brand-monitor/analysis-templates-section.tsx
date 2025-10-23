@@ -3,6 +3,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Building2, Globe } from 'lucide-react';
+import Image from 'next/image';
 import { useAnalysisTemplates } from '@/hooks/useBrandAnalyses';
 
 interface AnalysisTemplatesSectionProps {
@@ -53,9 +54,11 @@ export function AnalysisTemplatesSection({
           >
             <div className="flex items-start gap-3">
               {template.logo ? (
-                <img
+                <Image
                   src={template.logo}
                   alt={template.companyName || ''}
+                  width={48}
+                  height={48}
                   className="w-12 h-12 rounded object-contain"
                 />
               ) : (

@@ -18,13 +18,13 @@ export function maskUrlsInText(text: string, hideSources: boolean): string {
 
   // 1. Masquer les URLs complètes (http/https)
   const httpRegex = /https?:\/\/[^\s)\]}>'"`]+/gi;
-  maskedText = maskedText.replace(httpRegex, (match) => {
+  maskedText = maskedText.replace(httpRegex, () => {
     return '[...]';
   });
 
   // 2. Masquer les liens markdown [label](url)
   const mdLinkRegex = /\[([^\]]+)\]\(((?:https?:\/\/)[^\s)]+)\)/gi;
-  maskedText = maskedText.replace(mdLinkRegex, (match, label, url) => {
+  maskedText = maskedText.replace(mdLinkRegex, (match, label) => {
     return `[${label}]([...])`;
   });
 

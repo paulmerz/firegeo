@@ -5,7 +5,6 @@
 import { db } from '@/lib/db';
 import {
   brandAliases,
-  type BrandAlias,
   type NewBrandAlias,
 } from '@/lib/db/schema/companies';
 import { eq, inArray } from 'drizzle-orm';

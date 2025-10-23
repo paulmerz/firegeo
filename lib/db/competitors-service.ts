@@ -137,8 +137,8 @@ export async function mergeCompetitorsForWorkspace({
     .orderBy(desc(competitorEdges.competitionScore));
 
   // Récupérer les overrides pour ce workspace
-  let visibleCompetitorIds = new Set<string>();
-  let hiddenCompetitorIds = new Set<string>();
+  const visibleCompetitorIds = new Set<string>();
+  const hiddenCompetitorIds = new Set<string>();
   
   if (workspaceId) {
     const overrides = await db

@@ -422,7 +422,7 @@ export function HighlightedText({
     };
 
     performDetection();
-  }, [brandCandidates, maskedText, brandVariations, detectMultipleBrands]);
+  }, [brandCandidates, maskedText, brandVariations, detectMultipleBrands, text]);
 
   const segments = React.useMemo(() => highlightBrandMentions(maskedText, detectionResults), [maskedText, detectionResults]);
 

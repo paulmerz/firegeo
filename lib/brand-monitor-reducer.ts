@@ -40,7 +40,7 @@ export type BrandMonitorAction =
   | { type: 'RESET_STATE' }
   | { type: 'SCRAPE_SUCCESS'; payload: Company }
   | { type: 'ANALYSIS_COMPLETE'; payload: Analysis }
-  | { type: 'LOAD_FROM_TEMPLATE'; payload: any };
+  | { type: 'LOAD_FROM_TEMPLATE'; payload: Record<string, unknown> };
 
 // State Interfaces
 export interface IdentifiedCompetitor {

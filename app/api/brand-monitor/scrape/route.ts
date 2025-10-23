@@ -137,14 +137,6 @@ export async function POST(request: NextRequest) {
         apiUsageTracker.updateCall(callId, { duration });
         
         // Save company to database
-        let canonicalDomain: string;
-        try {
-          canonicalDomain = new URL(normalizedUrl).hostname.toLowerCase();
-        } catch (error) {
-          // Fallback: extract domain from URL string
-          const match = normalizedUrl.match(/https?:\/\/([^\/]+)/);
-          canonicalDomain = match ? match[1].toLowerCase() : normalizedUrl;
-        }
         
         const savedCompanyId = await upsertCompanyFromScrape(company, locale, normalizedUrl);
         company.id = savedCompanyId;
@@ -155,7 +147,7 @@ export async function POST(request: NextRequest) {
       logger.info(`✅ [Scrape API] Company info scraped successfully:`, {
         name: company.name,
         url: company.url,
-        industry: (company as any).industry || 'Unknown',
+        industry: (company as CompanyData).industry || 'Unknown',
         id: company.id
       });
       

@@ -71,3 +71,4 @@ LEFT JOIN information_schema.constraint_column_usage AS ccu
 WHERE tc.table_name = 'brand_aliases'
 ORDER BY tc.constraint_type, tc.constraint_name;
 
+

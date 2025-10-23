@@ -11,7 +11,6 @@ import { canonicalizeUrl, extractBaseDomain } from './url-utils';
  */
 export function extractBrandNameFromDomain(domain: string): string {
   const canonical = canonicalizeUrl(domain);
-  const parts = canonical.split('.');
   
   // Get the main part (before TLD)
   // rolex.com → rolex

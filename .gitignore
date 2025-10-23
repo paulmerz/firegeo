@@ -68,3 +68,6 @@ i18n.cache
 
 # lockfiles from other package managers
 package-lock.json
+
+# lint results
+lint-result/

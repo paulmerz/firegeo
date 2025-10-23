@@ -9,7 +9,7 @@ import { logger } from '@/lib/logger';
 import { getOrCreateCompanyByUrl } from '@/lib/db/companies-service';
 import { db } from '@/lib/db';
 import { competitorEdgeOverrides } from '@/lib/db/schema/companies';
-import { eq, and } from 'drizzle-orm';
+// No additional imports needed for this operation
 
 export async function DELETE(request: NextRequest) {
   try {

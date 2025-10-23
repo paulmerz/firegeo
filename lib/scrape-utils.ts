@@ -3,6 +3,18 @@ import FirecrawlApp from '@mendable/firecrawl-js';
 import { getLanguageInstruction } from './locale-utils';
 import { z } from 'zod';
 
+// Type pour la réponse Firecrawl
+interface FirecrawlResponse {
+  markdown?: string;
+  json?: unknown;
+  error?: string;
+  metadata?: {
+    title?: string;
+    description?: string;
+    [key: string]: unknown;
+  };
+}
+
 const firecrawl = new FirecrawlApp({
   apiKey: process.env.FIRECRAWL_API_KEY,
 });
@@ -131,7 +143,7 @@ EXIGENCES CRITIQUES:
 ✅ Focus sur ce que l'entreprise FABRIQUE/VEND, pas ce qui va dans les produits
 ✅ Tout le contenu doit être en ${languageInstruction} (locale: ${locale || 'en'})
 ✅ Haute précision - base l'analyse sur le contenu réel du site, pas des suppositions`
-            } as any // Type assertion nécessaire car Firecrawl v2 accepte des schémas Zod mais les types ne sont pas encore à jour
+            } as Record<string, unknown> // Type assertion nécessaire car Firecrawl v2 accepte des schémas Zod mais les types ne sont pas encore à jour
           ],
           maxAge: cacheAge,
           onlyMainContent: true,
@@ -142,16 +154,16 @@ EXIGENCES CRITIQUES:
         });
         
         console.log(`🔍 [Scraper] Firecrawl response received (attempt ${attempt}):`, {
-          hasMarkdown: 'markdown' in response && !!(response as any).markdown,
-          hasJson: 'json' in response && !!(response as any).json,
-          markdownLength: (response as any).markdown ? (response as any).markdown.length : 0,
-          hasError: 'error' in response && !!(response as any).error
+          hasMarkdown: 'markdown' in response && !!(response as FirecrawlResponse).markdown,
+          hasJson: 'json' in response && !!(response as FirecrawlResponse).json,
+          markdownLength: (response as FirecrawlResponse).markdown ? (response as FirecrawlResponse).markdown!.length : 0,
+          hasError: 'error' in response && !!(response as FirecrawlResponse).error
         });
         
         // Check for errors in the response
-        const hasError = 'error' in response && !!(response as any).error;
+        const hasError = 'error' in response && !!(response as FirecrawlResponse).error;
         if (hasError) {
-          const errorMessage = (response as any).error;
+          const errorMessage = (response as FirecrawlResponse).error;
           lastError = errorMessage;
           console.warn(`⚠️ [Scraper] Error in attempt ${attempt}: ${errorMessage}`);
           
@@ -166,10 +178,10 @@ EXIGENCES CRITIQUES:
         }
         
         // Vérifier si on a du JSON
-        if ((response as any).json) {
+        if ((response as FirecrawlResponse).json) {
           console.log(`✅ [Scraper] JSON extraction successful on attempt ${attempt}`);
-          const markdownContent = (response as any).markdown || '';
-          return processJsonExtraction((response as any).json, response.metadata, normalizedUrl, locale, markdownContent);
+          const markdownContent = (response as FirecrawlResponse).markdown || '';
+          return processJsonExtraction((response as FirecrawlResponse).json!, response.metadata, normalizedUrl, locale, markdownContent);
         } else {
           console.warn(`⚠️ [Scraper] No JSON data in response for attempt ${attempt}`);
           lastError = 'No JSON data returned';
@@ -468,7 +480,7 @@ function processJsonExtractionFallback(jsonData: unknown, metadata: Record<strin
 /**
  * Process scraped data and extract structured information (fallback method)
  */
-async function processScrapedDataFallback(markdown: string, metadata: Record<string, unknown> | undefined, url: string, locale?: string): Promise<Company> {
+async function processScrapedDataFallback(markdown: string, metadata: Record<string, unknown> | undefined, url: string): Promise<Company> {
   try {
     console.log(`🔍 [Processor] Processing scraped data fallback for URL: ${url}`);
     

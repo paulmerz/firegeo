@@ -656,7 +656,7 @@ export function BrandMonitor({
           // Construire la liste des brands avec leurs IDs
           const allBrands = [
             { name: company.name, id: company.id },
-            ...data.competitors.map((c: any) => ({ name: c.name, id: c.id }))
+            ...data.competitors.map((c: { name: string; id: string }) => ({ name: c.name, id: c.id }))
           ];
           
           logger.info('[Brand Monitor] Starting async brand variations generation', {
@@ -690,7 +690,7 @@ export function BrandMonitor({
       dispatch({ type: 'SET_SHOW_COMPETITORS', payload: false });
       dispatch({ type: 'SET_SHOW_PROMPTS_LIST', payload: true });
     }, 300);
-  }, [company, identifiedCompetitors, creditsAvailable, tErrors]);
+  }, [company, creditsAvailable, tErrors]);
   
   const handleAnalyze = useCallback(async (displayPrompts: string[]) => {
     if (!company) return;

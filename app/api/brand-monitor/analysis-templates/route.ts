@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { brandAnalyses } from '@/lib/db/schema';
-import { eq, desc, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { handleApiError, AuthenticationError } from '@/lib/api-errors';
 import { getUserDefaultWorkspace } from '@/lib/db/workspace-service';
 
@@ -31,7 +30,7 @@ export async function GET(request: NextRequest) {
     `);
 
     // Enrichir avec des métadonnées calculées
-    const enrichedTemplates = templates.rows.map((t: any) => {
+    const enrichedTemplates = templates.rows.map((t: Record<string, unknown>) => {
       const competitorCount = Array.isArray(t.competitors) 
         ? t.competitors.length 
         : 0;

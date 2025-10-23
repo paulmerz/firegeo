@@ -51,7 +51,6 @@ export function normalizeUrlForStorage(url: string): string {
 
 export async function getOrCreateCompanyByUrl({
   url,
-  locale,
   preferredName,
 }: {
   url: string;
