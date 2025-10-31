@@ -5,7 +5,7 @@
  * Utilisez ce script pour identifier les problèmes de configuration entre ordinateurs
  */
 
-import { validateEnv } from '../lib/env-validation';
+// import { validateEnv } from '../lib/env-validation';
 
 interface DiagnosticResult {
   variable: string;
@@ -113,17 +113,17 @@ async function checkFirecrawlConnection(): Promise<{ connected: boolean; error?:
   
   try {
     const firecrawlModule = await import('@mendable/firecrawl-js');
-    const FirecrawlApp = (firecrawlModule as any).FirecrawlApp ?? (firecrawlModule as any).default;
-    const firecrawl = new FirecrawlApp({ apiKey: process.env.FIRECRAWL_API_KEY });
+    const FirecrawlApp = (firecrawlModule as Record<string, unknown>).FirecrawlApp ?? (firecrawlModule as Record<string, unknown>).default;
+    const firecrawl = new (FirecrawlApp as new (config: { apiKey: string }) => unknown)({ apiKey: process.env.FIRECRAWL_API_KEY });
     
     // Test simple avec une URL rapide
-    const response = await firecrawl.scrapeUrl('https://httpbin.org/html', {
+    const response = await (firecrawl as { scrapeUrl: (url: string, options: Record<string, unknown>) => Promise<unknown> }).scrapeUrl('https://httpbin.org/html', {
       formats: ['markdown'],
       timeout: 10000,
       onlyMainContent: true
     });
     
-    return { connected: response.success };
+    return { connected: (response as { success: boolean }).success };
   } catch (error) {
     return { 
       connected: false, 

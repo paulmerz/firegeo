@@ -10,6 +10,10 @@
  * 4. Utilise completed_at comme recorded_at
  */
 
+import { config } from 'dotenv';
+
+config({ path: '.env.local' });
+
 import { db } from '../lib/db';
 import { brandAnalysisRuns } from '../lib/db/schema';
 import { eq, isNotNull } from 'drizzle-orm';
@@ -39,6 +43,9 @@ interface AnalysisData {
     }>;
     isOwn?: boolean;
   }>;
+  company?: {
+    brand?: string;
+  };
 }
 
 async function backfillMetricEvents() {
@@ -87,15 +94,28 @@ async function backfillMetricEvents() {
 
         // Extraire les métriques depuis providerRankings
         if (analysisData.providerRankings && Array.isArray(analysisData.providerRankings)) {
-          analysisData.providerRankings.forEach((providerRanking) => {
-            const provider = providerRanking.provider;
-            
+          const providerRankings = analysisData.providerRankings;
+          const allBrands = new Set<string>();
+          const targetBrand = analysisData.company?.brand;
+
+          providerRankings.forEach((providerRanking) => {
+            const provider = typeof providerRanking.provider === 'string' ? providerRanking.provider : null;
+
+            if (!provider) {
+              return;
+            }
+
             if (providerRanking.competitors && Array.isArray(providerRanking.competitors)) {
               providerRanking.competitors.forEach((competitor) => {
-                const competitorName = competitor.name;
-                
-                // Ajouter les métriques pour ce concurrent et ce provider
-                if (competitor.visibilityScore !== undefined) {
+                const competitorName = typeof competitor.name === 'string' ? competitor.name : null;
+
+                if (!competitorName) {
+                  return;
+                }
+
+                allBrands.add(competitorName);
+
+                if (typeof competitor.visibilityScore === 'number') {
                   metricEvents.push({
                     run_id: run.id,
                     brand_analysis_id: run.brandAnalysisId,
@@ -106,8 +126,8 @@ async function backfillMetricEvents() {
                     recorded_at: recordedAt
                   });
                 }
-                
-                if (competitor.mentions !== undefined) {
+
+                if (typeof competitor.mentions === 'number') {
                   metricEvents.push({
                     run_id: run.id,
                     brand_analysis_id: run.brandAnalysisId,
@@ -118,20 +138,20 @@ async function backfillMetricEvents() {
                     recorded_at: recordedAt
                   });
                 }
-                
-                if (competitor.averagePosition !== undefined) {
+
+                if (typeof competitor.averagePosition === 'number') {
                   metricEvents.push({
                     run_id: run.id,
                     brand_analysis_id: run.brandAnalysisId,
                     competitor_name: competitorName,
                     provider,
-                    metric_type: 'average_position',
+                    metric_type: 'position',
                     metric_value: competitor.averagePosition,
                     recorded_at: recordedAt
                   });
                 }
-                
-                if (competitor.sentimentScore !== undefined) {
+
+                if (typeof competitor.sentimentScore === 'number') {
                   metricEvents.push({
                     run_id: run.id,
                     brand_analysis_id: run.brandAnalysisId,
@@ -142,14 +162,14 @@ async function backfillMetricEvents() {
                     recorded_at: recordedAt
                   });
                 }
-                
-                if (competitor.shareOfVoice !== undefined) {
+
+                if (typeof competitor.shareOfVoice === 'number') {
                   metricEvents.push({
                     run_id: run.id,
                     brand_analysis_id: run.brandAnalysisId,
                     competitor_name: competitorName,
                     provider,
-                    metric_type: 'share_of_voice',
+                    metric_type: 'share_of_voices',
                     metric_value: competitor.shareOfVoice,
                     recorded_at: recordedAt
                   });
@@ -157,6 +177,73 @@ async function backfillMetricEvents() {
               });
             }
           });
+
+          allBrands.forEach((brandName) => {
+            const visibilityScores = providerRankings
+              .map((pr) => {
+                const competitors = Array.isArray(pr.competitors) ? pr.competitors : [];
+                const competitor = competitors.find((c) => typeof c.name === 'string' && c.name === brandName);
+                return typeof competitor?.visibilityScore === 'number' ? competitor.visibilityScore : null;
+              })
+              .filter((score): score is number => typeof score === 'number');
+
+            if (visibilityScores.length > 0) {
+              const avgVisibilityScore = visibilityScores.reduce((sum, score) => sum + score, 0) / visibilityScores.length;
+              metricEvents.push({
+                run_id: run.id,
+                brand_analysis_id: run.brandAnalysisId,
+                competitor_name: brandName,
+                provider: 'all',
+                metric_type: 'visibility_average',
+                metric_value: avgVisibilityScore,
+                recorded_at: recordedAt
+              });
+            }
+
+            const positions = providerRankings
+              .map((pr) => {
+                const competitors = Array.isArray(pr.competitors) ? pr.competitors : [];
+                const competitor = competitors.find((c) => typeof c.name === 'string' && c.name === brandName);
+                return typeof competitor?.averagePosition === 'number' ? competitor.averagePosition : null;
+              })
+              .filter((pos): pos is number => typeof pos === 'number');
+
+            if (positions.length > 0) {
+              const avgPosition = positions.reduce((sum, pos) => sum + pos, 0) / positions.length;
+              metricEvents.push({
+                run_id: run.id,
+                brand_analysis_id: run.brandAnalysisId,
+                competitor_name: brandName,
+                provider: 'all',
+                metric_type: 'average_position',
+                metric_value: avgPosition,
+                recorded_at: recordedAt
+              });
+            }
+          });
+
+          if (targetBrand) {
+            const targetScores = providerRankings
+              .flatMap((pr) => {
+                const competitors = Array.isArray(pr.competitors) ? pr.competitors : [];
+                return competitors.filter((c) => typeof c.name === 'string' && c.name === targetBrand);
+              })
+              .map((competitor) => (typeof competitor.visibilityScore === 'number' ? competitor.visibilityScore : null))
+              .filter((score): score is number => typeof score === 'number');
+
+            if (targetScores.length > 0) {
+              const avgScore = targetScores.reduce((sum, score) => sum + score, 0) / targetScores.length;
+              metricEvents.push({
+                run_id: run.id,
+                brand_analysis_id: run.brandAnalysisId,
+                competitor_name: targetBrand,
+                provider: 'target',
+                metric_type: 'average_score',
+                metric_value: avgScore,
+                recorded_at: recordedAt
+              });
+            }
+          }
         }
 
         // Insérer les événements pour ce run

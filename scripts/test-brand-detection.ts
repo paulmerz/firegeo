@@ -12,7 +12,7 @@ import path from 'path';
 // Charger .env.local
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
-import { detectBrandMentions, detectMultipleBrands } from '../lib/brand-detection-service';
+import { detectBrandMentions } from '../lib/brand-detection-service';
 
 interface TestCase {
   name: string;

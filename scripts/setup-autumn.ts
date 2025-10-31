@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 
 // Suppress dotenv console output
 const originalLog = console.log;
-console.log = (...args: any[]) => {
+console.log = (...args: unknown[]) => {
   if (args[0] && typeof args[0] === 'string' && args[0].includes('[dotenv@')) {
     return; // Skip dotenv messages
   }

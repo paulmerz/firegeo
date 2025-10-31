@@ -4,7 +4,7 @@ import path from 'path';
 
 // Suppress dotenv console output
 const originalLog = console.log;
-console.log = (...args: any[]) => {
+console.log = (...args: unknown[]) => {
   if (args[0] && typeof args[0] === 'string' && args[0].includes('[dotenv@')) {
     return; // Skip dotenv messages
   }
@@ -23,7 +23,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 async function setupBillingPortal() {
   try {
-    const configuration = await stripe.billingPortal.configurations.create({
+    await stripe.billingPortal.configurations.create({
       business_profile: {
         headline: 'Voxum - Manage your subscription',
         privacy_policy_url: `${process.env.NEXT_PUBLIC_APP_URL}/privacy`,
