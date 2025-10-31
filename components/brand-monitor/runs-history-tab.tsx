@@ -18,12 +18,10 @@ import {
   DialogContent, 
   DialogDescription, 
   DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+  DialogTitle 
 } from '@/components/ui/dialog';
 import { 
   History, 
-  Eye, 
   Clock, 
   CheckCircle, 
   XCircle, 
@@ -53,6 +51,9 @@ export function RunsHistoryTab({ analysisId }: RunsHistoryTabProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedRun, setSelectedRun] = useState<RunWithSources | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
 
   // Charger les runs
   React.useEffect(() => {
@@ -66,7 +67,18 @@ export function RunsHistoryTab({ analysisId }: RunsHistoryTabProps) {
         }
         
         const data = await response.json();
-        setRuns(data.runs || []);
+        const runsData = (data.runs ?? []) as RunWithSources[];
+        const sortedRuns = runsData
+          .slice()
+          .sort((a, b) => {
+            const toTimestamp = (value?: string | Date | null) => {
+              if (!value) return 0;
+              const date = typeof value === 'string' || value instanceof Date ? new Date(value) : null;
+              return date && !Number.isNaN(date.getTime()) ? date.getTime() : 0;
+            };
+            return toTimestamp(b.startedAt) - toTimestamp(a.startedAt);
+          });
+        setRuns(sortedRuns.slice(0, 15));
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erreur lors du chargement');
       } finally {
@@ -79,6 +91,8 @@ export function RunsHistoryTab({ analysisId }: RunsHistoryTabProps) {
 
   const handleViewDetails = async (runId: string) => {
     try {
+      setDetailsLoading(true);
+      setDetailsError(null);
       const response = await fetch(`/api/brand-monitor/analyses/${analysisId}/runs/${runId}`);
       
       if (!response.ok) {
@@ -88,8 +102,15 @@ export function RunsHistoryTab({ analysisId }: RunsHistoryTabProps) {
       const data = await response.json();
       setSelectedRun(data.run);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors du chargement des détails');
+      setDetailsError(err instanceof Error ? err.message : 'Erreur lors du chargement des détails');
     }
+    setDetailsLoading(false);
+  };
+
+  const handleRunSelection = async (run: RunWithSources) => {
+    setSelectedRun(run);
+    setIsDialogOpen(true);
+    await handleViewDetails(run.id);
   };
 
   const getStatusIcon = (status: RunStatus) => {
@@ -173,13 +194,23 @@ export function RunsHistoryTab({ analysisId }: RunsHistoryTabProps) {
                     <TableHead>Statut</TableHead>
                     <TableHead>Durée</TableHead>
                     <TableHead>Crédits</TableHead>
-                    <TableHead>Score</TableHead>
-                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {runs.map((run) => (
-                    <TableRow key={run.id}>
+                    <TableRow
+                      key={run.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleRunSelection(run)}
+                      tabIndex={0}
+                      role="button"
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          void handleRunSelection(run);
+                        }
+                      }}
+                    >
                       <TableCell>
                         <div className="space-y-1">
                           <div className="text-sm font-medium">
@@ -218,108 +249,6 @@ export function RunsHistoryTab({ analysisId }: RunsHistoryTabProps) {
                           <span className="text-sm">{run.creditsUsed || 0}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {run.visibilityScore ? (
-                          <span className="text-sm font-medium">{run.visibilityScore}%</span>
-                        ) : (
-                          <span className="text-sm text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewDetails(run.id)}
-                            >
-                              <Eye className="w-3 h-3 mr-1" />
-                              Détails
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>Détails de l&apos;exécution</DialogTitle>
-                              <DialogDescription>
-                                Exécution du {run.startedAt ? new Date(run.startedAt).toLocaleString('fr-FR') : 'N/A'}
-                              </DialogDescription>
-                            </DialogHeader>
-                            
-                            {selectedRun && (
-                              <div className="space-y-6">
-                                {/* Informations générales */}
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <h4 className="font-medium mb-2">Statut</h4>
-                                    <div className="flex items-center gap-2">
-                                      {selectedRun.status && getStatusIcon(selectedRun.status)}
-                                      <Badge className={selectedRun.status ? getStatusBadgeColor(selectedRun.status) : 'bg-gray-100'}>
-                                        {selectedRun.status ? getStatusText(selectedRun.status) : 'Unknown'}
-                                      </Badge>
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <h4 className="font-medium mb-2">Crédits utilisés</h4>
-                                    <div className="flex items-center gap-1">
-                                      <CreditCard className="w-4 h-4" />
-                                      <span>{selectedRun.creditsUsed || 0}</span>
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <h4 className="font-medium mb-2">Score de visibilité</h4>
-                                    <span className="text-lg font-bold text-orange-600">
-                                      {selectedRun.visibilityScore || 0}%
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <h4 className="font-medium mb-2">Concurrents analysés</h4>
-                                    <div className="flex items-center gap-1">
-                                      <Users className="w-4 h-4" />
-                                      <span>{selectedRun.competitorsCount || 0}</span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Message d'erreur */}
-                                {selectedRun.errorMessage && (
-                                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                                    <h4 className="font-medium text-red-800 mb-2">Erreur</h4>
-                                    <p className="text-sm text-red-700">{selectedRun.errorMessage}</p>
-                                  </div>
-                                )}
-
-                                {/* Sources */}
-                                {selectedRun.sources && selectedRun.sources.length > 0 && (
-                                  <div>
-                                    <h4 className="font-medium mb-3 flex items-center gap-2">
-                                      <FileText className="w-4 h-4" />
-                                      Sources ({selectedRun.sources.length})
-                                    </h4>
-                                    <div className="space-y-2">
-                                      {selectedRun.sources.map((source) => (
-                                        <div 
-                                          key={source.id}
-                                          className="p-3 border rounded-lg bg-gray-50"
-                                        >
-                                          <div className="flex items-center justify-between">
-                                            <div>
-                                              <p className="text-sm font-medium">{source.provider || 'Source inconnue'}</p>
-                                              <p className="text-xs text-gray-600">{source.url}</p>
-                                            </div>
-                                            <Badge variant="outline" className="text-xs">
-                                              {source.sourceType || 'web_search'}
-                                            </Badge>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </DialogContent>
-                        </Dialog>
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -328,6 +257,123 @@ export function RunsHistoryTab({ analysisId }: RunsHistoryTabProps) {
           )}
         </CardContent>
       </Card>
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            setSelectedRun(null);
+            setDetailsError(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Détails de l&apos;exécution</DialogTitle>
+            <DialogDescription>
+              {selectedRun?.startedAt
+                ? `Exécution du ${new Date(selectedRun.startedAt).toLocaleString('fr-FR')}`
+                : 'Exécution'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {detailsLoading && (
+            <div className="flex flex-col items-center justify-center py-8 gap-2">
+              <Clock className="w-6 h-6 animate-spin text-gray-400" />
+              <p className="text-sm text-gray-600">Chargement des détails...</p>
+            </div>
+          )}
+
+          {!detailsLoading && detailsError && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <h4 className="font-medium text-red-800 mb-2">Erreur</h4>
+              <p className="text-sm text-red-700">{detailsError}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => {
+                  if (selectedRun) {
+                    void handleViewDetails(selectedRun.id);
+                  }
+                }}
+              >
+                Réessayer
+              </Button>
+            </div>
+          )}
+
+          {!detailsLoading && !detailsError && selectedRun && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-medium mb-2">Statut</h4>
+                  <div className="flex items-center gap-2">
+                    {selectedRun.status && getStatusIcon(selectedRun.status)}
+                    <Badge className={selectedRun.status ? getStatusBadgeColor(selectedRun.status) : 'bg-gray-100'}>
+                      {selectedRun.status ? getStatusText(selectedRun.status) : 'Unknown'}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2">Crédits utilisés</h4>
+                  <div className="flex items-center gap-1">
+                    <CreditCard className="w-4 h-4" />
+                    <span>{selectedRun.creditsUsed || 0}</span>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2">Score de visibilité</h4>
+                  <span className="text-lg font-bold text-orange-600">
+                    {selectedRun.visibilityScore || 0}%
+                  </span>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2">Concurrents analysés</h4>
+                  <div className="flex items-center gap-1">
+                    <Users className="w-4 h-4" />
+                    <span>{selectedRun.competitorsCount || 0}</span>
+                  </div>
+                </div>
+              </div>
+
+              {selectedRun.errorMessage && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <h4 className="font-medium text-red-800 mb-2">Erreur</h4>
+                  <p className="text-sm text-red-700">{selectedRun.errorMessage}</p>
+                </div>
+              )}
+
+              {selectedRun.sources && selectedRun.sources.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    Sources ({selectedRun.sources.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedRun.sources.map((source) => (
+                      <div 
+                        key={source.id}
+                        className="p-3 border rounded-lg bg-gray-50"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">{source.provider || 'Source inconnue'}</p>
+                            <p className="text-xs text-gray-600">{source.url}</p>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {source.sourceType || 'web_search'}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

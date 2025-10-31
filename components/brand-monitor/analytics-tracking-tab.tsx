@@ -4,25 +4,19 @@ import React, { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   TrendingUp, 
   BarChart3, 
-  Target, 
   Loader2,
   AlertCircle,
   Calendar
 } from 'lucide-react';
 import { MetricTrendChart } from './metric-trend-chart';
-import { CompetitorMetricSeries, MetricsHistoryResponse } from '@/lib/types';
+import { CompetitorMetricSeries, MetricsHistoryResponse, MetricDataPoint } from '@/lib/types';
 import { logger } from '@/lib/logger';
+import { ProviderIcon } from './provider-icon';
+import { Input } from '@/components/ui/input';
 
 interface AnalyticsTrackingTabProps {
   analysisId: string;
@@ -57,6 +51,20 @@ const normalizeSeriesDates = (
     })
   }));
 
+const toDateInputValue = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const clampToToday = (value: string) => {
+  const today = new Date();
+  const todayValue = toDateInputValue(today);
+  if (!value) return todayValue;
+  return value > todayValue ? todayValue : value;
+};
+
 export function AnalyticsTrackingTab({ 
   analysisId, 
   competitors, 
@@ -65,16 +73,31 @@ export function AnalyticsTrackingTab({
   const t = useTranslations('brandMonitor.analyticsTracking');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedProviders, setSelectedProviders] = useState<string[]>([]);
   const [availableProviders, setAvailableProviders] = useState<string[]>([]);
-  const [metricsData, setMetricsData] = useState<{
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+  const [metricsByProvider, setMetricsByProvider] = useState<Record<string, {
     visibility: CompetitorMetricSeries[];
     rankings: CompetitorMetricSeries[];
-    matrix: Record<string, CompetitorMetricSeries[]>;
-  }>({
-    visibility: [],
-    rankings: [],
-    matrix: {}
+    mentions: CompetitorMetricSeries[];
+    shareOfVoice: CompetitorMetricSeries[];
+  }>>({});
+  const [dateRange, setDateRange] = useState<{ start: string; end: string }>(() => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 7);
+    return {
+      start: toDateInputValue(start),
+      end: toDateInputValue(end)
+    };
+  });
+  const [draftDateRange, setDraftDateRange] = useState<{ start: string; end: string }>(() => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 7);
+    return {
+      start: toDateInputValue(start),
+      end: toDateInputValue(end)
+    };
   });
 
   // Charger les données des métriques
@@ -84,33 +107,71 @@ export function AnalyticsTrackingTab({
         setLoading(true);
         setError(null);
 
-        // Récupérer les providers disponibles
-        const providersResponse = await fetch(`/api/brand-monitor/analyses/${analysisId}/metrics-history?metricType=visibility_score`);
-        if (!providersResponse.ok) {
-          throw new Error('Failed to fetch providers');
-        }
-        
-        const providersData = await providersResponse.json() as MetricsHistoryResponse;
-        const providers = [...new Set(providersData.series.map(s => s.provider))];
-        setAvailableProviders(providers);
-        setSelectedProviders(providers); // Sélectionner tous par défaut
+        const normalizeProvider = (name: string | null | undefined) => (name ?? '').trim();
 
-        // Charger les données pour chaque type de métrique
-        const [visibilityData, rankingsData] = await Promise.all([
+        const [visibilityRaw, rankingsRaw, mentionsRaw, shareOfVoiceRaw] = await Promise.all([
           fetchMetricsHistory('visibility_score'),
-          fetchMetricsHistory('average_position')
+          fetchMetricsHistory('average_position'),
+          fetchMetricsHistory('mentions'),
+          fetchMetricsHistory('share_of_voices')
         ]);
 
-        // Charger les données de matrice par provider
-        const matrixData: Record<string, CompetitorMetricSeries[]> = {};
-        for (const provider of providers) {
-          matrixData[provider] = await fetchMetricsHistory('visibility_score', [provider]);
-        }
+        const visibilityData = visibilityRaw.map((serie) => ({
+          ...serie,
+          provider: normalizeProvider(serie.provider)
+        }));
 
-        setMetricsData({
-          visibility: visibilityData,
-          rankings: rankingsData,
-          matrix: matrixData
+        const rankingsData = rankingsRaw.map((serie) => ({
+          ...serie,
+          provider: normalizeProvider(serie.provider)
+        }));
+
+        const mentionsData = mentionsRaw.map((serie) => ({
+          ...serie,
+          provider: normalizeProvider(serie.provider)
+        }));
+
+        const shareOfVoiceData = shareOfVoiceRaw.map((serie) => ({
+          ...serie,
+          provider: normalizeProvider(serie.provider)
+        }));
+
+        const providerSet = new Set<string>();
+        const addProvider = (serie: CompetitorMetricSeries) => {
+          const providerName = serie.provider;
+          if (!providerName) return;
+          if (providerName.toLowerCase() === 'all') return;
+          providerSet.add(providerName);
+        };
+        visibilityData.forEach(addProvider);
+        rankingsData.forEach(addProvider);
+        mentionsData.forEach(addProvider);
+        shareOfVoiceData.forEach(addProvider);
+
+        const providers = Array.from(providerSet);
+        setAvailableProviders(providers);
+
+        const groupedMetrics = providers.reduce<Record<string, {
+          visibility: CompetitorMetricSeries[];
+          rankings: CompetitorMetricSeries[];
+          mentions: CompetitorMetricSeries[];
+          shareOfVoice: CompetitorMetricSeries[];
+        }>>((acc, provider) => {
+          acc[provider] = {
+            visibility: visibilityData.filter((serie) => serie.provider === provider),
+            rankings: rankingsData.filter((serie) => serie.provider === provider),
+            mentions: mentionsData.filter((serie) => serie.provider === provider),
+            shareOfVoice: shareOfVoiceData.filter((serie) => serie.provider === provider)
+          };
+          return acc;
+        }, {});
+
+        setMetricsByProvider(groupedMetrics);
+        setSelectedProvider((current) => {
+          if (current && providers.includes(current)) {
+            return current;
+          }
+          return providers[0] ?? null;
         });
 
       } catch (err) {
@@ -122,7 +183,11 @@ export function AnalyticsTrackingTab({
     };
 
     fetchMetricsData();
-  }, [analysisId]);
+  }, [analysisId, dateRange.start, dateRange.end]);
+
+  useEffect(() => {
+    setDraftDateRange(dateRange);
+  }, [dateRange]);
 
   const fetchMetricsHistory = async (
     metricType: string, 
@@ -130,8 +195,33 @@ export function AnalyticsTrackingTab({
   ): Promise<CompetitorMetricSeries[]> => {
     const params = new URLSearchParams({
       metricType,
-      ...(providers && { providers: providers.join(',') })
+      ...(providers && providers.length > 0 ? { providers: providers.join(',') } : {})
     });
+
+    const normalizeDateForApi = (value: string, endOfDay = false) => {
+      if (!value) return null;
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) {
+        return null;
+      }
+      if (endOfDay) {
+        date.setHours(23, 59, 59, 999);
+      } else {
+        date.setHours(0, 0, 0, 0);
+      }
+      return date.toISOString();
+    };
+
+    const startIso = normalizeDateForApi(dateRange.start);
+    const endIso = normalizeDateForApi(dateRange.end, true);
+
+    if (startIso) {
+      params.set('startDate', startIso);
+    }
+
+    if (endIso) {
+      params.set('endDate', endIso);
+    }
 
     const response = await fetch(`/api/brand-monitor/analyses/${analysisId}/metrics-history?${params}`);
     if (!response.ok) {
@@ -140,26 +230,6 @@ export function AnalyticsTrackingTab({
 
     const data = await response.json() as MetricsHistoryResponse;
   return normalizeSeriesDates(data.series);
-  };
-
-  const handleProviderChange = async (providers: string[]) => {
-    setSelectedProviders(providers);
-    
-    // Recharger les données avec les nouveaux providers
-    try {
-      const [visibilityData, rankingsData] = await Promise.all([
-        fetchMetricsHistory('visibility_score', providers),
-        fetchMetricsHistory('average_position', providers)
-      ]);
-
-      setMetricsData(prev => ({
-        ...prev,
-        visibility: visibilityData,
-        rankings: rankingsData
-      }));
-    } catch (err) {
-      logger.error('Failed to update metrics data:', err);
-    }
   };
 
   const formatVisibilityValue = (value: number) => `${value.toFixed(1)}%`;
@@ -197,7 +267,71 @@ export function AnalyticsTrackingTab({
     );
   }
 
-  const hasData = metricsData.visibility.length > 0 || metricsData.rankings.length > 0;
+  const currentMetrics = selectedProvider ? metricsByProvider[selectedProvider] : undefined;
+  const visibilitySeries = currentMetrics?.visibility ?? [];
+  const mentionsSeries = currentMetrics?.mentions ?? [];
+  const shareOfVoiceSeries = currentMetrics?.shareOfVoice ?? [];
+  const hasData = Object.values(metricsByProvider).some((metrics) => (
+    metrics.visibility.length > 0 ||
+    metrics.rankings.length > 0 ||
+    metrics.mentions.length > 0 ||
+    metrics.shareOfVoice.length > 0
+  ));
+  const providerGridClass = (() => {
+    switch (availableProviders.length) {
+      case 0:
+      case 1:
+        return 'grid-cols-1';
+      case 2:
+        return 'grid-cols-2';
+      case 3:
+        return 'grid-cols-3';
+      default:
+        return 'grid-cols-4';
+    }
+  })();
+  const matrixSeries = visibilitySeries;
+  const rankingSeries = matrixSeries.map((serie) => ({
+    ...serie,
+    dataPoints: serie.dataPoints.map((point) => {
+      const pointsSameDate = matrixSeries
+        .map((candidate) => candidate.dataPoints.find((p) => p.date.getTime() === point.date.getTime()))
+        .filter((candidate): candidate is MetricDataPoint => Boolean(candidate));
+
+      const sorted = [...pointsSameDate].sort((a, b) => b.value - a.value);
+      const position = sorted.findIndex((p) => p.runId === point.runId) + 1;
+
+      return {
+        ...point,
+        value: position > 0 ? position : sorted.length
+      };
+    })
+  }));
+
+  const todayValue = toDateInputValue(new Date());
+
+  const handleStartDateCommit = (value: string) => {
+    if (!value) return;
+    setDateRange((prev) => {
+      const clampedEnd = prev.end < value ? value : prev.end;
+      return {
+        start: value,
+        end: clampToToday(clampedEnd)
+      };
+    });
+  };
+
+  const handleEndDateCommit = (value: string) => {
+    if (!value) return;
+    const clampedValue = clampToToday(value);
+    setDateRange((prev) => {
+      const start = prev.start > clampedValue ? clampedValue : prev.start;
+      return {
+        start,
+        end: clampedValue
+      };
+    });
+  };
 
   if (!hasData) {
     return (
@@ -238,94 +372,115 @@ export function AnalyticsTrackingTab({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-gray-500" />
-              <span className="text-sm font-medium">{t('selectProviders')}:</span>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium">{t('selectProvider')}:</span>
+          </div>
+          {availableProviders.length > 0 && selectedProvider && (
+            <Tabs value={selectedProvider} onValueChange={(value) => setSelectedProvider(value)} className="w-full">
+              <TabsList className={`grid w-full sm:w-auto h-14 gap-2 ${providerGridClass}`}>
+                {availableProviders.map((provider) => (
+                  <TabsTrigger
+                    key={provider}
+                    value={provider}
+                    className="flex h-full items-center justify-center"
+                    title={provider}
+                  >
+                    <ProviderIcon provider={provider} size="md" />
+                    <span className="sr-only">{provider}</span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          )}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="metrics-start-date" className="text-sm font-medium text-gray-700">
+                {t('startDate')}
+              </label>
+              <Input
+                id="metrics-start-date"
+                type="date"
+                value={draftDateRange.start}
+                max={draftDateRange.end}
+                onChange={(event) => setDraftDateRange((prev) => ({ ...prev, start: event.target.value }))}
+                onBlur={(event) => handleStartDateCommit(event.target.value)}
+              />
             </div>
-            <div className="flex flex-wrap gap-2">
-              {availableProviders.map(provider => (
-                <Badge
-                  key={provider}
-                  variant={selectedProviders.includes(provider) ? "default" : "outline"}
-                  className={`cursor-pointer transition-colors ${
-                    selectedProviders.includes(provider) 
-                      ? 'bg-orange-500 hover:bg-orange-600' 
-                      : 'hover:bg-gray-100'
-                  }`}
-                  onClick={() => {
-                    const newProviders = selectedProviders.includes(provider)
-                      ? selectedProviders.filter(p => p !== provider)
-                      : [...selectedProviders, provider];
-                    handleProviderChange(newProviders);
-                  }}
-                >
-                  {provider}
-                </Badge>
-              ))}
+            <div className="flex flex-col gap-2">
+              <label htmlFor="metrics-end-date" className="text-sm font-medium text-gray-700">
+                {t('endDate')}
+              </label>
+              <Input
+                id="metrics-end-date"
+                type="date"
+                value={draftDateRange.end}
+                min={draftDateRange.start}
+                max={todayValue}
+                onChange={(event) => setDraftDateRange((prev) => ({ ...prev, end: event.target.value }))}
+                onBlur={(event) => handleEndDateCommit(event.target.value)}
+              />
             </div>
           </div>
+        </div>
         </CardContent>
       </Card>
 
-      {/* Score de visibilité global */}
-      {metricsData.visibility.length > 0 && (
+      {/* Score de visibilité */}
+      {selectedProvider && matrixSeries.length > 0 && (
         <MetricTrendChart
-          title={t('visibilityScoreChart')}
-          series={metricsData.visibility}
+          key={`matrix-${selectedProvider}`}
+          title={`${t('visibilityScoreChart')} (%)`}
+          series={matrixSeries}
           metricType="visibility_score"
           targetBrand={targetBrand}
           yAxisLabel="Score de visibilité (%)"
           formatValue={formatVisibilityValue}
+          titleTooltip={t('visibilityScoreTooltip')}
         />
       )}
 
-      {/* Matrice de comparaison par provider */}
-      {Object.entries(metricsData.matrix).map(([provider, series]) => {
-        if (series.length === 0 || !selectedProviders.includes(provider)) return null;
-        
-        return (
-          <MetricTrendChart
-            key={`matrix-${provider}`}
-            title={t('comparisonMatrixChart', { provider })}
-            series={series}
-            metricType="visibility_score"
-            targetBrand={targetBrand}
-            yAxisLabel="Score de visibilité (%)"
-            formatValue={formatVisibilityValue}
-          />
-        );
-      })}
+      {/* Nombre de mentions */}
+      {selectedProvider && mentionsSeries.length > 0 && (
+        <MetricTrendChart
+          key={`mentions-${selectedProvider}`}
+          title={t('mentionsChart')}
+          series={mentionsSeries}
+          metricType="mentions"
+          targetBrand={targetBrand}
+          yAxisLabel={t('mentionsYAxis')}
+          formatValue={(value) => value.toString()}
+        />
+      )}
 
-      {/* Classement des marques par provider */}
-      {Object.entries(metricsData.matrix).map(([provider, series]) => {
-        if (series.length === 0 || !selectedProviders.includes(provider)) return null;
-        
-        // Convertir les données de visibilité en classement
-        const rankingSeries = series.map(serie => ({
-          ...serie,
-          dataPoints: serie.dataPoints.map(point => ({
-            ...point,
-            value: serie.dataPoints
-              .filter(p => p.date.getTime() === point.date.getTime())
-              .sort((a, b) => b.value - a.value)
-              .findIndex(p => p.runId === point.runId) + 1
-          }))
-        }));
+      {/* Part de voix */}
+      {selectedProvider && shareOfVoiceSeries.length > 0 && (
+        <MetricTrendChart
+          key={`share-of-voice-${selectedProvider}`}
+          title={`${t('shareOfVoiceChart')} (%)`}
+          series={shareOfVoiceSeries}
+          metricType="share_of_voices"
+          targetBrand={targetBrand}
+          yAxisLabel={t('shareOfVoiceYAxis')}
+          formatValue={formatVisibilityValue}
+          titleTooltip={t('shareOfVoiceTooltip')}
+        />
+      )}
 
-        return (
-          <MetricTrendChart
-            key={`rankings-${provider}`}
-            title={t('rankingsChart', { provider })}
-            series={rankingSeries}
-            metricType="average_position"
-            targetBrand={targetBrand}
-            yAxisLabel="Position dans le classement"
-            formatValue={formatPositionValue}
-            reverseYAxis={true}
-          />
-        );
-      })}
+      {/* Classement des marques */}
+      {selectedProvider && rankingSeries.length > 0 && (
+        <MetricTrendChart
+          key={`rankings-${selectedProvider}`}
+          title={t('rankingsChart')}
+          series={rankingSeries}
+          metricType="average_position"
+          targetBrand={targetBrand}
+          titleTooltip={t('rankingsChartTooltip')}
+          formatValue={formatPositionValue}
+          reverseYAxis={true}
+        />
+      )}
     </div>
   );
 }

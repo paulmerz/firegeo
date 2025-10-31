@@ -7,13 +7,15 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   Legend,
   ResponsiveContainer,
   Dot
 } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CompetitorMetricSeries } from '@/lib/types';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { InfoCircledIcon } from '@radix-ui/react-icons';
 
 interface MetricTrendChartProps {
   title: string;
@@ -24,6 +26,8 @@ interface MetricTrendChartProps {
   yAxisLabel?: string;
   formatValue?: (value: number) => string;
   reverseYAxis?: boolean;
+  titleTooltip?: string;
+  subtitle?: string;
 }
 
 export function MetricTrendChart({
@@ -34,8 +38,47 @@ export function MetricTrendChart({
   height = 400,
   yAxisLabel,
   formatValue = (value) => value.toString(),
-  reverseYAxis = false
+  reverseYAxis = false,
+  titleTooltip,
+  subtitle
 }: MetricTrendChartProps) {
+  const brandColor = '#f97316';
+  const competitorPalette = [
+    '#6366f1',
+    '#0ea5e9',
+    '#14b8a6',
+    '#f43f5e',
+    '#facc15',
+    '#8b5cf6',
+    '#22c55e',
+    '#ec4899',
+    '#06b6d4',
+    '#94a3b8'
+  ];
+
+  const competitorColors = React.useMemo(() => {
+    const colorMap = new Map<string, string>();
+    let paletteIndex = 0;
+
+    series.forEach((serie) => {
+      const key = serie.competitor.trim().toLowerCase();
+      if (colorMap.has(key)) {
+        return;
+      }
+
+      if (serie.isOwn) {
+        colorMap.set(key, brandColor);
+        return;
+      }
+
+      const color = competitorPalette[paletteIndex % competitorPalette.length];
+      colorMap.set(key, color);
+      paletteIndex += 1;
+    });
+
+    return colorMap;
+  }, [series]);
+
   // Transformer les données pour recharts
   const chartData = React.useMemo(() => {
     // Créer un map de toutes les dates uniques
@@ -63,7 +106,7 @@ export function MetricTrendChart({
         const point = serie.dataPoints.find(p => 
           p.date.toISOString().split('T')[0] === date
         );
-        dataPoint[`${serie.competitor}-${serie.provider}`] = point?.value || null;
+        dataPoint[`${serie.competitor}-${serie.provider}`] = point ? point.value : null;
       });
 
       return dataPoint;
@@ -72,10 +115,8 @@ export function MetricTrendChart({
 
   // Générer les couleurs pour chaque série
   const getSeriesColor = (serie: CompetitorMetricSeries) => {
-    if (serie.isOwn) {
-      return '#f97316'; // Orange pour la marque cible
-    }
-    return '#6b7280'; // Gris pour les concurrents
+    const key = serie.competitor.trim().toLowerCase();
+    return competitorColors.get(key) ?? brandColor;
   };
 
   const getSeriesStrokeWidth = (serie: CompetitorMetricSeries) => {
@@ -89,9 +130,9 @@ export function MetricTrendChart({
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900 mb-2">{label}</p>
           {payload.map((entry: any, index: number) => {
-            const [competitor, provider] = entry.dataKey.split('-');
+            const [competitor] = entry.dataKey.split('-');
             const serie = series.find(s => 
-              s.competitor === competitor && s.provider === provider
+              s.competitor === competitor && `${s.competitor}-${s.provider}` === entry.dataKey
             );
             const rawValue = entry.value;
             const numericValue = typeof rawValue === 'number' ? rawValue : Number(rawValue);
@@ -106,9 +147,8 @@ export function MetricTrendChart({
                   style={{ backgroundColor: entry.color }}
                 />
                 <span className="font-medium">
-                  {competitor} {serie?.isOwn && '(Votre marque)'}
+                  {competitor}
                 </span>
-                <span className="text-gray-500">({provider})</span>
                 <span className="font-semibold">
                   {formattedValue}
                 </span>
@@ -139,18 +179,64 @@ export function MetricTrendChart({
     );
   }
 
+  const yAxisLabelProps = yAxisLabel
+    ? {
+        label: {
+          value: yAxisLabel,
+          angle: -90,
+          position: 'insideLeft' as const,
+          style: {
+            textAnchor: 'middle',
+            fill: '#4b5563',
+            fontWeight: 500
+          },
+          offset: -10
+        }
+      }
+    : {};
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>
-          {yAxisLabel || `Évolution du ${metricType}`}
-        </CardDescription>
+      <CardHeader className="pb-0">
+        <CardTitle className="flex items-center gap-2">
+          <span>{title}</span>
+          {titleTooltip && (
+            <TooltipProvider delayDuration={100}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={titleTooltip}
+                    className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-100"
+                  >
+                    <InfoCircledIcon className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="start" className="max-w-xs text-left">
+                  {titleTooltip}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </CardTitle>
+        {subtitle && (
+          <CardDescription>
+            {subtitle}
+          </CardDescription>
+        )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-5 pb-4 pt-0">
         <div style={{ width: '100%', height }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <LineChart
+              data={chartData}
+              margin={{
+                top: height * 0.1,
+                bottom: height * 0.1,
+                left: 32,
+                right: 32
+              }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis 
                 dataKey="date" 
@@ -161,10 +247,21 @@ export function MetricTrendChart({
                 stroke="#666"
                 fontSize={12}
                 domain={reverseYAxis ? ['dataMax', 'dataMin'] : ['dataMin', 'dataMax']}
-                label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: 'insideLeft' } : undefined}
+                {...yAxisLabelProps}
               />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend />
+              <RechartsTooltip content={<CustomTooltip />} />
+              <Legend
+                verticalAlign="bottom"
+                align="left"
+                iconType="circle"
+                wrapperStyle={{
+                  paddingTop: 4,
+                  fontSize: 12,
+                  marginLeft: 32,
+                  marginRight: 32,
+                  width: 'calc(100% - 64px)'
+                }}
+              />
               
               {series.map((serie, index) => (
                 <Line
@@ -175,7 +272,7 @@ export function MetricTrendChart({
                   strokeWidth={getSeriesStrokeWidth(serie)}
                   dot={({ cx, cy, payload }) => {
                     const value = payload[`${serie.competitor}-${serie.provider}`];
-                    if (value === null || value === undefined) return null;
+                    if (value === null || value === undefined) return <></>;
                     
                     return (
                       <Dot
@@ -191,7 +288,7 @@ export function MetricTrendChart({
                     );
                   }}
                   connectNulls={false}
-                  name={`${serie.competitor} ${serie.isOwn ? '(Votre marque)' : ''} (${serie.provider})`}
+                  name={serie.competitor}
                   className={`${serie.isOwn ? '' : 'hover:stroke-blue-500 transition-colors duration-200'}`}
                 />
               ))}
