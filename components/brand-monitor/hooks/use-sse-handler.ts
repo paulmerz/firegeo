@@ -23,7 +23,7 @@ interface UseSSEHandlerProps {
   state: BrandMonitorState;
   dispatch: React.Dispatch<BrandMonitorAction>;
   onCreditsUpdate?: () => void;
-  onAnalysisComplete?: (analysis: Analysis) => void;
+  onAnalysisComplete?: (analysis: Analysis, analysisId?: string) => void;
   onApiUsageSummary?: (summary: ApiUsageSummaryData) => void;
 }
 
@@ -34,6 +34,7 @@ type SSEMessage<T = unknown> = Omit<SSEEvent<T>, 'stage'> & { stage?: AnalysisSt
 
 interface AnalysisCompletePayload {
   analysis: Analysis;
+  analysisId?: string;
   apiUsageSummary?: ApiUsageSummaryData;
 }
 
@@ -413,7 +414,7 @@ export function useSSEHandler({ state, dispatch, onCreditsUpdate, onAnalysisComp
         }
         // Call the completion callback
         if (completeData.analysis && onAnalysisComplete) {
-          onAnalysisComplete(completeData.analysis);
+          onAnalysisComplete(completeData.analysis, completeData.analysisId);
         }
         // Handle API usage summary if provided
         if (completeData.apiUsageSummary && onApiUsageSummary) {

@@ -101,20 +101,56 @@ export async function POST(request: NextRequest) {
         }
       });
       
-      const startTime = Date.now();
-      const company = useDeepCrawl
-        ? await crawlCompanyInfo(normalizedUrl, maxAge, locale)
-        : await scrapeCompanyInfo(normalizedUrl, maxAge, locale);
-      const duration = Date.now() - startTime;
+      // NOUVEAU : Vérifier cache BDD avant scraping
+      const { getCompanyFromCache, upsertCompanyFromScrape } = await import('@/lib/db/companies-service');
+      const cachedCompany = await getCompanyFromCache(normalizedUrl, locale);
       
-      // Update tracking with duration
-      apiUsageTracker.updateCall(callId, { duration });
+      let company;
+      let duration = 0;
+      
+      if (cachedCompany) {
+        // Données en cache, pas besoin de scraper !
+        logger.info(`✅ [Scrape API] Données servies depuis cache BDD pour ${normalizedUrl} (locale: ${locale})`);
+        company = {
+          id: cachedCompany.id,
+          name: cachedCompany.name,
+          url: cachedCompany.url,
+          originalUrl: normalizedUrl,
+          description: cachedCompany.description,
+          industry: cachedCompany.businessProfile?.businessType || cachedCompany.businessProfile?.marketSegment,
+          logo: cachedCompany.logo || undefined,
+          favicon: cachedCompany.favicon || undefined,
+          scraped: true,
+          scrapedData: cachedCompany.scrapedData,
+          businessProfile: cachedCompany.businessProfile,
+        };
+        apiUsageTracker.updateCall(callId, { duration: 0 });
+      } else {
+        // Pas de cache, scraper normalement
+        const startTime = Date.now();
+        company = useDeepCrawl
+          ? await crawlCompanyInfo(normalizedUrl, maxAge, locale)
+          : await scrapeCompanyInfo(normalizedUrl, maxAge, locale);
+        duration = Date.now() - startTime;
+        
+        // Update tracking with duration
+        apiUsageTracker.updateCall(callId, { duration });
+        
+        // Save company to database
+        
+        const savedCompanyId = await upsertCompanyFromScrape(company, locale, normalizedUrl);
+        company.id = savedCompanyId;
+        // Ajouter l'URL originale pour l'affichage
+        company.originalUrl = normalizedUrl;
+      }
       
       logger.info(`✅ [Scrape API] Company info scraped successfully:`, {
         name: company.name,
         url: company.url,
-        industry: company.industry
+        industry: (company as CompanyData).industry || 'Unknown',
+        id: company.id
       });
+      
       return NextResponse.json({ company });
     }
   } catch (error) {
@@ -142,7 +178,7 @@ interface CompanyData {
 
 function buildComparison(single: CompanyData | null, deep: CompanyData | null) {
   const field = (obj: CompanyData | null, path: string[]): unknown =>
-    path.reduce((acc: CompanyData | null | Record<string, unknown>, k) => (acc && typeof acc === 'object' ? (acc as Record<string, unknown>)[k] : undefined), obj);
+    path.reduce<unknown>((acc, k) => (acc && typeof acc === 'object' ? (acc as Record<string, unknown>)[k] : undefined), obj);
 
   const pick = (obj: CompanyData | null) => ({
     name: obj?.name,

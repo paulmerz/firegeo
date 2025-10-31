@@ -11,7 +11,7 @@ import { useConversations, useConversation, useDeleteConversation } from '@/hook
 import { useSendMessage } from '@/hooks/useMessages';
 import { format } from 'date-fns';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import type { Session } from 'better-auth';
+import type { Session } from '@/lib/auth';
 
 // Separate component that uses Autumn hooks
 function ChatContent({ session }: { session: Session }) {

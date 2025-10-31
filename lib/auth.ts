@@ -45,7 +45,7 @@ export const auth = betterAuth({
     .split(',').map(origin => origin.trim()),
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
-    updateAge: 60 * 60 * 24, // Update session if older than 1 day
+    freshAge: 60 * 60 * 24,
     cookieOptions: {
       httpOnly: true,
       sameSite: 'lax',
@@ -102,3 +102,6 @@ export const auth = betterAuth({
     })
   ],
 });
+
+// Export the Session type for use in components
+export type Session = Awaited<ReturnType<typeof auth.api.getSession>>;

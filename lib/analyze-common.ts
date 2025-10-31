@@ -6,7 +6,7 @@ import { extractAnalysisSources } from './brand-monitor-sources';
 import { getConfiguredProviders } from './provider-config';
 import { apiUsageTracker, type ApiUsageSummary } from './api-usage-tracker';
 import { logger } from './logger';
-import { ensureBrandVariationsForBrand } from './brand-detection-service';
+import { ensureBrandVariationsForBrand } from './brand-variations-service';
 import type { BrandVariation } from './types';
 
 export interface AnalysisConfig {
@@ -40,6 +40,8 @@ export interface AnalysisResult {
   webSearchUsed?: boolean;
   apiUsageSummary?: ApiUsageSummary;
   brandVariations?: Record<string, BrandVariation>;
+  // Signature d'index pour compatibilité avec Record<string, unknown>
+  [key: string]: unknown;
 }
 
 /**
@@ -446,41 +448,91 @@ export async function performAnalysis({
     await Promise.all(batchPromises);
   }
 
-  // Generate brand variations once for all brands (target + competitors)
+  // Load brand variations from database (pre-generated before analysis)
   await sendEvent({
     type: 'stage',
     stage: 'generating-brand-variations',
     data: {
       stage: 'generating-brand-variations',
       progress: 0,
-      message: 'Generating intelligent brand variations...'
+      message: 'Loading brand variations from database...'
     } as ProgressData,
     timestamp: new Date()
   });
 
-  const allBrands = [company.name, ...competitors];
-
   try {
-    const variationPromises = allBrands.map(async (brandName) => {
+    // Import the new aliases service
+    const { getBulkAliases } = await import('@/lib/db/aliases-service');
+    
+    // Get company IDs for target and competitors
+    // For competitors, we need to resolve them to get their company IDs
+    const companyIds = [company.id];
+    const competitorNameToId: Record<string, string> = {};
+    
+    // Resolve competitors to get their company IDs
+    for (const competitorName of competitors) {
       try {
-        const variations = await ensureBrandVariationsForBrand(brandName, locale);
-        return { brandName, variations };
+        // Try to find the competitor by name in the database
+        const { db } = await import('@/lib/db');
+        const { companies } = await import('@/lib/db/schema/companies');
+        const { eq } = await import('drizzle-orm');
+        
+        const [competitorCompany] = await db
+          .select({ id: companies.id, name: companies.name })
+          .from(companies)
+          .where(eq(companies.name, competitorName))
+          .limit(1);
+        
+        if (competitorCompany) {
+          companyIds.push(competitorCompany.id);
+          competitorNameToId[competitorName] = competitorCompany.id;
+          logger.debug(`[Brand Variations] Resolved competitor "${competitorName}" to ID: ${competitorCompany.id}`);
+        } else {
+          logger.warn(`[Brand Variations] Could not resolve competitor "${competitorName}" to company ID`);
+        }
       } catch (error) {
-        logger.warn(`Failed to generate variations for brand "${brandName}":`, error);
-        return {
-          brandName,
-          variations: {
-            original: brandName,
-            variations: [brandName, brandName.toLowerCase()],
-            confidence: 0.5
-          }
+        logger.warn(`[Brand Variations] Error resolving competitor "${competitorName}":`, error);
+      }
+    }
+    
+    const aliasesFromDb = await getBulkAliases(companyIds);
+
+    // Convert to BrandVariation format for compatibility
+    const variationRecord: Record<string, BrandVariation> = {};
+    
+    // Add target company variations
+    if (aliasesFromDb[company.id]) {
+      variationRecord[company.name] = {
+        original: company.name,
+        variations: aliasesFromDb[company.id],
+        confidence: 1.0
+      };
+    }
+
+    // Add competitor variations with their aliases from database
+    competitors.forEach(competitorName => {
+      const competitorId = competitorNameToId[competitorName];
+      
+      if (competitorId && aliasesFromDb[competitorId]) {
+        // Use aliases from database
+        variationRecord[competitorName] = {
+          original: competitorName,
+          variations: aliasesFromDb[competitorId],
+          confidence: 1.0
         };
+        logger.debug(`[Brand Variations] Loaded ${aliasesFromDb[competitorId].length} aliases for competitor "${competitorName}"`);
+      } else {
+        // Fallback to basic variations if no aliases found
+        variationRecord[competitorName] = {
+          original: competitorName,
+          variations: [competitorName, competitorName.toLowerCase()],
+          confidence: 0.8
+        };
+        logger.debug(`[Brand Variations] Using basic variations for competitor "${competitorName}"`);
       }
     });
 
-    const variationResults = await Promise.all(variationPromises);
-    const variationRecord: Record<string, BrandVariation> = {};
-
+    // Add normalized keys for robust matching
     const normalizeKey = (value: string) =>
       (value || '')
         .toLowerCase()
@@ -489,18 +541,26 @@ export async function performAnalysis({
         .replace(/\s+/g, ' ')
         .trim();
 
-    variationResults.forEach(({ brandName, variations }) => {
-      // Clé originale
-      variationRecord[brandName] = variations;
-      // Clé normalisée pour correspondance robuste (cible incluse)
-      variationRecord[normalizeKey(brandName)] = variations;
+    Object.keys(variationRecord).forEach(brandName => {
+      variationRecord[normalizeKey(brandName)] = variationRecord[brandName];
     });
 
     brandVariations = variationRecord;
 
-    logger.info(`[Brand Variations] Generated variations for ${variationResults.length} brands`);
+    logger.info(`[Brand Variations] Loaded variations for ${Object.keys(aliasesFromDb).length} companies from database`);
+    logger.debug(`[Brand Variations] Competitor name to ID mapping:`, competitorNameToId);
   } catch (error) {
-    logger.error('[Brand Variations] Failed to generate brand variations:', error);
+    logger.error('[Brand Variations] Failed to load brand variations from database:', error);
+    // Fallback: create basic variations
+    const allBrands = [company.name, ...competitors];
+    brandVariations = {};
+    allBrands.forEach(brandName => {
+      brandVariations![brandName] = {
+        original: brandName,
+        variations: [brandName, brandName.toLowerCase()],
+        confidence: 0.5
+      };
+    });
   }
 
   // Stage 4: Extract brands from responses (70-90% of total progress)
@@ -520,6 +580,7 @@ export async function performAnalysis({
     company, 
     responses, 
     competitors,
+    brandVariations,
     sendEvent
   );
 

@@ -5,7 +5,15 @@ import { AIResponse, type MockMode } from './types';
 import { getProviderModel, normalizeProviderName, getProviderConfig, PROVIDER_CONFIGS } from './provider-config';
 // import { getLanguageName } from './locale-utils';
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
-import { detectMultipleBrands, type BrandDetectionMatch } from './brand-detection-service';
+// Types for brand detection
+export interface BrandDetectionMatch {
+  text: string;
+  index: number;
+  brandName: string;
+  variation: string;
+  confidence: number;
+  snippet?: string;
+}
 import { cleanProviderResponse } from './provider-response-utils';
 import { getMockedRawResponse, getMockedSources } from './ai-utils-mock';
 
@@ -234,6 +242,7 @@ export async function detectBrandsInResponse(
   options: {
     locale?: string;
     providerName?: string;
+    brandVariations?: Record<string, any>;
   } = {}
 ): Promise<{
   brandMentioned: boolean;
@@ -247,16 +256,51 @@ export async function detectBrandsInResponse(
   };
 }> {
   try {
-    const { providerName } = options;
+    const { providerName, brandVariations } = options;
     const cleanedText = cleanProviderResponse(text, { providerName });
 
-    // Detect all brands using the centralized service
+    // Initialize detection results
     const allBrands = [brandName, ...competitors];
-    const detectionResults = await detectMultipleBrands(cleanedText, allBrands, {
-      caseSensitive: false,
-      excludeNegativeContext: false,
-      minConfidence: 0.3
+    const detectionResults = new Map<string, { mentioned: boolean; matches: BrandDetectionMatch[]; confidence: number }>();
+    
+    // Initialize all brands
+    allBrands.forEach(brand => {
+      detectionResults.set(brand, { mentioned: false, matches: [], confidence: 0 });
     });
+
+    // Use the new BrandMatcher API if brandVariations are provided
+    if (brandVariations) {
+      const response = await fetch('/api/brand-detection/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          text: cleanedText, 
+          brandVariations 
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Brand detection API failed: ${response.status}`);
+      }
+      
+      const { matches } = await response.json();
+      
+      // Process matches
+      matches.forEach((match: any) => {
+        if (allBrands.includes(match.brandId)) {
+          const result = detectionResults.get(match.brandId)!;
+          result.mentioned = true;
+          result.matches.push({
+            text: match.surface,
+            index: match.start,
+            brandName: match.brandId,
+            variation: match.surface,
+            confidence: 1.0
+          });
+          result.confidence = Math.max(result.confidence, 1.0);
+        }
+      });
+    }
 
     // Check if target brand is mentioned
     const brandResult = detectionResults.get(brandName);

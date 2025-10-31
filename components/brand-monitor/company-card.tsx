@@ -5,10 +5,11 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Globe, Building2, ExternalLink, Plus, Trash2 } from 'lucide-react';
+import { Globe, Building2, ExternalLink, Plus, Trash2, MoreVertical } from 'lucide-react';
 import { Company } from '@/lib/types';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 interface CompanyCardProps {
   company: Company;
@@ -44,6 +45,12 @@ export function CompanyCard({
   const t = useTranslations('brandMonitor');
   const [logoError, setLogoError] = React.useState(false);
   const [faviconError, setFaviconError] = React.useState(false);
+  const [menuOpenIdx, setMenuOpenIdx] = React.useState<number | null>(null);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [pendingRemoval, setPendingRemoval] = React.useState<{ name: string; url?: string } | null>(null);
+  
+  // Masquer le bouton "Identifier les Concurrents" en production
+  const isDevelopment = process.env.NODE_ENV === 'development';
   
   // Validate URLs
   const isValidUrl = (url: string | undefined): boolean => {
@@ -59,7 +66,31 @@ export function CompanyCard({
   const validLogoUrl = isValidUrl(company.logo) ? company.logo : null;
   const validFaviconUrl = isValidUrl(company.favicon) ? company.favicon : null;
 
+  const toAbsoluteUrl = (raw: string | undefined): string | null => {
+    if (!raw) return null;
+    const trimmed = raw.trim();
+    const withProtocol = trimmed.startsWith('http') ? trimmed : `https://${trimmed}`;
+    try {
+      // Validate construction
+      const u = new URL(withProtocol);
+      return u.toString();
+    } catch {
+      return null;
+    }
+  };
+
+  const getHostname = (raw: string | undefined): string => {
+    const absolute = toAbsoluteUrl(raw);
+    if (!absolute) return '';
+    try {
+      return new URL(absolute).hostname;
+    } catch {
+      return '';
+    }
+  };
+
   return (
+    <>
     <Card className="p-2 bg-card text-card-foreground gap-6 rounded-xl border py-6 shadow-sm border-gray-200 overflow-hidden transition-all hover:shadow-lg">
       <div className="flex">
         {/* Left side - OG Image */}
@@ -96,7 +127,7 @@ export function CompanyCard({
           
           {/* Website link overlay on image */}
           <a
-            href={company.url}
+            href={toAbsoluteUrl(company.originalUrl || company.url) || '#'}
             target="_blank"
             rel="noopener noreferrer"
             className="absolute top-4 right-4 p-2 rounded-lg bg-white/90 backdrop-blur-sm hover:bg-white transition-all shadow-md group"
@@ -118,37 +149,40 @@ export function CompanyCard({
                 )}
                 <span className="text-sm text-gray-500 flex items-center gap-1">
                   <Globe className="h-3 w-3" />
-                  {new URL(company.url).hostname}
+                  {getHostname(company.originalUrl || company.url) || (company.originalUrl || company.url)}
                 </span>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* Identify Competitors Button */}
-              <button 
-                onClick={onAnalyze} 
-                disabled={analyzing}
-                className="h-9 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#36322F] text-[#fff] hover:bg-[#4a4542] disabled:bg-[#8c8885] disabled:hover:bg-[#8c8885] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100 px-4 py-1"
-              >
-                {analyzing ? (
-                  <>
-                    <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin mr-2" />
-                    {t('analyzing')}
-                  </>
-                ) : (
-                  t('identifyCompetitors')
-                )}
-              </button>
+              {/* Identify Competitors Button - visible seulement en développement */}
+              {isDevelopment && (
+                <button 
+                  onClick={onAnalyze} 
+                  disabled={analyzing}
+                  className="h-9 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#36322F] text-[#fff] hover:bg-[#4a4542] disabled:bg-[#8c8885] disabled:hover:bg-[#8c8885] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100 px-4 py-1"
+                >
+                  {analyzing ? (
+                    <>
+                      <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin mr-2" />
+                      {t('analyzing')}
+                    </>
+                  ) : (
+                    t('identifyCompetitors')
+                  )}
+                </button>
+              )}
             </div>
           </div>
 
           <p className="text-sm text-gray-600 mb-4">
-            {company.description}
+            {company.description || (company as any).locales?.[0]?.description}
           </p>
 
           {/* Keywords inline */}
-          {company.scrapedData?.keywords && company.scrapedData.keywords.length > 0 && (
+          {((company.scrapedData?.keywords && company.scrapedData.keywords.length > 0) || 
+            ((company as any).locales?.[0]?.keywords && (company as any).locales[0].keywords.length > 0)) && (
             <div className="flex flex-wrap gap-2">
-              {company.scrapedData.keywords.map((keyword, idx) => (
+              {(company.scrapedData?.keywords || (company as any).locales?.[0]?.keywords || []).map((keyword: string, idx: number) => (
                 <span
                   key={idx}
                   className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
@@ -227,15 +261,48 @@ export function CompanyCard({
                       </div>
                     </div>
                     
-                    {/* Remove button */}
-                    {onRemoveCompetitor && (
-                      <button
-                        onClick={() => onRemoveCompetitor(idx)}
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-50"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-red-600" />
-                      </button>
-                    )}
+                    {/* Actions top-right */}
+                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-100 transition-opacity">
+                      {/* Kebab menu for workspace edges removal from DB */}
+                      {competitor.url && (
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMenuOpenIdx(menuOpenIdx === idx ? null : idx);
+                            }}
+                            className="p-1 rounded hover:bg-gray-100"
+                          >
+                            <MoreVertical className="w-3.5 h-3.5 text-gray-600" />
+                          </button>
+                          {menuOpenIdx === idx && (
+                            <div className="absolute right-0 mt-1 w-44 bg-white border rounded shadow-md z-10">
+                              <button
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPendingRemoval({ name: competitor.name, url: competitor.url });
+                                  setConfirmOpen(true);
+                                  setMenuOpenIdx(null);
+                                }}
+                              >
+                                Retirer des suggestions
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Remove from selection (UI only) */}
+                      {onRemoveCompetitor && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onRemoveCompetitor(idx); }}
+                          className="p-1 rounded hover:bg-red-50"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -268,5 +335,39 @@ export function CompanyCard({
         </div>
       )}
     </Card>
+
+    {/* Confirmation dialog for DB removal */}
+    <ConfirmationDialog
+      open={confirmOpen}
+      onOpenChange={setConfirmOpen}
+      title={"Retirer des suggestions"}
+      description={"Cette marque ne sera plus suggérée automatiquement pour ce workspace."}
+      confirmText={"Retirer"}
+      cancelText={"Annuler"}
+      onConfirm={async () => {
+        try {
+          if (!pendingRemoval?.url) return;
+          
+          // Retirer de l'UI immédiatement
+          const competitorIndex = identifiedCompetitors.findIndex(comp => comp.url === pendingRemoval.url);
+          if (competitorIndex !== -1 && onRemoveCompetitor) {
+            onRemoveCompetitor(competitorIndex);
+          }
+          
+          // Résoudre workspace et supprimer l'edge workspace
+          const workspaceRes = await fetch('/api/user/workspace', { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+          if (!workspaceRes.ok) return;
+          const { workspaceId } = await workspaceRes.json();
+          await fetch('/api/company/remove-manual-competitor', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ companyUrl: company.url, competitorUrl: pendingRemoval.url, workspaceId })
+          });
+        } finally {
+          setPendingRemoval(null);
+        }
+      }}
+    />
+    </>
   );
 }

@@ -1,5 +1,25 @@
 import { useState, useCallback } from 'react';
-import type { BrandDetectionResult, BrandDetectionOptions } from '@/lib/brand-detection-service';
+
+export interface BrandDetectionMatch {
+  text: string;
+  index: number;
+  brandName: string;
+  variation: string;
+  confidence: number;
+  snippet?: string;
+}
+
+export interface BrandDetectionResult {
+  mentioned: boolean;
+  matches: BrandDetectionMatch[];
+  confidence: number;
+}
+
+export interface BrandDetectionOptions {
+  caseSensitive?: boolean;
+  excludeNegativeContext?: boolean;
+  minConfidence?: number;
+}
 
 interface BrandDetectionError {
   message: string;
@@ -10,8 +30,8 @@ interface BrandDetectionError {
 }
 
 interface UseBrandDetectionReturn {
-  detectBrandMentions: (text: string, brandName: string, options?: BrandDetectionOptions) => Promise<BrandDetectionResult>;
-  detectMultipleBrands: (text: string, brandNames: string[], options?: BrandDetectionOptions) => Promise<Map<string, BrandDetectionResult>>;
+  detectBrandMentions: (text: string, brandName: string, brandVariations: Record<string, any>, options?: BrandDetectionOptions) => Promise<BrandDetectionResult>;
+  detectMultipleBrands: (text: string, brandNames: string[], brandVariations: Record<string, any>, options?: BrandDetectionOptions) => Promise<Map<string, BrandDetectionResult>>;
   isLoading: boolean;
   error: BrandDetectionError | null;
   clearError: () => void;
@@ -28,6 +48,7 @@ export function useBrandDetection(): UseBrandDetectionReturn {
   const detectBrandMentions = useCallback(async (
     text: string, 
     brandName: string, 
+    brandVariations: Record<string, any>,
     options: BrandDetectionOptions = {}
   ): Promise<BrandDetectionResult> => {
     setIsLoading(true);
@@ -60,15 +81,14 @@ export function useBrandDetection(): UseBrandDetectionReturn {
     try {
       console.log(`[useBrandDetection] Détection de marque: "${brandName}" dans un texte de ${text.length} caractères`);
       
-      const response = await fetch('/api/brand-detection', {
+      const response = await fetch('/api/brand-detection/match', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           text,
-          brandNames: brandName,
-          options
+          brandVariations
         }),
       });
 
@@ -92,8 +112,25 @@ export function useBrandDetection(): UseBrandDetectionReturn {
         throw new Error(error.message);
       }
 
-      const result = await response.json();
-      console.log(`[useBrandDetection] Détection réussie pour "${brandName}": ${result.mentioned ? 'mentionnée' : 'non mentionnée'}`);
+      const { matches } = await response.json();
+      
+      // Convert matches to BrandDetectionResult format
+      const brandMatches = matches.filter((match: any) => match.brandId === brandName);
+      const mentioned = brandMatches.length > 0;
+      
+      const result: BrandDetectionResult = {
+        mentioned,
+        matches: brandMatches.map((match: any) => ({
+          text: match.surface,
+          index: match.start,
+          brandName: match.brandId,
+          variation: match.surface,
+          confidence: 1.0
+        })),
+        confidence: mentioned ? 1.0 : 0
+      };
+      
+      console.log(`[useBrandDetection] Détection réussie pour "${brandName}": ${mentioned ? 'mentionnée' : 'non mentionnée'}`);
       return result;
     } catch (err) {
       // Si l'erreur n'a pas déjà été définie par la gestion des erreurs API
@@ -112,11 +149,13 @@ export function useBrandDetection(): UseBrandDetectionReturn {
     } finally {
       setIsLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const detectMultipleBrands = useCallback(async (
     text: string, 
     brandNames: string[], 
+    brandVariations: Record<string, any>,
     options: BrandDetectionOptions = {}
   ): Promise<Map<string, BrandDetectionResult>> => {
     setIsLoading(true);
@@ -162,15 +201,14 @@ export function useBrandDetection(): UseBrandDetectionReturn {
     try {
       console.log(`[useBrandDetection] Détection de ${brandNames.length} marques dans un texte de ${text.length} caractères`);
       
-      const response = await fetch('/api/brand-detection', {
+      const response = await fetch('/api/brand-detection/match', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           text,
-          brandNames,
-          options
+          brandVariations
         }),
       });
 
@@ -194,9 +232,36 @@ export function useBrandDetection(): UseBrandDetectionReturn {
         throw new Error(error.message);
       }
 
-      const resultsObject = (await response.json()) as Record<string, BrandDetectionResult>;
-      // Convert Object back to Map with proper typing
-      const results = new Map<string, BrandDetectionResult>(Object.entries(resultsObject));
+      const { matches } = await response.json();
+      
+      // Convert matches to Map<string, BrandDetectionResult> format
+      const results = new Map<string, BrandDetectionResult>();
+      
+      // Initialize all brands
+      brandNames.forEach(brand => {
+        results.set(brand, {
+          mentioned: false,
+          matches: [],
+          confidence: 0
+        });
+      });
+      
+      // Process matches
+      matches.forEach((match: any) => {
+        if (brandNames.includes(match.brandId)) {
+          const result = results.get(match.brandId)!;
+          result.mentioned = true;
+          result.matches.push({
+            text: match.surface,
+            index: match.start,
+            brandName: match.brandId,
+            variation: match.surface,
+            confidence: 1.0
+          });
+          result.confidence = Math.max(result.confidence, 1.0);
+        }
+      });
+      
       console.log(`[useBrandDetection] Détection multiple réussie: ${results.size} marques traitées`);
       return results;
     } catch (err) {
@@ -216,6 +281,7 @@ export function useBrandDetection(): UseBrandDetectionReturn {
     } finally {
       setIsLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {

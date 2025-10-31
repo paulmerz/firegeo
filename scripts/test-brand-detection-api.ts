@@ -148,7 +148,7 @@ class BrandDetectionAPITester {
         testCase,
         passed,
         actualCount,
-        matches: result.matches ? result.matches.map((m: any) => ({
+        matches: result.matches ? result.matches.map((m: Record<string, unknown>) => ({
           text: m.text,
           confidence: m.confidence,
           variation: m.variation
@@ -160,8 +160,8 @@ class BrandDetectionAPITester {
       
       if (result.matches && result.matches.length > 0) {
         console.log(`🔍 Détections:`);
-        result.matches.forEach((match: any, index: number) => {
-          console.log(`   ${index + 1}. "${match.text}" (variation: ${match.variation}, confiance: ${match.confidence.toFixed(2)})`);
+        result.matches.forEach((match: Record<string, unknown>, index: number) => {
+          console.log(`   ${index + 1}. "${match.text}" (variation: ${match.variation}, confiance: ${typeof match.confidence === 'number' ? match.confidence.toFixed(2) : 'N/A'})`);
         });
       }
 
@@ -261,8 +261,8 @@ class BrandDetectionAPITester {
       
       if (result.matches && result.matches.length > 0) {
         console.log(`🔍 Détections:`);
-        result.matches.forEach((match: any, i: number) => {
-          console.log(`   ${i + 1}. "${match.text}" (${match.variation}, conf: ${match.confidence.toFixed(2)})`);
+        result.matches.forEach((match: Record<string, unknown>, i: number) => {
+          console.log(`   ${i + 1}. "${match.text}" (${match.variation}, conf: ${typeof match.confidence === 'number' ? match.confidence.toFixed(2) : 'N/A'})`);
         });
       } else {
         console.log(`ℹ️  Aucune détection trouvée`);

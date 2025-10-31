@@ -27,7 +27,7 @@ export async function analyzePromptWithOpenAIWebSearch(
   brandName: string,
   competitors: string[],
   locale?: string,
-  modelId: string = 'gpt-5',
+  modelId: string = 'gpt-4o',
   options?: { mockMode?: MockMode }
 ): Promise<AIResponse> {
   if (!process.env.OPENAI_API_KEY) {

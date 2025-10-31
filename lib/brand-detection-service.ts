@@ -1,842 +1,143 @@
 /**
- * Centralized Brand Detection Service
- * Single source of truth for brand detection and highlighting
- * Uses AI to generate intelligent brand variations
+ * Brand Detection Service
+ * Functions for extracting brands from text and calculating visibility
  */
 
-import OpenAI from 'openai';
-import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
 import { logger } from './logger';
 
-const getOpenAIClient = () => {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OpenAI API key not configured');
-  }
-  return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-};
-
-export interface BrandVariation {
-  original: string;
-  variations: string[];
+export interface BrandExtraction {
+  brand: string;
+  mentions: number;
+  context: string;
   confidence: number;
 }
 
-export interface BrandDetectionMatch {
-  text: string;
-  index: number;
-  brandName: string;
-  variation: string;
-  confidence: number;
-  snippet?: string;
-}
-
-export interface BrandDetectionResult {
-  mentioned: boolean;
-  matches: BrandDetectionMatch[];
-  confidence: number;
-}
-
-export interface BrandDetectionOptions {
-  caseSensitive?: boolean;
-  excludeNegativeContext?: boolean;
-  minConfidence?: number;
+export interface BrandVisibility {
+  brand: string;
+  visibilityScore: number;
+  mentions: number;
+  averagePosition: number;
+  shareOfVoice: number;
+  sentimentScore: number;
 }
 
 /**
- * Generate intelligent brand variations using AI
- * This is the single source of truth for brand variations
- */
-export async function generateIntelligentBrandVariations(
-  brandName: string,
-  locale: string = 'en'
-): Promise<BrandVariation> {
-  const coreBrand = brandName.trim();
-
-  const prompt = `You are a brand detection expert. Analyze this brand name and generate ONLY the variations that would be appropriate for brand detection in text.
-
-Brand: "${coreBrand}"
-
-Rules:
-1. Include the full brand name and common case variations
-2. Include ONLY distinctive parts that are NOT generic words (avoid: "cars", "technologies", "solutions", "systems", "group", "international", "global", "worldwide", "inc", "llc", "corp", "ltd", "limited", "company", "co")
-3. Include common abbreviations/acronyms ONLY if they are distinctive to this brand
-4. Do NOT include variations that would cause false positives (i.e Radical is a brand, but also an adjective and radical can easily be confused with the brand in a race car context)
-5. For single-word brands that are common adjectives/nouns, ONLY include the exact brand name with proper capitalization (i.e Orange must not be included as "orange" as it would cause a false positive)
-6. Avoid variations that could match common words in other contexts
-7. Be smart as you are a brand detection expert and you know what is a brand and what is not, how people call it or not
-
-Examples you can use for training :
-- "Caterham Cars" → ["Caterham Cars", "Caterham", "caterham cars", "caterham"]
-- "Louis Vuitton" → ["Louis Vuitton", "louis vuitton", "LV", "Vuitton"]
-- "Alpine" → ["Alpine", "alpine"] (NOT "BMW Alpine" - that's a different brand)
-- "Christian Dior" → ["Christian Dior", "christian dior", "Dior", "dior"]¨
-- "Dior" → ["Dior", "dior", "Christian Dior", "christian dior"] ("Dior" is the short form, "Christian Dior" is the full brand name)
-- "Yves Saint Laurent" → ["Saint Laurent", "YSL", "St Laurent", "Yves Saint Laurent", "yves saint laurent", "ysl"]
-- "Patek Philippe" → ["Patek Philippe", "patek philippe", "Patek"] (NOT "philippe" - too common as last name and nobody calls the brand "philippe")
-- "Audemars Piguet" → ["Audemars Piguet", "audemars piguet", "Audemars", "AP"] (NOT "Piguet" as nobody calls the brand "Piguet")
-- "Grand Seiko" → ["Grand Seiko", "grand seiko", "GS"] (NOT "Seiko" as it is another brand, much lower price range, not "Grand" as it is a generic term and nobody calls the brand "Grand")
-- "Nvidia Technologies" → ["Nvidia", "nvidia"] (NOT "technologies" - too generic)
-- "Apple Inc" → ["Apple"] (NOT "apple" - too common as fruit)
-- "Radical" → ["Radical"] (NOT "radical" - too common as adjective)
-- "Orange" → ["Orange"] (NOT "orange" - too common as fruit)
-- "Black" → ["Black"] (NOT "black" - too common as color)
-- "Nike" → ["Nike", "nike"] (OK - distinctive enough, not too common)
-- "Tesla" → ["Tesla", "tesla"] (OK - distinctive enough, not too common)
-- "Google" → ["Google", "google"] (OK - distinctive enough, not too common the verb "google" comes from the brand name)
-- "Amazon" → ["Amazon", "amazon"] (OK - distinctive enough, not too common)
-- "Lotus" → ["Lotus", "lotus"] (OK - distinctive enough)
-- "BMW" → ["BMW", "bmw"] (OK - distinctive acronym)
-- "Mercedes" → ["Mercedes", "mercedes"] (OK - distinctive name)
-- "Morgan Stanley" → ["Morgan Stanley", "Morgan Stanley & Co."] ("Morgan" is a generic name, "MS" is the acronym but never used alone)
--...
-
-CRITICAL: For brands that are VERY common words (like "Radical", "Apple", "Orange", "Black", "Google"...), be VERY conservative and ONLY include the exact brand name with proper capitalization. For distinctive brands (like "Nike", "Tesla", "Amazon", "Mercedes"...), include both capitalized and lowercase versions.
-
-Return ONLY a JSON object with this exact structure:
-{
-  "original": "exact brand name", (STRING)
-  "variations": ["variation1", "variation2", ...], (ARRAY OF STRINGS)
-  "confidence": "level of confidence in the variations" (NUMBER)
-}`;
-
-  let callId: string | undefined;
-  
-  try {
-    const openai = getOpenAIClient();
-    
-    // Track API call for brand variations
-    callId = apiUsageTracker.trackCall({
-      provider: 'openai',
-      model: 'gpt-4o-mini',
-      operation: 'analysis',
-      success: true,
-      metadata: { 
-        step: 'brand_variations',
-        brandName: coreBrand,
-        locale
-      }
-    });
-
-    const startTime = Date.now();
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a brand detection expert. Generate precise brand variations for text detection, avoiding false positives. Return only valid JSON.`
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      temperature: 0.1,
-      max_tokens: 300
-    });
-    const duration = Date.now() - startTime;
-    logger.debug('[Brand Detection Service] OpenAI response:', response.choices[0]?.message?.content);
-
-    let content = response.choices[0]?.message?.content?.trim();
-    if (!content) {
-      throw new Error('No content from OpenAI');
-    }
-
-    // Clean up the response
-    if (content.startsWith('```')) {
-      content = content.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '').trim();
-    }
-
-    const result = JSON.parse(content);
-    
-    // Validate the response
-    if (!result.original || !Array.isArray(result.variations) || typeof result.confidence !== 'number') {
-      throw new Error('Invalid response format');
-    }
-
-    // Ensure the original brand name is included
-    if (!result.variations.includes(result.original)) {
-      result.variations.unshift(result.original);
-    }
-
-    // Remove duplicates and filter out empty strings
-    result.variations = [...new Set(result.variations)].filter(v => v && typeof v === 'string' && v.trim().length > 0);
-
-    // Extract tokens from usage and update API call
-    const tokens = extractTokensFromUsage(response.usage ?? null);
-    apiUsageTracker.updateCall(callId, {
-      inputTokens: tokens.inputTokens,
-      outputTokens: tokens.outputTokens,
-      cost: estimateCost('openai', 'gpt-4o-mini', tokens.inputTokens, tokens.outputTokens),
-      duration
-    });
-
-    console.log(`🤖 [AI Brand Variations] ${coreBrand} → [${result.variations.join(', ')}]`);
-    cacheBrandVariations(brandName, result);
-
-    return result;
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorDetails = {
-      brandName: coreBrand,
-      locale,
-      errorType: error instanceof Error ? error.constructor.name : 'UnknownError',
-      errorMessage,
-      timestamp: new Date().toISOString()
-    };
-    
-    console.error('[Brand Detection Service] AI brand variations failed:', errorDetails);
-    
-    // Update API call with error status
-    if (callId) {
-      apiUsageTracker.updateCall(callId, {
-        success: false,
-        error: errorMessage,
-        metadata: {
-          ...errorDetails,
-          step: 'brand_variations_error'
-        }
-      });
-    }
-    
-    // Re-throw the error instead of using fallback
-    throw new Error(`Failed to generate brand variations for "${coreBrand}": ${errorMessage}`);
-  }
-}
-
-/**
- * Detect brand mentions in text using intelligent variations
- * This is the single source of truth for brand detection
- */
-export async function detectBrandMentions(
-  text: string,
-  brandName: string,
-  options: BrandDetectionOptions = {},
-  locale: string = 'en',
-  variationsMap?: Map<string, BrandVariation>
-): Promise<BrandDetectionResult> {
-  const {
-    caseSensitive = false,
-    excludeNegativeContext = false,
-    minConfidence = 0.3
-  } = options;
-
-  // Validation des paramètres d'entrée
-  if (!text || typeof text !== 'string' || text.trim().length === 0) {
-    throw new Error('Le texte fourni est invalide ou vide');
-  }
-
-  if (!brandName || typeof brandName !== 'string' || brandName.trim().length === 0) {
-    throw new Error('Le nom de marque fourni est invalide ou vide');
-  }
-
-  try {
-    if (variationsMap && !variationsMap.has(brandName)) {
-      return {
-        mentioned: false,
-        matches: [],
-        confidence: 0
-      };
-    }
-
-    let brandVariation: BrandVariation;
-
-    if (variationsMap && variationsMap.has(brandName)) {
-      brandVariation = variationsMap.get(brandName)!;
-    } else {
-      brandVariation = await ensureBrandVariationsForBrand(brandName, locale);
-    }
-    
-    if (brandVariation.confidence < minConfidence) {
-      return {
-        mentioned: false,
-        matches: [],
-        confidence: 0
-      };
-    }
-
-    const matches: BrandDetectionMatch[] = [];
-
-    // For brands that are common words, be more strict about case sensitivity
-    const commonWords = ['apple', 'orange', 'black', 'radical', 'nike', 'tesla', 'google', 'amazon'];
-    const isCommonWord = brandName.length <= 8 && /^[a-zA-Z]+$/.test(brandName) && 
-                        commonWords.includes(brandName.toLowerCase());
-    const shouldBeCaseSensitive = isCommonWord || caseSensitive;
-
-    // Sort variations by length (longest first) to prioritize complete brand names
-    // This ensures "Audemars Piguet" matches before "Piguet" alone
-    const sortedVariations = [...brandVariation.variations].sort((a, b) => b.length - a.length);
-
-    // Create regex patterns for each variation
-    // Make separators flexible: spaces and hyphens are considered equivalent
-    const patterns = sortedVariations.map(variation => {
-      const sepClass = '[\\s\\-–—]+';
-      const parts = variation.trim().split(/\s+/);
-      const escapedParts = parts.map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-      const flexible = escapedParts.join(sepClass);
-      return {
-        variation,
-        regex: new RegExp(`\\b${flexible}\\b`, shouldBeCaseSensitive ? 'g' : 'gi')
-      };
-    });
-
-    // Always search in the original text to get correct positions
-    // Track matched ranges to avoid overlapping matches
-    const matchedRanges: Array<{ start: number; end: number }> = [];
-    
-    patterns.forEach(({ variation, regex }) => {
-      let match;
-      while ((match = regex.exec(text)) !== null) {
-        const matchText = match[0];
-        const matchIndex = match.index;
-        const matchEnd = matchIndex + matchText.length;
-        
-        // Check if this match overlaps with any existing match
-        const overlaps = matchedRanges.some(range => 
-          (matchIndex >= range.start && matchIndex < range.end) ||
-          (matchEnd > range.start && matchEnd <= range.end) ||
-          (matchIndex <= range.start && matchEnd >= range.end)
-        );
-        
-        // Skip this match if it overlaps with a longer match already found
-        if (overlaps) {
-          continue;
-        }
-
-        // Check for negative context if requested
-        if (excludeNegativeContext) {
-          const contextStart = Math.max(0, matchIndex - 50);
-          const contextEnd = Math.min(text.length, matchIndex + matchText.length + 50);
-          const context = text.substring(contextStart, contextEnd);
-          
-          const negativePatterns = [
-            /\bnot\s+(?:recommended|good|worth|reliable)/i,
-            /\bavoid\b/i,
-            /\bworse\s+than\b/i,
-            /\binferior\s+to\b/i,
-            /\bdon't\s+(?:use|recommend|like)\b/i
-          ];
-          
-          const hasNegativeContext = negativePatterns.some(np => np.test(context));
-          if (hasNegativeContext) continue;
-        }
-
-        // Additional check to avoid matching in URLs or other inappropriate contexts
-        const contextStart = Math.max(0, matchIndex - 20);
-        const contextEnd = Math.min(text.length, matchIndex + matchText.length + 20);
-        const context = text.substring(contextStart, contextEnd);
-        
-        // More precise checks for inappropriate contexts
-        const isInUrl = /https?:\/\/[^\s]*/i.test(context) || /www\.[^\s]*/i.test(context);
-        const isInEmail = /[^\s]+@[^\s]+/i.test(context);
-        
-        // Check if the match is directly part of a domain (like "caterham.com")
-        const isDirectlyInDomain = /\.[a-z]{2,4}\b/i.test(context) && 
-          context.indexOf(matchText) > 0 && 
-          context[context.indexOf(matchText) - 1] === '.';
-        
-        // Check for actual file paths (not markdown formatting)
-        const isInFilePath = /[\/\\][a-zA-Z0-9_\-\.]+/i.test(context) && !/\*\*/.test(context);
-        
-        if (isInUrl || isInEmail || isDirectlyInDomain || isInFilePath) {
-          continue;
-        }
-
-        // Calculate confidence
-        let confidence = brandVariation.confidence;
-        
-        // Boost confidence for exact matches
-        if (matchText.toLowerCase() === brandName.toLowerCase()) {
-          confidence = Math.min(confidence + 0.2, 1.0);
-        }
-        
-        // Reduce confidence for partial matches
-        if (variation.toLowerCase() !== brandName.toLowerCase()) {
-          confidence = Math.max(confidence - 0.1, 0.1);
-        }
-
-        const snippetStart = Math.max(0, matchIndex - 120);
-        const snippetEnd = Math.min(text.length, matchIndex + matchText.length + 120);
-        const snippetContext = text.substring(snippetStart, snippetEnd);
-        const snippet = snippetContext.trim();
-
-        
-
-        matches.push({
-          text: matchText,
-          index: matchIndex,
-          brandName,
-          variation,
-          confidence,
-          snippet
-        });
-        
-        // Record this match range to prevent overlapping shorter matches
-        matchedRanges.push({
-          start: matchIndex,
-          end: matchEnd
-        });
-      }
-    });
-
-    // Remove duplicate matches at the same position (keep highest confidence)
-    const uniqueMatches = matches.reduce((acc, match) => {
-      const existing = acc.find(m => m.index === match.index);
-      if (!existing || match.confidence > existing.confidence) {
-        return [...acc.filter(m => m.index !== match.index), match];
-      }
-      return acc;
-    }, [] as BrandDetectionMatch[]);
-
-    // Sort by confidence
-    uniqueMatches.sort((a, b) => b.confidence - a.confidence);
-
-    const overallConfidence = uniqueMatches.length > 0
-      ? Math.max(...uniqueMatches.map(m => m.confidence))
-      : 0;
-
-    return {
-      mentioned: uniqueMatches.length > 0,
-      matches: uniqueMatches,
-      confidence: overallConfidence
-    };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorDetails = {
-      brandName,
-      textLength: text.length,
-      options,
-      errorType: error instanceof Error ? error.constructor.name : 'UnknownError',
-      errorMessage,
-      timestamp: new Date().toISOString()
-    };
-    
-    console.error('[Brand Detection Service] Brand detection failed:', errorDetails);
-    
-    // Re-throw the error instead of returning empty result
-    throw new Error(`Brand detection failed for "${brandName}": ${errorMessage}`);
-  }
-}
-
-/**
- * Detect multiple brands in text
- */
-export async function detectMultipleBrands(
-  text: string,
-  brandNames: string[],
-  options: BrandDetectionOptions = {},
-  locale: string = 'en',
-  variationsMap?: Map<string, BrandVariation>
-): Promise<Map<string, BrandDetectionResult>> {
-  // Validation des paramètres d'entrée
-  if (!text || typeof text !== 'string' || text.trim().length === 0) {
-    throw new Error('Le texte fourni est invalide ou vide');
-  }
-
-  if (!Array.isArray(brandNames) || brandNames.length === 0) {
-    throw new Error('La liste des marques fournie est invalide ou vide');
-  }
-
-  const invalidBrands = brandNames.filter(name => typeof name !== 'string' || !name.trim());
-  if (invalidBrands.length > 0) {
-    throw new Error(`Certains noms de marques sont invalides: ${invalidBrands.length} marques invalides trouvées`);
-  }
-
-  const results = new Map<string, BrandDetectionResult>();
-  
-  // Process brands in parallel for better performance
-  const normalizeKey = (value: string) =>
-    (value || '')
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/\p{Diacritic}/gu, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-  const detectionPromises = brandNames.map(async (brandName) => {
-    try {
-      let localVariationsMap = variationsMap;
-      // Si la map est fournie mais ne contient pas la clé originale, tenter la clé normalisée
-      if (variationsMap && !variationsMap.has(brandName)) {
-        const normalized = normalizeKey(brandName);
-        if (variationsMap.has(normalized)) {
-          localVariationsMap = new Map(variationsMap);
-          const v = variationsMap.get(normalized)!;
-          localVariationsMap.set(brandName, v);
-        }
-      }
-
-      const result = await detectBrandMentions(text, brandName, options, locale, localVariationsMap);
-      return { brandName, result, error: null };
-    } catch (error) {
-      return { brandName, result: null, error };
-    }
-  });
-
-  const detectionResults = await Promise.all(detectionPromises);
-  
-  // Check if any detection failed
-  const errors = detectionResults.filter(r => r.error);
-  if (errors.length > 0) {
-    const errorDetails = {
-      totalBrands: brandNames.length,
-      failedBrands: errors.length,
-      errors: errors.map(e => ({
-        brandName: e.brandName,
-        errorType: e.error instanceof Error ? e.error.constructor.name : 'UnknownError',
-        errorMessage: e.error instanceof Error ? e.error.message : 'Unknown error'
-      })),
-      timestamp: new Date().toISOString()
-    };
-    
-    console.error('[Brand Detection Service] Multiple brand detection failed:', errorDetails);
-    
-    const errorMessages = errors.map(e => `${e.brandName}: ${e.error instanceof Error ? e.error.message : 'Unknown error'}`);
-    throw new Error(`Brand detection failed for: ${errorMessages.join(', ')}`);
-  }
-  
-  detectionResults.forEach(({ brandName, result }) => {
-    if (result) {
-      results.set(brandName, result);
-    }
-  });
-
-  return results;
-}
-
-/**
- * Cache for brand variations to avoid repeated AI calls
- */
-const brandVariationCache = new Map<string, BrandVariation>();
-const pendingBrandVariationPromises = new Map<string, Promise<BrandVariation>>();
-
-// Cache key ne dépend plus de la locale pour éviter des duplications
-// entre locales différentes qui référencent la même marque.
-const buildCacheKey = (brandName: string): string => {
-  const normalizedBrand = (brandName || '')
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/\s+/g, ' ');
-
-  return `${normalizedBrand}`;
-};
-
-const cacheBrandVariations = (brandName: string, variations: BrandVariation) => {
-  brandVariationCache.set(buildCacheKey(brandName), variations);
-};
-
-/**
- * Get cached brand variations or generate new ones
- */
-export async function getCachedBrandVariations(
-  brandName: string,
-  // _locale: string = 'en'
-): Promise<BrandVariation> {
-  const cacheKey = buildCacheKey(brandName);
-
-  if (brandVariationCache.has(cacheKey)) {
-    return brandVariationCache.get(cacheKey)!;
-  }
-
-  throw new Error(`No cached brand variations for key ${cacheKey}`);
-}
-
-export async function ensureBrandVariationsForBrand(brandName: string, locale: string = 'en'): Promise<BrandVariation> {
-  const cacheKey = buildCacheKey(brandName);
-
-  if (brandVariationCache.has(cacheKey)) {
-    return brandVariationCache.get(cacheKey)!;
-  }
-
-  if (pendingBrandVariationPromises.has(cacheKey)) {
-    return pendingBrandVariationPromises.get(cacheKey)!;
-  }
-
-  logger.debug(`Brand variations not cached yet for "${brandName}" (${locale}) - generating`);
-
-  const generationPromise = (async () => {
-    try {
-      const generated = await generateIntelligentBrandVariations(brandName);
-      cacheBrandVariations(brandName, generated);
-      return generated;
-    } finally {
-      pendingBrandVariationPromises.delete(cacheKey);
-    }
-  })();
-
-  pendingBrandVariationPromises.set(cacheKey, generationPromise);
-
-  return generationPromise;
-}
-
-/**
- * Clear the brand variation cache
- */
-export function clearBrandVariationCache(): void {
-  brandVariationCache.clear();
-}
-
-/**
- * Clean brands with AI (migrated from brand-detection-enhanced)
- * This function provides the same interface as the old enhanced version
- */
-export async function cleanBrandsWithAI(brands: string[]): Promise<Array<{
-  original: string;
-  cleaned: string;
-  variations: string[];
-  reasoning?: string;
-}>> {
-  console.log(`[BrandDetection] 🧹 Nettoyage de ${brands.length} marques avec OpenAI`);
-  
-  const results = [];
-  
-  for (const brand of brands) {
-    try {
-      // Use cache-backed retrieval to avoid duplicate OpenAI calls
-      const variation = await ensureBrandVariationsForBrand(brand);
-      results.push({
-        original: brand,
-        cleaned: variation.original,
-        variations: variation.variations,
-        reasoning: `AI-generated variations with confidence ${variation.confidence}`
-      });
-    } catch (error) {
-      console.warn(`Failed to clean brand "${brand}":`, error);
-      // Fallback to basic cleaning
-      results.push({
-        original: brand,
-        cleaned: brand,
-        variations: [brand, brand.toLowerCase()],
-        reasoning: 'Fallback due to AI error'
-      });
-    }
-  }
-  
-  return results;
-}
-
-/**
- * Extract brands from text (migrated from brand-detection-enhanced)
- * This function provides the same interface as the old enhanced version
+ * Extract brands from text using cleaned brands as reference
  */
 export async function extractBrandsFromText(
-  text: string,
-  targetBrands: Array<{
-    original: string;
-    cleaned: string;
-    variations: string[];
-    reasoning?: string;
-  }>,
-  provider: string
-): Promise<{
-  mentionedBrands: Array<{
-    brand: string;
-    matchedVariation: string;
-    confidence: number;
-    context?: string;
-  }>;
-  totalBrandsFound: number;
-  confidence: number;
-}> {
-  console.log(`[BrandDetection] 🔍 Extraction des marques du texte ${provider} (${text.length} chars)`);
-  
-  const mentionedBrands: Array<{
-    brand: string;
-    matchedVariation: string;
-    confidence: number;
-    context?: string;
-  }> = [];
-  const brandNames = targetBrands.map(b => b.cleaned);
-  
+  text: string, 
+  cleanedBrands: Array<{ original: string; cleaned: string; variations: string[]; confidence: number }>,
+  sourceId: string
+): Promise<BrandExtraction[]> {
   try {
-    const detectionResults = await detectMultipleBrands(text, brandNames, {
-      caseSensitive: false,
-      excludeNegativeContext: false,
-      minConfidence: 0.3
-    });
+    const extractions: BrandExtraction[] = [];
+    const textLower = text.toLowerCase();
     
-    detectionResults.forEach((result, brandName) => {
-      if (result.mentioned) {
-        result.matches.forEach(match => {
-          mentionedBrands.push({
-            brand: brandName,
-            matchedVariation: match.variation,
-            confidence: match.confidence,
-            context: text.substring(Math.max(0, match.index - 20), Math.min(text.length, match.index + match.text.length + 20))
-          });
+    // For each cleaned brand, search for it and its variations in the text
+    for (const brandData of cleanedBrands) {
+      const searchTerms = [brandData.cleaned, ...brandData.variations];
+      let totalMentions = 0;
+      const contexts: string[] = [];
+      
+      for (const term of searchTerms) {
+        const regex = new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+        const matches = text.match(regex);
+        
+        if (matches) {
+          totalMentions += matches.length;
+          
+          // Extract context around mentions
+          const contextMatches = text.match(new RegExp(`.{0,50}${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}.{0,50}`, 'gi'));
+          if (contextMatches) {
+            contexts.push(...contextMatches.slice(0, 3)); // Limit to 3 contexts
+          }
+        }
+      }
+      
+      if (totalMentions > 0) {
+        extractions.push({
+          brand: brandData.cleaned,
+          mentions: totalMentions,
+          context: contexts.join(' ... '),
+          confidence: brandData.confidence
         });
       }
-    });
+    }
     
-    const totalBrandsFound = mentionedBrands.length;
-    const confidence = totalBrandsFound > 0 
-      ? mentionedBrands.reduce((sum, m) => sum + m.confidence, 0) / totalBrandsFound
-      : 0;
+    logger.debug(`[BrandDetection] Extracted ${extractions.length} brands from ${sourceId}`);
+    return extractions;
     
-    return {
-      mentionedBrands,
-      totalBrandsFound,
-      confidence
-    };
   } catch (error) {
-    console.error('Brand extraction failed:', error);
-    return {
-      mentionedBrands: [],
-      totalBrandsFound: 0,
-      confidence: 0
-    };
+    logger.error(`[BrandDetection] Failed to extract brands from text (${sourceId}):`, error);
+    return [];
   }
 }
 
 /**
- * Calculate brand visibility by provider (migrated from brand-detection-enhanced)
- * This function provides the same interface as the old enhanced version
+ * Calculate brand visibility by provider
  */
 export function calculateBrandVisibilityByProvider(
-  brandExtractions: Map<string, Array<{
-    mentionedBrands: Array<{
-      brand: string;
-      matchedVariation: string;
-      confidence: number;
-      context?: string;
-    }>;
-    totalBrandsFound: number;
-    confidence: number;
-  }>>,
+  brandExtractions: Map<string, BrandExtraction[]>,
   targetBrand: string,
-  competitors: string[]
-): Map<string, Map<string, { 
-  mentioned: boolean; 
-  confidence: number; 
-  mentionCount: number; 
-  totalResponses: number; 
-  percentage: number 
-}>> {
-  console.log(`[BrandDetection] 📊 Calcul des détections par provider`);
+  knownCompetitors: string[]
+): Map<string, BrandVisibility[]> {
+  const results = new Map<string, BrandVisibility[]>();
   
-  const results = new Map();
-  const allBrands = [targetBrand, ...competitors];
-
-  // Normalization function for brand comparison
-  const normalize = (value: string) => {
-    return (value || '')
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/\p{Diacritic}/gu, '')
-      .replace(/[^a-z0-9]+/g, ' ')
-      .trim();
-  };
-  
-  const isSameBrand = (a: string, b: string) => {
-    const na = normalize(a);
-    const nb = normalize(b);
-    if (!na || !nb) return false;
-    if (na === nb) return true;
-    return na.includes(nb) || nb.includes(na);
-  };
-  
-  brandExtractions.forEach((extractions, provider) => {
-    const providerResults = new Map();
-    const totalResponses = extractions.length;
-    
-    allBrands.forEach(brand => {
-      let mentionCount = 0;
-      let totalConfidence = 0;
-      
-      extractions.forEach(extraction => {
-        const mention = extraction.mentionedBrands.find(m => isSameBrand(m.brand, brand));
-        if (mention) {
-          mentionCount++;
-          totalConfidence += mention.confidence;
-        }
-      });
-      
-      const mentioned = mentionCount > 0;
-      const averageConfidence = mentionCount > 0 ? totalConfidence / mentionCount : 0;
-      const percentage = totalResponses > 0 ? (mentionCount / totalResponses) * 100 : 0;
-      
-      providerResults.set(brand, { 
-        mentioned, 
-        confidence: averageConfidence,
-        mentionCount,
-        totalResponses,
-        percentage: Math.round(percentage * 10) / 10
-      });
-    });
-    
-    results.set(provider, providerResults);
-  });
-  
-  return results;
-}
-
-/**
- * Detect brand mentions in a response (migrated from brand-detection-enhanced)
- * This function provides the same interface as the old enhanced version
- */
-export async function detectBrandsInResponse(
-  text: string,
-  targetBrand: string,
-  competitors: string[],
-  options: BrandDetectionOptions = {},
-  locale: string = 'en',
-  precomputedVariations?: Record<string, BrandVariation>
-): Promise<{
-  brandMentioned: boolean;
-  brandPosition?: number;
-  competitors: string[];
-  sentiment: 'positive' | 'neutral' | 'negative';
-  confidence: number;
-  detectionDetails: {
-    brandMatches: BrandDetectionMatch[];
-    competitorMatches: Map<string, BrandDetectionMatch[]>;
-  };
-}> {
-  console.log(`[BrandDetection] 🔍 Détection des marques dans la réponse (${text.length} chars)`);
-
   try {
-    const variationsMap = precomputedVariations
-      ? new Map<string, BrandVariation>(Object.entries(precomputedVariations))
-      : undefined;
-
-    const detectionResults = await detectMultipleBrands(
-      text,
-      [targetBrand, ...competitors],
-      options,
-      locale,
-      variationsMap
-    );
-
-    const targetResult = detectionResults.get(targetBrand);
-    const brandMentioned = targetResult?.mentioned ?? false;
-    const brandMatches = targetResult?.matches ?? [];
-
-    const competitorMatches = new Map<string, BrandDetectionMatch[]>();
-    competitors.forEach((competitor) => {
-      const result = detectionResults.get(competitor);
-      if (result?.mentioned) {
-        competitorMatches.set(competitor, result.matches);
-      }
+    // Get all unique brands across all providers
+    const allBrands = new Set<string>();
+    brandExtractions.forEach(extractions => {
+      extractions.forEach(extraction => {
+        allBrands.add(extraction.brand);
+      });
     });
-
-    const mentionedCompetitors = Array.from(competitorMatches.keys());
-
-    return {
-      brandMentioned,
-      brandPosition: brandMatches.length > 0 ? 1 : undefined,
-      competitors: mentionedCompetitors,
-      sentiment: 'neutral',
-      confidence: targetResult?.confidence ?? 0,
-      detectionDetails: {
-        brandMatches,
-        competitorMatches,
-      },
-    };
+    
+    // Calculate visibility for each provider
+    brandExtractions.forEach((extractions, provider) => {
+      const providerResults: BrandVisibility[] = [];
+      
+      // Calculate total mentions for share of voice
+      const totalMentions = extractions.reduce((sum, ext) => sum + ext.mentions, 0);
+      
+      // Sort by mentions to get positions
+      const sortedExtractions = [...extractions].sort((a, b) => b.mentions - a.mentions);
+      
+      allBrands.forEach(brand => {
+        const brandExtraction = extractions.find(ext => ext.brand === brand);
+        const mentions = brandExtraction?.mentions || 0;
+        const position = sortedExtractions.findIndex(ext => ext.brand === brand) + 1;
+        const shareOfVoice = totalMentions > 0 ? (mentions / totalMentions) * 100 : 0;
+        
+        // Simple visibility score calculation
+        const visibilityScore = mentions > 0 ? Math.max(0, 100 - (position - 1) * 10) : 0;
+        
+        // Simple sentiment score (neutral for now)
+        const sentimentScore = 50;
+        
+        providerResults.push({
+          brand,
+          visibilityScore: Math.round(visibilityScore),
+          mentions,
+          averagePosition: position,
+          shareOfVoice: Math.round(shareOfVoice * 100) / 100,
+          sentimentScore
+        });
+      });
+      
+      results.set(provider, providerResults);
+    });
+    
+    logger.debug(`[BrandDetection] Calculated visibility for ${results.size} providers`);
+    return results;
+    
   } catch (error) {
-    console.error('[BrandDetection] ❌ Échec de la détection des marques dans la réponse:', error);
-    throw error;
+    logger.error('[BrandDetection] Failed to calculate brand visibility:', error);
+    return new Map();
   }
 }
+
+
+
+
+
+

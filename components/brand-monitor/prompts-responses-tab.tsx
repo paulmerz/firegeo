@@ -4,16 +4,35 @@
 
 import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronsDown, ChevronsUp, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronsDown, ChevronsUp } from 'lucide-react';
 import { BrandPrompt, AIResponse, BrandVariation } from '@/lib/types';
 import { HighlightedResponse } from './highlighted-response';
+import { SourcesList } from './sources-list';
 import { useTranslations } from 'next-intl';
 import { logger } from '@/lib/logger';
-import { detectBrandsInResponse } from '@/lib/brand-detection-service';
 import { extractUrlsFromText } from '@/lib/brand-monitor-sources';
 import { cleanProviderResponse } from '@/lib/provider-response-utils';
 
-type DetectionResult = Awaited<ReturnType<typeof detectBrandsInResponse>>;
+interface DetectionResult {
+  brandMentioned: boolean;
+  detectionDetails: {
+    brandMatches: Array<{
+      text: string;
+      index: number;
+      brandName: string;
+      variation: string;
+      confidence: number;
+    }>;
+    competitorMatches: Map<string, Array<{
+      text: string;
+      index: number;
+      brandName: string;
+      variation: string;
+      confidence: number;
+    }>>;
+  };
+  confidence: number;
+}
 
 interface PromptsResponsesTabProps {
   prompts: BrandPrompt[];
@@ -107,18 +126,85 @@ export function PromptsResponsesTab({
         if (detectionCache.has(cacheKey)) continue;
 
         try {
-          const detection = await detectBrandsInResponse(
-            cleanProviderResponse(response.response, { providerName: response.provider }),
-            brandName,
-            competitors,
-            {
-              caseSensitive: false,
-              excludeNegativeContext: false,
-              minConfidence: 0.3
+          const cleanedText = cleanProviderResponse(response.response, { providerName: response.provider });
+          
+          // Use the new BrandMatcher API
+          const apiResponse = await fetch('/api/brand-detection/match', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              text: cleanedText, 
+              brandVariations 
+            })
+          });
+          
+          if (!apiResponse.ok) {
+            throw new Error(`Brand detection API failed: ${apiResponse.status}`);
+          }
+          
+          const { matches, brandIdToName } = await apiResponse.json();
+          
+          // Convert matches to DetectionResult format
+          const allBrands = [brandName, ...competitors];
+          const brandMatches: Array<{
+            text: string;
+            index: number;
+            brandName: string;
+            variation: string;
+            confidence: number;
+          }> = [];
+          
+          const competitorMatches = new Map<string, Array<{
+            text: string;
+            index: number;
+            brandName: string;
+            variation: string;
+            confidence: number;
+          }>>();
+          
+          // Initialize competitor matches map
+          competitors.forEach(competitor => {
+            competitorMatches.set(competitor, []);
+          });
+          
+          // Process matches en mappant vers la marque cible ou concurrents connus
+          const normalize = (v: string) => v.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').trim();
+          const knownNames = new Map<string, string>();
+          [brandName, ...competitors].forEach(n => knownNames.set(normalize(n), n));
+          const mapToKnown = (name: string) => {
+            const n = normalize(name);
+            if (knownNames.has(n)) return knownNames.get(n)!;
+            for (const [kn, original] of knownNames.entries()) {
+              if (n.includes(kn) || kn.includes(n)) return original;
+            }
+            return name;
+          };
+
+          matches.forEach((match: { brandId: string; surface: string; start: number; end: number }) => {
+            const displayName = mapToKnown((brandIdToName && brandIdToName[match.brandId]) || match.brandId);
+            const matchData = {
+              text: match.surface,
+              index: match.start,
+              brandName: displayName,
+              variation: match.surface,
+              confidence: 1.0
+            };
+            
+            if (displayName === brandName) {
+              brandMatches.push(matchData);
+            } else if (competitors.includes(displayName)) {
+              competitorMatches.get(displayName)!.push(matchData);
+            }
+          });
+          
+          const detection: DetectionResult = {
+            brandMentioned: brandMatches.length > 0,
+            detectionDetails: {
+              brandMatches,
+              competitorMatches
             },
-            undefined,
-            brandVariations
-          );
+            confidence: brandMatches.length > 0 ? 1.0 : 0
+          };
 
           updates.push([cacheKey, detection]);
         } catch (error) {
@@ -423,6 +509,7 @@ export function PromptsResponsesTab({
                               brandVariations={brandVariations}
                               showHighlighting={true}
                               renderMarkdown={true}
+                              hideWebSearchSources={hideWebSearchSources}
                             />
                           )}
                         </div>
@@ -447,32 +534,12 @@ export function PromptsResponsesTab({
                             items = urls.map((u) => ({ url: u }));
                           }
                           if (!items || items.length === 0) return null;
-                          const display = items.slice(0, 6);
-                          const getHostname = (u: string) => {
-                            try { return new URL(u).hostname.replace(/^www\./i, ''); } catch { return u; }
-                          };
+                          
                           return (
-                            <div className="mt-2">
-                              <div className="text-xs text-gray-500 mb-1">Sources</div>
-                              <div className="flex flex-wrap gap-2">
-                                {display.map((it, i) => {
-                                  const host = getHostname(it.url);
-                                  const title = it.title?.trim() || it.url;
-                                  return (
-                                    <a
-                                      key={`${it.url}-${i}`}
-                                      href={it.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700 break-all"
-                                    >
-                                      <ExternalLink className="h-3.5 w-3.5" />
-                                      {title} ({host})
-                                    </a>
-                                  );
-                                })}
-                              </div>
-                            </div>
+                            <SourcesList 
+                              sources={items}
+                              maxVisible={3}
+                            />
                           );
                         })()}
                       </div>

@@ -25,7 +25,7 @@ export default function PricingPage() {
         <div className="bg-white rounded-[20px] shadow-xl p-8 border border-zinc-200">
           <PricingSection
             showHeader={false}
-            products={getPricingProducts(t, locale)}
+            products={getPricingProducts(t)}
           />
         </div>
       </div>

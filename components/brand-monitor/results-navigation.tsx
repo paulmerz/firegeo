@@ -10,13 +10,17 @@ interface ResultsNavigationProps {
   onTabChange: (tab: ResultsTab) => void;
   onRestart: () => void;
   hideSourcesTab?: boolean;
+  isScheduled?: boolean;
+  hasSelectedAnalysis?: boolean;
 }
 
 export function ResultsNavigation({
   activeTab,
   onTabChange,
   onRestart,
-  hideSourcesTab
+  hideSourcesTab,
+  isScheduled = false,
+  hasSelectedAnalysis = false
 }: ResultsNavigationProps) {
   const t = useTranslations('brandMonitor');
   
@@ -101,6 +105,48 @@ export function ResultsNavigation({
         >
           {t('resultsNavigation.visibilityScore')}
         </button>
+        
+        {/* Onglet Paramètres - seulement si une analyse est sélectionnée */}
+        {hasSelectedAnalysis && (
+          <button
+            onClick={() => handleTabClick('settings')}
+            className={`w-full text-left px-4 py-3 rounded-[10px] text-sm font-medium transition-all duration-200 ${
+              activeTab === 'settings'
+                ? 'bg-[#36322F] text-white [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)]'
+                : 'bg-orange-500 text-white hover:bg-orange-600 [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#c2410c,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(234,_88,_12,_58%)] hover:translate-y-[1px] hover:scale-[0.98]'
+            }`}
+          >
+            Paramètres
+          </button>
+        )}
+        
+        {/* Onglet Historique - seulement si scheduling activé */}
+        {isScheduled && (
+          <button
+            onClick={() => handleTabClick('history')}
+            className={`w-full text-left px-4 py-3 rounded-[10px] text-sm font-medium transition-all duration-200 ${
+              activeTab === 'history'
+                ? 'bg-[#36322F] text-white [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)]'
+                : 'bg-orange-500 text-white hover:bg-orange-600 [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#c2410c,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(234,_88,_12,_58%)] hover:translate-y-[1px] hover:scale-[0.98]'
+            }`}
+          >
+            Historique
+          </button>
+        )}
+        
+        {/* Onglet Suivi analytique - seulement si scheduling activé */}
+        {isScheduled && hasSelectedAnalysis && (
+          <button
+            onClick={() => handleTabClick('analytics')}
+            className={`w-full text-left px-4 py-3 rounded-[10px] text-sm font-medium transition-all duration-200 ${
+              activeTab === 'analytics'
+                ? 'bg-[#36322F] text-white [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)]'
+                : 'bg-orange-500 text-white hover:bg-orange-600 [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#c2410c,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(234,_88,_12,_58%)] hover:translate-y-[1px] hover:scale-[0.98]'
+            }`}
+          >
+            Suivi analytique
+          </button>
+        )}
         
         </div>
         

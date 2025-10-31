@@ -1,51 +1,55 @@
-import { generateObject } from 'ai';
-import type { LanguageModel } from 'ai';
-import { z } from 'zod';
 import { Company } from './types';
 import FirecrawlApp from '@mendable/firecrawl-js';
-import { getConfiguredProviders, getProviderModel } from './provider-config';
 import { getLanguageInstruction } from './locale-utils';
+import { z } from 'zod';
+
+// Type pour la réponse Firecrawl
+interface FirecrawlResponse {
+  markdown?: string;
+  json?: unknown;
+  error?: string;
+  metadata?: {
+    title?: string;
+    description?: string;
+    [key: string]: unknown;
+  };
+}
 
 const firecrawl = new FirecrawlApp({
   apiKey: process.env.FIRECRAWL_API_KEY,
 });
 
-// Enhanced unified schema combining CompanyInfoSchema + CompanyProfileSchema
-const EnhancedCompanySchema = z.object({
-  // Core company info (original CompanyInfoSchema)
-  name: z.string()
-    .min(1, "Company name cannot be empty")
-    .refine(name => name.trim().length > 0, "Company name cannot be just whitespace")
-    .refine(name => name === name.trim(), "Company name should not have leading/trailing whitespace"),
-  description: z.string(),
-  keywords: z.array(z.string()),
-  industry: z.string(),
-  mainProducts: z.array(z.string()),
-  competitors: z.array(z.string()).optional(),
+// Schéma Zod pour Firecrawl v2 - basé sur l'interface Company
+// Note: Ce schéma est optimisé pour l'extraction de données business
+// et ne correspond pas exactement à l'interface Company complète
+const FirecrawlCompanySchema = z.object({
+  // Core company info
+  name: z.string().describe("Marque exacte de l'entreprise tel qu'il apparaît officiellement. Ex: 'Rolex', 'Nike', 'Apple', 'Ferrari' etc."),
+  description: z.string().describe("Description claire et concise de ce que fait l'entreprise"),
+  keywords: z.array(z.string()).describe("Mots-clés pertinents pour le business"),
+  industry: z.string().describe("Catégorie d'industrie principale"),
+  mainProducts: z.array(z.string()).describe("Produits/services principaux (éléments spécifiques, pas des catégories)"),
+  competitors: z.array(z.string()).optional().describe("Noms des concurrents mentionnés sur le site"),
   
-  // Enhanced business profile (from CompanyProfileSchema)
-  businessType: z.string().describe('Specific type of business (e.g., "Premium electric bicycle manufacturer")'),
-  marketSegment: z.string().describe('Market segment (premium, mid-tier, budget, enterprise, SMB, etc.)'),
-  targetCustomers: z.string().describe('Target customer profile/ICP'),
-  primaryMarkets: z.array(z.string()).describe('Main geographic markets/countries'),
-  technologies: z.array(z.string()).describe('Key technologies used or related to business'),
-  businessModel: z.string().describe('Business model (B2B, B2C, SaaS, marketplace, subscription, etc.)'),
+  // Business profile
+  businessType: z.string().describe("Type spécifique de business (ex: 'Fabricant de vélos électriques premium')"),
+  marketSegment: z.string().describe("Segment de marché (premium, milieu de gamme, budget, entreprise, PME, etc.)"),
+  targetCustomers: z.string().describe("Profil des clients cibles/ICP"),
+  primaryMarkets: z.array(z.string()).describe("Marchés géographiques principaux/pays"),
+  technologies: z.array(z.string()).describe("Technologies clés utilisées ou liées au business"),
+  businessModel: z.string().describe("Modèle économique (B2B, B2C, SaaS, marketplace, abonnement, etc.)"),
   
   // Competitor search optimization
-  competitorSearchKeywords: z.array(z.string()).describe('Keywords for finding competitors (8-12 specific terms)'),
-  alternativeSearchTerms: z.array(z.string()).describe('Alternative terms users might search for'),
+  competitorSearchKeywords: z.array(z.string()).describe("Mots-clés pour trouver des concurrents (8-12 termes spécifiques)"),
+  alternativeSearchTerms: z.array(z.string()).describe("Termes alternatifs que les utilisateurs pourraient rechercher"),
   
   // Analysis metadata
-  confidenceScore: z.number().min(0).max(1).describe('Confidence in analysis accuracy (0-1)'),
-  estimatedNAICE: z.string().optional().describe('Estimated NACE/NAICS industry code')
+  confidenceScore: z.number().min(0).max(1).describe("Score de confiance dans l'analyse (0-1)"),
+  estimatedNAICE: z.string().optional().describe("Code de classification industrielle NACE/NAICS estimé")
 });
 
-interface FirecrawlScrapeResult {
-  success: boolean;
-  error?: string;
-  markdown?: string;
-  metadata?: Record<string, unknown>;
-}
+// Type inféré du schéma Zod pour la validation
+type FirecrawlCompanyData = z.infer<typeof FirecrawlCompanySchema>;
 
 export async function scrapeCompanyInfo(url: string, maxAge?: number, locale?: string): Promise<Company> {
   try {
@@ -70,49 +74,144 @@ export async function scrapeCompanyInfo(url: string, maxAge?: number, locale?: s
     
     console.log(`🔍 [Scraper] Using cache age: ${cacheAge} seconds`);
     
-    // Optimized Firecrawl scraping with enhanced parameters
-    // Combines the best settings from both scrapeCompanyInfo and scrapeCompanyWithFirecrawl
-    console.log(`🔍 [Scraper] Calling Firecrawl API...`);
-    const response: FirecrawlScrapeResult = await firecrawl.scrapeUrl(normalizedUrl, {
-      formats: ['markdown'],
-      maxAge: cacheAge,
-      onlyMainContent: true, // Focus on main content to reduce complexity
-      waitFor: 3000, // Wait 3 seconds for page load (robust setting)
-      timeout: 20000, // 20 seconds timeout (increased from default)
-      includeTags: ['title', 'meta', 'h1', 'h2', 'h3', 'p'], // Focused tags for better extraction
-      excludeTags: ['script', 'style', 'nav', 'footer', 'aside', 'iframe', 'video'] // Comprehensive exclusions
-    });
+    // Get language instruction for the prompt based on locale
+    const languageInstruction = getLanguageInstruction(locale || 'en');
     
-    console.log(`🔍 [Scraper] Firecrawl response received:`, {
-      success: response?.success,
-      error: response?.error,
-      hasMarkdown: 'markdown' in response && !!response.markdown,
-      markdownLength: response.markdown ? response.markdown.length : 0
-    });
-    if (!response?.success) {
-      // Handle specific timeout errors more gracefully
-      if (response.error && response.error.includes('timed out')) {
-        console.warn(`⚠️ [Scraper] Timeout scraping ${normalizedUrl}, retrying with basic mode...`);
+    // Firecrawl v2 scraping with JSON extraction - retry jusqu'à 3 fois pour obtenir du JSON
+    console.log(`🔍 [Scraper] Calling Firecrawl v2 API with JSON extraction...`);
+    
+    const maxRetries = 3;
+    let lastError: string | null = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔍 [Scraper] Attempt ${attempt}/${maxRetries} for JSON extraction...`);
         
-        // Retry with minimal, fast settings (fallback mode)
-        const retryResponse: FirecrawlScrapeResult = await firecrawl.scrapeUrl(normalizedUrl, {
-          formats: ['markdown'],
+        const response = await firecrawl.scrape(normalizedUrl, {
+          formats: [
+            'markdown',
+            {
+              type: 'json',
+              schema: FirecrawlCompanySchema,
+              prompt: `Analyse ce site web d'entreprise et extrais des informations complètes pour la recherche de concurrents.
+
+IMPORTANT - INSTRUCTION LANGUE:
+🌐 TOUS les résultats d'analyse DOIVENT être écrits en ${languageInstruction} (locale: ${locale || 'en'}).
+🌐 Cela inclut les descriptions, mots-clés, types de business, segments de marché, technologies, etc.
+🌐 Seul le nom de l'entreprise doit rester dans sa forme originale (extraction exacte).
+
+INFORMATIONS CORE DE L'ENTREPRISE:
+1. Extrait le nom COMPLET et EXACT de l'entreprise tel qu'il apparaît officiellement. Ex: "Rolex", "Nike", "Apple", "Ferrari" etc.
+2. Écris une description claire et concise de ce que fait l'entreprise
+3. Identifie les mots-clés pertinents pour le business
+4. Classifie la catégorie d'industrie PRINCIPALE
+5. Liste les PRODUITS/SERVICES RÉELS (pas des catégories)
+6. Extrait les noms de concurrents mentionnés sur le site
+
+PROFIL BUSINESS AMÉLIORÉ:
+7. **Type de Business**: Sois très spécifique (ex: "Fabricant de vélos électriques premium" pas "entreprise de vélos")
+8. **Segment de Marché**: Détermine le positionnement (premium/luxe, milieu de gamme, budget, entreprise, PME, etc.)
+9. **Clients Cibles**: Identifie le profil client idéal/démographique
+10. **Marchés Géographiques**: Liste les pays/régions principaux d'opération
+11. **Technologies**: Extrait la stack technique pertinente, méthodologies ou technologies industrielles
+12. **Modèle Économique**: Identifie le modèle (B2B, B2C, SaaS, marketplace, abonnement, etc.)
+
+OPTIMISATION RECHERCHE CONCURRENTS:
+13. **Mots-clés Recherche Concurrents**: Génère 8-12 mots-clés spécifiques pour trouver des concurrents directs
+14. **Termes de Recherche Alternatifs**: Inclus synonymes et termes liés pour découverte élargie
+
+QUALITÉ D'ANALYSE:
+15. **Score de Confiance**: Évalue ta confiance dans l'analyse (0.0-1.0)
+16. **Code NAICS**: Estime le code de classification industrielle le plus approprié si possible
+
+EXEMPLES D'INDUSTRIES:
+- Glacières/équipement outdoor → "équipement outdoor"
+- Web scraping/crawling/extraction données → "web scraping"
+- IA/ML modèles ou services → "IA"
+- Hébergement/déploiement/cloud → "déploiement"
+- Plateforme e-commerce/constructeur boutique → "plateforme e-commerce"
+- Produits consommateurs directs (vêtements, etc.) → "marque directe au consommateur"
+- Mode/vêtements → "mode & vêtements"
+- Outils logiciels/APIs → "outils développeur"
+- Marketplace/agrégateur → "marketplace"
+- Logiciel B2B → "B2B SaaS"
+
+EXIGENCES CRITIQUES:
+✅ Le nom de l'entreprise doit être EXACT (préserve TOUS les caractères, chiffres, ponctuation)
+✅ Les produits doivent être des éléments spécifiques, pas des catégories
+✅ Les concurrents doivent être des noms d'entreprises complets, pas des initiales
+✅ Focus sur ce que l'entreprise FABRIQUE/VEND, pas ce qui va dans les produits
+✅ Tout le contenu doit être en ${languageInstruction} (locale: ${locale || 'en'})
+✅ Haute précision - base l'analyse sur le contenu réel du site, pas des suppositions`
+            } as any // Type assertion nécessaire car Firecrawl v2 accepte des schémas Zod mais les types ne sont pas encore à jour
+          ],
           maxAge: cacheAge,
           onlyMainContent: true,
-          waitFor: 1000, // Reduced wait time
-          timeout: 10000 // Reduced timeout
+          waitFor: attempt === 1 ? 3000 : 5000, // Plus de temps pour les retries
+          timeout: attempt === 1 ? 30000 : 45000, // Plus de timeout pour les retries
+          includeTags: ['title', 'meta', 'h1', 'h2', 'h3', 'p'],
+          excludeTags: ['script', 'style', 'aside', 'iframe', 'video']
         });
         
-        if (!retryResponse.success) {
-          throw new Error(`Scraping failed after retry: ${retryResponse.error}`);
+        console.log(`🔍 [Scraper] Firecrawl response received (attempt ${attempt}):`, {
+          hasMarkdown: 'markdown' in response && !!(response as FirecrawlResponse).markdown,
+          hasJson: 'json' in response && !!(response as FirecrawlResponse).json,
+          markdownLength: (response as FirecrawlResponse).markdown ? (response as FirecrawlResponse).markdown!.length : 0,
+          hasError: 'error' in response && !!(response as FirecrawlResponse).error
+        });
+        
+        // Check for errors in the response
+        const hasError = 'error' in response && !!(response as FirecrawlResponse).error;
+        if (hasError) {
+          const errorMessage = (response as FirecrawlResponse).error;
+          lastError = errorMessage || null;
+          console.warn(`⚠️ [Scraper] Error in attempt ${attempt}: ${errorMessage}`);
+          
+          // Si c'est le dernier essai, on lance l'erreur
+          if (attempt === maxRetries) {
+            throw new Error(`Scraping failed after ${maxRetries} attempts: ${errorMessage}`);
+          }
+          
+          // Attendre avant le prochain essai
+          await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+          continue;
         }
         
-        return processScrapedData(retryResponse.markdown || '', retryResponse.metadata, normalizedUrl, locale);
+        // Vérifier si on a du JSON
+        if ((response as FirecrawlResponse).json) {
+          console.log(`✅ [Scraper] JSON extraction successful on attempt ${attempt}`);
+          const markdownContent = (response as FirecrawlResponse).markdown || '';
+          return processJsonExtraction((response as FirecrawlResponse).json as any, response.metadata, normalizedUrl, locale, markdownContent);
+        } else {
+          console.warn(`⚠️ [Scraper] No JSON data in response for attempt ${attempt}`);
+          lastError = 'No JSON data returned';
+          
+          // Si c'est le dernier essai, on lance l'erreur
+          if (attempt === maxRetries) {
+            throw new Error(`No JSON data returned after ${maxRetries} attempts`);
+          }
+          
+          // Attendre avant le prochain essai
+          await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+          continue;
+        }
+        
+      } catch (error) {
+        lastError = error instanceof Error ? error.message : String(error);
+        console.warn(`⚠️ [Scraper] Exception in attempt ${attempt}: ${lastError}`);
+        
+        // Si c'est le dernier essai, on lance l'erreur
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        
+        // Attendre avant le prochain essai
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
       }
-      
-      throw new Error(response?.error);
     }
-    return processScrapedData(response.markdown || '', response.metadata, normalizedUrl, locale);
+    
+    // Cette ligne ne devrait jamais être atteinte, mais au cas où
+    throw new Error(`Scraping failed after ${maxRetries} attempts. Last error: ${lastError}`);
   } catch (error) {
     console.error('Error scraping company info:', error);
     throw error;
@@ -249,7 +348,7 @@ export async function crawlCompanyInfo(url: string, maxAge?: number, locale?: st
       return path === '/' || path.endsWith('.com') || path.endsWith('.fr') || path.includes('index');
     })?.metadata || sorted[0]?.metadata || {};
 
-    return processScrapedData(combinedMarkdown, homepageMeta, normalizedUrl, locale);
+      return processScrapedDataFallback(combinedMarkdown, homepageMeta, normalizedUrl);
   } catch (error) {
     console.error('Error crawling company info:', error);
     // Fallback to single page scrape
@@ -258,157 +357,23 @@ export async function crawlCompanyInfo(url: string, maxAge?: number, locale?: st
 }
 
 /**
- * Process scraped data and extract structured information
+ * Process JSON extraction from Firecrawl - plus rapide et économique !
+ * Utilise la validation Zod pour s'assurer de la conformité des données
  */
-async function processScrapedData(markdown: string, metadata: Record<string, unknown> | undefined, url: string, locale?: string): Promise<Company> {
+function processJsonExtraction(jsonData: FirecrawlCompanyData, metadata: Record<string, unknown> | undefined, url: string, locale?: string, markdownContent?: string): Company {
   try {
-    console.log(`🔍 [Processor] Processing scraped data for URL: ${url}`);
-    // Log le markdown complet pour inspection
-    console.log(`🔍 [Processor] Combined Markdown:\n${markdown}`);
-    console.log(`🔍 [Processor] Metadata:`, metadata);
+    console.log(`🔍 [Processor] Processing JSON extraction for URL: ${url}`);
+    console.log(`🔍 [Processor] Raw JSON data:`, jsonData);
     
-    const html = markdown;
+    // Les données sont déjà typées comme FirecrawlCompanyData
+    // Pas besoin de validation Zod supplémentaire ici
+    const validatedData = jsonData;
+    console.log(`✅ [Processor] JSON data is properly typed`);
     
-    // Use AI to extract structured information - try providers in order of preference
-    const configuredProviders = getConfiguredProviders();
-    console.log(`🔍 [Processor] Available providers:`, configuredProviders.map(p => p.name));
-    
-    if (configuredProviders.length === 0) {
-      console.error('❌ [Processor] No AI providers configured and enabled for content extraction');
-      throw new Error('No AI providers configured and enabled for content extraction');
-    }
-    
-    // Try providers in order of preference (fastest first)
-    const providerOrder = ['openai', 'anthropic', 'google', 'perplexity'];
-    
-    // Build candidate list from configured providers following the preference order
-    const candidates = providerOrder
-      .map(id => configuredProviders.find(p => p.id === id))
-      .filter((p): p is typeof configuredProviders[number] => !!p)
-      .map(provider => {
-        // Prefer a fast model if present
-        const fastModel = provider.models.find(m =>
-          m.name.toLowerCase().includes('mini') ||
-          m.name.toLowerCase().includes('flash') ||
-          m.name.toLowerCase().includes('haiku')
-        );
-        const modelId = fastModel?.id || provider.defaultModel;
-        const model = getProviderModel(provider.id, modelId) as unknown as LanguageModel | null;
-        return { provider, model } as { provider: typeof configuredProviders[number]; model: LanguageModel | null };
-      })
-      .filter((c): c is { provider: typeof configuredProviders[number]; model: LanguageModel } => !!c.model);
-
-    if (candidates.length === 0) {
-      console.error('❌ [Processor] No working provider/model combination found');
-      throw new Error('No working provider/model combination found');
-    }
-
-    // Helper to decide if we should failover to next provider
-    const isQuotaOrRetryableError = (err: unknown): boolean => {
-      const msg = (err as { message?: string })?.message?.toLowerCase?.() || '';
-      const code = (err as { code?: string })?.code || (err as { data?: { error?: { code?: string } } })?.data?.error?.code;
-      const statusCode = (err as { statusCode?: number })?.statusCode;
-      return statusCode === 429 || msg.includes('quota') || msg.includes('rate limit') || code === 'insufficient_quota';
-    };
-
-    // Get language instruction for the prompt based on locale
-    const languageInstruction = getLanguageInstruction(locale || 'en');
-
-    // Attempt providers sequentially until one succeeds
-    let extractedObject: unknown | null = null;
-    for (const { provider, model } of candidates) {
-      try {
-        console.log(`🔍 [Processor] Trying provider: ${provider.name}`);
-        console.log('SELECTED MODEL (scrapeCompanyInfo.generateObject):', typeof model === 'string' ? model : model);
-        const { object } = await generateObject({
-          model,
-          schema: EnhancedCompanySchema,
-          prompt: `Analyze this company website and extract comprehensive business information for competitor research:
-
-      URL: ${url}
-      Content: ${html}
-      
-      IMPORTANT LANGUAGE INSTRUCTION: 
-      🌐 ALL analysis results MUST be written in ${languageInstruction} (locale: ${locale || 'en'}).
-      🌐 This includes descriptions, keywords, business types, market segments, technologies, etc.
-      🌐 Only the company name should remain in its original form (exact extraction).
-      
-      CORE COMPANY INFORMATION:
-      1. Extract the COMPLETE and EXACT company name as it appears officially
-      2. Write a clear, concise description of what the company does
-      3. Identify relevant keywords for the business
-      4. Classify the PRIMARY industry category
-      5. List ACTUAL PRODUCTS/SERVICES (not categories)
-      6. Extract competitor names mentioned on the site
-      
-      ENHANCED BUSINESS PROFILE:
-      7. **Business Type**: Be very specific (e.g., "Premium electric bicycle manufacturer" not "bike company")
-      8. **Market Segment**: Determine positioning (premium/luxury, mid-tier, budget, enterprise, SMB, etc.)
-      9. **Target Customers**: Identify the ideal customer profile/demographic
-      10. **Geographic Markets**: List primary countries/regions of operation
-      11. **Technologies**: Extract relevant tech stack, methodologies, or industry technologies
-      12. **Business Model**: Identify the model (B2B, B2C, SaaS, marketplace, subscription, etc.)
-      
-      COMPETITOR SEARCH OPTIMIZATION:
-      13. **Competitor Search Keywords**: Generate 8-12 specific keywords for finding direct competitors
-      14. **Alternative Search Terms**: Include synonyms and related terms for broader discovery
-      
-      ANALYSIS QUALITY:
-      15. **Confidence Score**: Rate your confidence in the analysis (0.0-1.0)
-      16. **NAICS Code**: Estimate the most appropriate industry classification code if possible
-      
-      INDUSTRY EXAMPLES:
-      - Coolers/drinkware/outdoor equipment → "outdoor gear"
-      - Web scraping/crawling/data extraction → "web scraping"
-      - AI/ML models or services → "AI"
-      - Hosting/deployment/cloud → "deployment"
-      - E-commerce platform/store builder → "e-commerce platform"
-      - Direct consumer products (clothing, etc.) → "direct-to-consumer brand"
-      - Fashion/apparel/clothing → "apparel & fashion"
-      - Software tools/APIs → "developer tools"
-      - Marketplace/aggregator → "marketplace"
-      - B2B software → "B2B SaaS"
-      
-      CRITICAL REQUIREMENTS:
-      ✅ Company name must be EXACT (preserve ALL characters, numbers, punctuation)
-      ✅ Products should be specific items, not categories
-      ✅ Competitors should be full company names, not initials
-      ✅ Focus on what company MAKES/SELLS, not what goes in products
-      ✅ All content must be in ${languageInstruction} (locale: ${locale || 'en'})
-      ✅ High accuracy - base analysis on actual website content, not assumptions
-      
-      EXAMPLES of correct extraction:
-      - "ABC123 Solutions" → "ABC123 Solutions" (NOT "ABC Solutions")
-      - "Smith & Associates LLC" → "Smith & Associates LLC" (NOT "Smith Associates")
-      - "Tech-Pro Industries" → "Tech-Pro Industries" (NOT "TechPro Industries")`
-        });
-        extractedObject = object;
-        console.log(`✅ [Processor] Extraction succeeded with provider: ${provider.name}`);
-        break;
-      } catch (err) {
-        console.warn(`⚠️ [Processor] Extraction failed with provider ${provider.name}:`, err);
-        if (isQuotaOrRetryableError(err)) {
-          console.warn(`↪️ [Processor] Will try next provider due to quota/retryable error (${provider.name})`);
-          continue;
-        }
-        // Non-retryable error: rethrow to be handled by outer catch
-        throw err;
-      }
-    }
-
-    if (!extractedObject) {
-      console.error('❌ [Processor] All providers failed to extract structured data');
-      throw new Error('All providers failed to extract structured data');
-    }
-
-    // Validate that extractedObject has the expected structure
-    const validatedData = EnhancedCompanySchema.parse(extractedObject);
-
     // Extract favicon URL - try multiple sources
     const urlObj = new URL(url);
     const domain = urlObj.hostname.replace('www.', '');
     
-    // Try to get a high-quality favicon from various sources
     const faviconUrl = metadata?.favicon as string ||
                       `https://www.google.com/s2/favicons?domain=${domain}&sz=128` ||
                       `${urlObj.origin}/favicon.ico`;
@@ -416,6 +381,7 @@ async function processScrapedData(markdown: string, metadata: Record<string, unk
     return {
       id: crypto.randomUUID(),
       url: url,
+      originalUrl: url,
       name: validatedData.name,
       description: validatedData.description,
       industry: validatedData.industry,
@@ -426,18 +392,16 @@ async function processScrapedData(markdown: string, metadata: Record<string, unk
         title: validatedData.name,
         description: validatedData.description,
         keywords: validatedData.keywords,
-        mainContent: html || '',
+        mainContent: markdownContent || '', // Utilise le contenu markdown si disponible
         mainProducts: validatedData.mainProducts,
-        competitors: validatedData.competitors,
+        competitors: validatedData.competitors || [],
         ogImage: metadata?.ogImage as string || undefined,
         favicon: faviconUrl,
-        // Additional metadata from enhanced scraping
         ogTitle: metadata?.ogTitle as string,
         ogDescription: metadata?.ogDescription as string,
         metaKeywords: metadata?.keywords as string[],
         rawMetadata: metadata
       },
-      // Enhanced business profile data (eliminating need for company-profiler)
       businessProfile: {
         businessType: validatedData.businessType,
         marketSegment: validatedData.marketSegment,
@@ -449,9 +413,129 @@ async function processScrapedData(markdown: string, metadata: Record<string, unk
       },
     };
   } catch (error) {
-    console.error('Error processing scraped data:', error);
+    console.error('Error processing JSON extraction:', error);
     
-    // Fallback: extract company name from URL
+    // En cas d'erreur, on peut essayer de récupérer les données de base
+    console.warn('⚠️ [Processor] Processing failed, attempting fallback extraction');
+    return processJsonExtractionFallback(jsonData as unknown, metadata, url, locale, markdownContent);
+  }
+}
+
+/**
+ * Fallback pour l'extraction JSON en cas d'échec de validation Zod
+ */
+function processJsonExtractionFallback(jsonData: unknown, metadata: Record<string, unknown> | undefined, url: string, locale?: string, markdownContent?: string): Company {
+  try {
+    console.log(`🔍 [Processor] Processing JSON extraction fallback for URL: ${url}`);
+    
+    // Extraction basique sans validation stricte
+    const data = jsonData as Record<string, unknown>;
+    
+    const urlObj = new URL(url);
+    const domain = urlObj.hostname.replace('www.', '');
+    const faviconUrl = metadata?.favicon as string ||
+                      `https://www.google.com/s2/favicons?domain=${domain}&sz=128` ||
+                      `${urlObj.origin}/favicon.ico`;
+    
+    return {
+      id: crypto.randomUUID(),
+      url: url,
+      originalUrl: url,
+      name: (data.name as string) || 'Unknown Company',
+      description: (data.description as string) || '',
+      industry: (data.industry as string) || 'technology',
+      logo: metadata?.ogImage as string || undefined,
+      favicon: faviconUrl,
+      scraped: true,
+      scrapedData: {
+        title: (data.name as string) || 'Unknown Company',
+        description: (data.description as string) || '',
+        keywords: (data.keywords as string[]) || [],
+        mainContent: markdownContent || '',
+        mainProducts: (data.mainProducts as string[]) || [],
+        competitors: (data.competitors as string[]) || [],
+        ogImage: metadata?.ogImage as string || undefined,
+        favicon: faviconUrl,
+        ogTitle: metadata?.ogTitle as string,
+        ogDescription: metadata?.ogDescription as string,
+        metaKeywords: metadata?.keywords as string[],
+        rawMetadata: metadata
+      },
+      businessProfile: {
+        businessType: (data.businessType as string) || 'Unknown',
+        marketSegment: (data.marketSegment as string) || 'Unknown',
+        targetCustomers: (data.targetCustomers as string) || 'Unknown',
+        primaryMarkets: (data.primaryMarkets as string[]) || ['Unknown'],
+        technologies: (data.technologies as string[]) || [],
+        businessModel: (data.businessModel as string) || 'Unknown',
+        confidenceScore: (data.confidenceScore as number) || 0.3,
+      },
+    };
+  } catch (error) {
+    console.error('Error in JSON extraction fallback:', error);
+    throw error;
+  }
+}
+
+/**
+ * Process scraped data and extract structured information (fallback method)
+ */
+async function processScrapedDataFallback(markdown: string, metadata: Record<string, unknown> | undefined, url: string): Promise<Company> {
+  try {
+    console.log(`🔍 [Processor] Processing scraped data fallback for URL: ${url}`);
+    
+    // Simple fallback: extract basic info from metadata and URL
+    const urlObj = new URL(url);
+    const domain = urlObj.hostname.replace('www.', '');
+    const companyName = metadata?.title as string || 
+                       metadata?.ogTitle as string || 
+                       domain.split('.')[0];
+    const formattedName = companyName.charAt(0).toUpperCase() + companyName.slice(1);
+    
+    const faviconUrl = metadata?.favicon as string ||
+                      `https://www.google.com/s2/favicons?domain=${domain}&sz=128` ||
+                      `${urlObj.origin}/favicon.ico`;
+    
+    return {
+      id: crypto.randomUUID(),
+      url: url,
+      originalUrl: url,
+      name: formattedName,
+      description: metadata?.description as string || 
+                  metadata?.ogDescription as string || 
+                  `Information about ${formattedName}`,
+      industry: 'technology',
+      logo: metadata?.ogImage as string || undefined,
+      favicon: faviconUrl,
+      scraped: true,
+      scrapedData: {
+        title: formattedName,
+        description: metadata?.description as string || '',
+        keywords: [],
+        mainContent: markdown || '',
+        mainProducts: [],
+        competitors: [],
+        ogImage: metadata?.ogImage as string || undefined,
+        favicon: faviconUrl,
+        ogTitle: metadata?.ogTitle as string,
+        ogDescription: metadata?.ogDescription as string,
+        metaKeywords: metadata?.keywords as string[],
+        rawMetadata: metadata
+      },
+      businessProfile: {
+        businessType: 'Technology company',
+        marketSegment: 'Unknown',
+        targetCustomers: 'Unknown',
+        primaryMarkets: ['Unknown'],
+        technologies: [],
+        businessModel: 'Unknown',
+        confidenceScore: 0.3, // Low confidence for fallback
+      },
+    };
+  } catch (error) {
+    console.error('Error processing scraped data fallback:', error);
+    
+    // Ultimate fallback: extract company name from URL
     const urlObj = new URL(url);
     const domain = urlObj.hostname.replace('www.', '');
     const companyName = domain.split('.')[0];
@@ -460,6 +544,7 @@ async function processScrapedData(markdown: string, metadata: Record<string, unk
     return {
       id: crypto.randomUUID(),
       url: url,
+      originalUrl: url,
       name: formattedName,
       description: `Information about ${formattedName}`,
       industry: 'technology',

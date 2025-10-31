@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { findCompetitorsWithAIWebSearch } from '@/lib/competitor-pipeline/ai-web-search';
+import { getCompetitorsFromCache } from '@/lib/db/competitors-service';
 import { Company } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
@@ -9,12 +10,14 @@ export async function POST(request: NextRequest) {
       company, 
       maxResults = 9,
       useWebSearch = true,
-      useSonarReasoning = false
+      useSonarReasoning = false,
+      workspaceId = null
     }: { 
       company: Company;
       maxResults?: number;
       useWebSearch?: boolean;
       useSonarReasoning?: boolean;
+      workspaceId?: string | null;
     } = await request.json();
     
     if (!company || !company.name) {
@@ -22,6 +25,42 @@ export async function POST(request: NextRequest) {
         { error: 'Company data is required' },
         { status: 400 }
       );
+    }
+
+    // NOUVEAU : Vérifier le cache des concurrents avant la recherche externe
+    if (company.id) {
+      logger.info('🔍 [API-AISearch] Checking competitors cache for company:', company.name);
+      
+      const cachedCompetitors = await getCompetitorsFromCache(
+        company.id,
+        workspaceId,
+        0.1 // Score minimum
+      );
+
+      if (cachedCompetitors && cachedCompetitors.length > 0) {
+        logger.info(`✅ [API-AISearch] Found ${cachedCompetitors.length} competitors in cache for ${company.name}`);
+        
+        return NextResponse.json({ 
+          success: true, 
+          competitors: cachedCompetitors.map(comp => ({
+            name: comp.name,
+            url: comp.url
+          })),
+          rawResults: cachedCompetitors,
+          method: 'database-cache',
+          model: 'cached',
+          stats: {
+            candidatesFound: cachedCompetitors.length,
+            finalCompetitors: cachedCompetitors.length,
+            processingTimeMs: 0,
+            fromCache: true
+          }
+        });
+      } else {
+        logger.info('❌ [API-AISearch] No competitors found in cache, proceeding with external search');
+      }
+    } else {
+      logger.info('⚠️ [API-AISearch] Company ID not provided, skipping cache check');
     }
 
     logger.info('🚀 [API-AISearch] Starting Perplexity competitor search for:', company.name);
@@ -51,7 +90,8 @@ export async function POST(request: NextRequest) {
       stats: {
         candidatesFound: competitors.length,
         finalCompetitors: competitors.length,
-        processingTimeMs: 0 // Will be calculated in the function
+        processingTimeMs: 0, // Will be calculated in the function
+        fromCache: false
       }
     });
     

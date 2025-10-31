@@ -654,7 +654,7 @@
     "searchPromptsPlaceholder": "Prompts und Antworten durchsuchen...",
     "legendTargetBrand": "Erwähnungen der Zielmarke",
     "legendCompetitorBrand": "Erwähnungen von Wettbewerbern",
-    "enterUrlPlaceholder": "Geben Sie die URL Ihrer Website ein (z. B. beispiel.com)",
+    "enterUrlPlaceholder": "Geben Sie die URL des Websites der Marke zur Analyse ein (z. B. beispiel.com)",
     "enterUrlPlaceholderShort": "beispiel.com",
     "competitorNamePlaceholder": "z. B. Anthropic",
     "competitorUrlPlaceholder": "z. B. anthropic.com",
@@ -677,8 +677,28 @@
       "visibilityScore": "Sichtbarkeits-Score",
       "analyzeAnotherWebsite": "Eine andere Website analysieren",
       "sources": "Quellen",
-      "upgradeRequiredTitle": "Verfügbar ab dem „Watch“-Plan",
+      "upgradeRequiredTitle": "Verfügbar ab dem 'Watch'-Plan",
       "upgradeCta": "Meinen Plan upgraden"
+    },
+    "analyticsTracking": {
+      "title": "Analytisches Tracking",
+      "description": "Entwicklung der Metriken über die Zeit",
+      "visibilityScoreChart": "Sichtbarkeits-Score",
+      "comparisonMatrixChart": "Vergleichsmatrix",
+      "rankingsChart": "Marken-Rankings",
+      "noData": "Keine historischen Daten verfügbar",
+      "selectProvider": "Provider wählen",
+      "selectProviders": "Provider auswählen",
+      "dateRange": "Datumsbereich",
+      "startDate": "Startdatum",
+      "endDate": "Enddatum",
+      "mentionsChart": "Anzahl der Erwähnungen",
+      "mentionsYAxis": "Anzahl der Erwähnungen",
+      "shareOfVoiceChart": "Share of Voice",
+      "shareOfVoiceYAxis": "Share of Voice (%)",
+      "visibilityScoreTooltip": "Prozentsatz der Antworten, in denen die Marke mindestens einmal erwähnt wird.",
+      "shareOfVoiceTooltip": "Prozentsatz der Erwähnungen, die dieser Marke im Vergleich zu allen Marken zugerechnet werden",
+      "rankingsChartTooltip": "Ranking der Marken nach Sichtbarkeit zuerst und anschließend nach Anzahl der Erwähnungen"
     },
     "analysisProgress": {
       "title": "Analysefortschritt",
@@ -689,7 +709,11 @@
       "startAnalysis": "Analyse starten",
       "analyzing": "Analyse läuft...",
       "custom": "Benutzerdefiniert",
-      "generatingAdaptivePrompts": "Adaptive Prompts werden generiert..."
+      "generatingAdaptivePrompts": "Adaptive Prompts werden generiert...",
+      "generating": "Wird generiert...",
+      "generatePromptsButton": "Prompts mit PromptGen© generieren",
+      "noPromptsMessage": "Noch keine Prompts",
+      "generateOrAddPrompts": "Generieren Sie Prompts mit PromptGen© oder fügen Sie Ihre eigenen Prompts hinzu"
     },
     "errors": {
       "pleaseEnterUrl": "Bitte geben Sie eine URL ein",
@@ -731,6 +755,7 @@
       "brand": "Marke",
       "company": "Unternehmen",
       "visibility": "Sichtbarkeit",
+      "mentions": "Erwähnungen",
       "shareOfVoice": "Share of Voice",
       "shareOfVoiceShort": "SoV",
       "avgPositionShort": "Ø Pos",
@@ -761,6 +786,55 @@
       "empty": "Keine Quellen für diese Analyse gespeichert.",
       "showMore": "weitere Quellen",
       "showLess": "Weniger anzeigen"
+    },
+    "sourcesList": {
+      "title": "Quellen",
+      "showMore": "{count} weitere anzeigen",
+      "showLess": "Weniger anzeigen"
+    },
+    "scheduling": {
+      "title": "Zeitplan-Einstellungen",
+      "description": "Konfigurieren Sie die periodische Analyse Ihrer Marke",
+      "frequency": "Häufigkeit",
+      "frequencyDescription": "Wählen Sie, wie oft diese Analyse ausgeführt werden soll",
+      "none": "Keine",
+      "daily": "Täglich",
+      "weekly": "Wöchentlich",
+      "monthly": "Monatlich",
+      "enableScheduling": "Zeitplanung aktivieren",
+      "enableSchedulingDescription": "Aktivieren Sie, um diese Analyse automatisch auszuführen",
+      "nextRun": "Nächster Lauf",
+      "lastRun": "Letzter Lauf",
+      "never": "Nie",
+      "creditsPerRun": "Credits pro Lauf",
+      "creditsPerMonth": "Credits pro Monat",
+      "insufficientCreditsWarning": "Warnung: {requiredCredits} Credits erforderlich, aber nur {availableCredits} verfügbar. Verlängerung am {renewalDate}.",
+      "unknownDate": "Unbekanntes Datum",
+      "updateSchedule": "Aktualisieren",
+      "updating": "Wird aktualisiert...",
+      "scheduleUpdated": "Zeitplan erfolgreich aktualisiert",
+      "scheduleUpdateError": "Fehler beim Aktualisieren des Zeitplans",
+      "lockedConfiguration": "Konfiguration gesperrt",
+      "lockedConfigurationDescription": "Diese Analyse ist geplant. Duplizieren Sie sie, um die Einstellungen zu ändern.",
+      "duplicateAnalysis": "Analyse duplizieren",
+      "pauseSchedule": "Pausieren",
+      "resumeSchedule": "Fortsetzen",
+      "schedulePaused": "Zeitplan pausiert",
+      "scheduleResumed": "Zeitplan fortgesetzt",
+      "runStatus": {
+        "pending": "Ausstehend",
+        "running": "Läuft",
+        "completed": "Abgeschlossen",
+        "failed": "Fehlgeschlagen",
+        "insufficient_credits": "Unzureichende Credits",
+        "unknown": "Unbekannt"
+      },
+      "periodicity": {
+        "none": "Keine",
+        "daily": "Täglich",
+        "weekly": "Wöchentlich",
+        "monthly": "Monatlich"
+      }
     }
   },
   "pricing": {

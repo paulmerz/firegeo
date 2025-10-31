@@ -129,7 +129,7 @@ export default function PublicPricingPage() {
               >
                 {isRecommended && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-4 py-1 rounded-full text-sm">
-                    {product.display.recommend_text}
+                    {product.display?.recommend_text}
                   </div>
                 )}
                 
@@ -151,7 +151,7 @@ export default function PublicPricingPage() {
                 </div>
                 
                 <ul className="space-y-3 mb-8">
-                  {features.map((item, index) => (
+                  {features?.map((item, index) => (
                     <li key={index} className="flex items-start">
                       <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
                       <div>

@@ -16,6 +16,7 @@ export type BrandMonitorAction =
   | { type: 'SET_SHOW_COMPETITORS'; payload: boolean }
   | { type: 'SET_CUSTOM_PROMPTS'; payload: string[] }
   | { type: 'ADD_CUSTOM_PROMPT'; payload: string }
+  | { type: 'REMOVE_CUSTOM_PROMPT'; payload: string }
   | { type: 'REMOVE_DEFAULT_PROMPT'; payload: number }
   | { type: 'SET_AVAILABLE_PROVIDERS'; payload: string[] }
   | { type: 'SET_IDENTIFIED_COMPETITORS'; payload: IdentifiedCompetitor[] }
@@ -39,7 +40,8 @@ export type BrandMonitorAction =
   | { type: 'SET_USE_INTELLISEARCH'; payload: boolean }
   | { type: 'RESET_STATE' }
   | { type: 'SCRAPE_SUCCESS'; payload: Company }
-  | { type: 'ANALYSIS_COMPLETE'; payload: Analysis };
+  | { type: 'ANALYSIS_COMPLETE'; payload: Analysis }
+  | { type: 'LOAD_FROM_TEMPLATE'; payload: Record<string, unknown> };
 
 // State Interfaces
 export interface IdentifiedCompetitor {
@@ -110,7 +112,7 @@ export interface Analysis {
   webSearchUsed?: boolean;
 }
 
-export type ResultsTab = 'visibility' | 'matrix' | 'rankings' | 'metrics' | 'prompts' | 'sources';
+export type ResultsTab = 'visibility' | 'matrix' | 'rankings' | 'metrics' | 'prompts' | 'sources' | 'settings' | 'history' | 'analytics';
 
 export interface BrandMonitorState {
   // URL and validation
@@ -264,6 +266,9 @@ export function brandMonitorReducer(
     case 'ADD_CUSTOM_PROMPT':
       return { ...state, customPrompts: [...state.customPrompts, action.payload] };
       
+    case 'REMOVE_CUSTOM_PROMPT':
+      return { ...state, customPrompts: state.customPrompts.filter(prompt => prompt !== action.payload) };
+      
     case 'REMOVE_DEFAULT_PROMPT':
       return { ...state, removedDefaultPrompts: [...state.removedDefaultPrompts, action.payload] };
       
@@ -389,6 +394,18 @@ export function brandMonitorReducer(
         ...state,
         analysis: action.payload,
         analyzing: false
+      };
+      
+    case 'LOAD_FROM_TEMPLATE':
+      const payload = action.payload as Record<string, unknown>; // Type assertion pour éviter les erreurs TypeScript
+      return {
+        ...state,
+        company: (payload.company as Company) || null,
+        identifiedCompetitors: (payload.competitors as IdentifiedCompetitor[]) || [],
+        showCompanyCard: true,
+        showCompetitors: true,
+        showPromptsList: false,
+        showInput: false,
       };
       
     default:

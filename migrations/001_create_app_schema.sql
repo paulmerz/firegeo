@@ -2,17 +2,19 @@
 -- This migration creates all application-specific tables
 -- Better Auth tables (user, session, account, verification) are managed separately by Better Auth
 
--- Create custom types
-DO $$ BEGIN
-    CREATE TYPE "role" AS ENUM('user', 'assistant');
-EXCEPTION
-    WHEN duplicate_object THEN null;
+-- Create custom types (idempotent)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'role') THEN
+        CREATE TYPE "role" AS ENUM('user', 'assistant');
+    END IF;
 END $$;
 
-DO $$ BEGIN
-    CREATE TYPE "theme" AS ENUM('light', 'dark');
-EXCEPTION
-    WHEN duplicate_object THEN null;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'theme') THEN
+        CREATE TYPE "theme" AS ENUM('light', 'dark');
+    END IF;
 END $$;
 
 -- Brand Monitor Analyses

@@ -654,7 +654,7 @@
     "searchPromptsPlaceholder": "Rechercher les prompts et réponses...",
     "legendTargetBrand": "Mentions de la marque cible",
     "legendCompetitorBrand": "Mentions des concurrents",
-    "enterUrlPlaceholder": "Entrez l'URL de votre site web (ex : exemple.com)",
+    "enterUrlPlaceholder": "Entrez l'URL du site web de la marque à analyser (ex : exemple.com)",
     "enterUrlPlaceholderShort": "exemple.com",
     "competitorNamePlaceholder": "ex : Anthropic",
     "competitorUrlPlaceholder": "ex : anthropic.com",
@@ -680,6 +680,26 @@
       "upgradeRequiredTitle": "Disponible à partir du plan \"Watch\"",
       "upgradeCta": "Augmenter mon plan"
     },
+    "analyticsTracking": {
+      "title": "Suivi analytique",
+      "description": "Évolution des métriques au fil du temps",
+      "visibilityScoreChart": "Score de visibilité",
+      "comparisonMatrixChart": "Matrice de comparaison",
+      "rankingsChart": "Classement des marques",
+      "noData": "Aucune donnée d'historique disponible",
+      "selectProvider": "Sélectionner un provider",
+      "selectProviders": "Sélectionner les providers",
+      "dateRange": "Plage de dates",
+      "startDate": "Date de début",
+      "endDate": "Date de fin",
+      "mentionsChart": "Nombre de mentions",
+      "mentionsYAxis": "Nombre de mentions",
+      "shareOfVoiceChart": "Part de voix",
+      "shareOfVoiceYAxis": "Part de voix (%)",
+      "visibilityScoreTooltip": "Pourcentage de réponses dans lesquelles la marque est mentionnée au moins une fois.",
+      "shareOfVoiceTooltip": "Pourcentage des mentions attribuées à cette marque parmi toutes les mentions de toutes les marques confondues",
+      "rankingsChartTooltip": "Classement des marques en fonction de leur score de visibilité d'abord et du nombre de mentions obtenues ensuite"
+    },
     "analysisProgress": {
       "title": "Progression de l'analyse",
       "prompts": "Prompts",
@@ -689,7 +709,11 @@
       "startAnalysis": "Commencer l'analyse",
       "analyzing": "Analyse en cours...",
       "custom": "Personnalisé",
-      "generatingAdaptivePrompts": "Génération de prompts adaptatifs..."
+      "generatingAdaptivePrompts": "Génération de prompts adaptatifs...",
+      "generating": "Génération en cours...",
+      "generatePromptsButton": "Générer les prompts avec PromptGen©",
+      "noPromptsMessage": "Aucun prompt pour le moment",
+      "generateOrAddPrompts": "Générez des prompts avec PromptGen© ou ajoutez vos propres prompts"
     },
     "errors": {
       "pleaseEnterUrl": "Veuillez entrer une URL",
@@ -732,6 +756,7 @@
       "brand": "Marque",
       "company": "Entreprise",
       "visibility": "Visibilité",
+      "mentions": "Nbre de mentions",
       "shareOfVoice": "Part de Voix",
       "shareOfVoiceShort": "PdV",
       "avgPositionShort": "Pos Moy",
@@ -762,6 +787,55 @@
       "empty": "Aucune source enregistrée pour cette analyse.",
       "showMore": "autres sources",
       "showLess": "Afficher moins"
+    },
+    "sourcesList": {
+      "title": "Sources",
+      "showMore": "Voir {count} de plus",
+      "showLess": "Montrer moins"
+    },
+    "scheduling": {
+      "title": "Paramètres de planification",
+      "description": "Configurez l'analyse périodique de votre marque",
+      "frequency": "Fréquence",
+      "frequencyDescription": "Choisissez la fréquence d'exécution de l'analyse",
+      "none": "Aucune",
+      "daily": "Quotidienne",
+      "weekly": "Hebdomadaire",
+      "monthly": "Mensuelle",
+      "enableScheduling": "Activer la planification",
+      "enableSchedulingDescription": "Activez pour exécuter cette analyse automatiquement",
+      "nextRun": "Prochaine exécution",
+      "lastRun": "Dernière exécution",
+      "never": "Jamais",
+      "creditsPerRun": "Crédits par exécution",
+      "creditsPerMonth": "Crédits par mois",
+      "insufficientCreditsWarning": "Attention : {requiredCredits} crédits requis mais seulement {availableCredits} disponibles. Renouvellement le {renewalDate}.",
+      "unknownDate": "Date inconnue",
+      "updateSchedule": "Mettre à jour",
+      "updating": "Mise à jour...",
+      "scheduleUpdated": "Planification mise à jour avec succès",
+      "scheduleUpdateError": "Erreur lors de la mise à jour de la planification",
+      "lockedConfiguration": "Configuration verrouillée",
+      "lockedConfigurationDescription": "Cette analyse est planifiée. Dupliquez-la pour modifier les paramètres.",
+      "duplicateAnalysis": "Dupliquer l'analyse",
+      "pauseSchedule": "Mettre en pause",
+      "resumeSchedule": "Reprendre",
+      "schedulePaused": "Planification en pause",
+      "scheduleResumed": "Planification reprise",
+      "runStatus": {
+        "pending": "En attente",
+        "running": "En cours",
+        "completed": "Terminé",
+        "failed": "Échec",
+        "insufficient_credits": "Crédits insuffisants",
+        "unknown": "Inconnu"
+      },
+      "periodicity": {
+        "none": "Aucune",
+        "daily": "Quotidienne",
+        "weekly": "Hebdomadaire",
+        "monthly": "Mensuelle"
+      }
     }
   },
   "pricing": {

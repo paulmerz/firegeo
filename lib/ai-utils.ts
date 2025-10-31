@@ -1,9 +1,8 @@
 
 import { generateText, generateObject } from 'ai';
 import { z } from 'zod';
-import { Company, BrandPrompt, AIResponse, AIResponseAnalysis, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData, SSEEvent } from './types';
+import { Company, BrandPrompt, AIResponse, AIResponseAnalysis, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData, SSEEvent, BrandVariation } from './types';
 import { getProviderModel, normalizeProviderName, getConfiguredProviders, PROVIDER_CONFIGS } from './provider-config';
-import { detectBrandMentions, detectMultipleBrands } from './brand-detection-service';
 import { getLanguageName } from './locale-utils';
 import { apiUsageTracker, extractTokensFromUsage, estimateCost } from './api-usage-tracker';
 import type { AIUsage, OpenAICompletionUsage } from './api-usage-tracker';
@@ -576,49 +575,53 @@ Be concise and direct.`;
 
     // Enhanced fallback with proper brand detection using centralized service
     const detectionText = cleanProviderResponse(text, { providerName: provider });
+    
+    // Use AI analysis for brand detection since enhanced detection is commented out
+    const brandMentioned = object.analysis.brandMentioned;
 
-    const brandDetectionResult = await detectBrandMentions(detectionText, brandName, {
-      caseSensitive: false,
-      excludeNegativeContext: false,
-      minConfidence: 0.3
-    });
-    const brandMentioned = brandDetectionResult.mentioned;
+    // TODO: Refactor to use new BrandMatcher API when brandVariations are available
+    // const brandDetectionResult = await detectBrandMentions(detectionText, brandName, {
+    //   caseSensitive: false,
+    //   excludeNegativeContext: false,
+    //   minConfidence: 0.3
+    // });
+    // const brandMentioned = brandDetectionResult.mentioned;
 
-    if (object.analysis.brandMentioned && !brandDetectionResult.mentioned) {
-      console.log(`[${provider}] Ignoring AI-only brand mention for "${brandName}" - detector found no evidence.`);
-    }
+    // if (object.analysis.brandMentioned && !brandDetectionResult.mentioned) {
+    //   console.log(`[${provider}] Ignoring AI-only brand mention for "${brandName}" - detector found no evidence.`);
+    // }
 
     // Detect all competitor mentions with centralized service
-    const competitorDetectionResults = await detectMultipleBrands(detectionText, competitors, {
-      caseSensitive: false,
-      excludeNegativeContext: false,
-      minConfidence: 0.3
-    });
+    // const competitorDetectionResults = await detectMultipleBrands(detectionText, competitors, {
+    //   caseSensitive: false,
+    //   excludeNegativeContext: false,
+    //   minConfidence: 0.3
+    // });
 
-    const relevantCompetitors = competitors.filter(competitorName => {
-      const detection = competitorDetectionResults.get(competitorName);
-      return detection?.mentioned && competitorName !== brandName;
-    });
+    // const relevantCompetitors = competitors.filter(competitorName => {
+    //   const detection = competitorDetectionResults.get(competitorName);
+    //   return detection?.mentioned && competitorName !== brandName;
+    // });
 
     // Surface AI-only competitors that we intentionally ignore
     const aiOnlyCompetitors = new Set(
       object.analysis.competitors.filter((c: string) => competitors.includes(c) && c !== brandName)
     );
-    relevantCompetitors.forEach((c: string) => aiOnlyCompetitors.delete(c));
+    // relevantCompetitors.forEach((c: string) => aiOnlyCompetitors.delete(c));
 
     if (aiOnlyCompetitors.size > 0) {
       console.log(`[${provider}] Ignoring AI-only competitors without detector evidence: [${Array.from(aiOnlyCompetitors).join(', ')}]`);
     }
     
     // Log detection details for debugging
-    if (brandDetectionResult.mentioned && !object.analysis.brandMentioned) {
-      console.log(`Enhanced detection found brand "${brandName}" in response from ${provider}:`, 
-        brandDetectionResult.matches.map(m => ({
-          text: m.text,
-          confidence: m.confidence
-        }))
-      );
-    }
+    // if (brandDetectionResult.mentioned && !object.analysis.brandMentioned) {
+    //   console.log(`Enhanced detection found brand "${brandName}" in response from ${provider}:`, 
+    //     brandDetectionResult.matches.map(m => ({
+    //       text: m.text,
+    //       confidence: m.confidence
+    //     }))
+    //   );
+    // }
 
     // Get the proper display name for the provider
     const providerDisplayName = provider === 'openai' ? 'OpenAI' :
@@ -867,6 +870,7 @@ export async function analyzeCompetitorsByProvider(
   company: Company,
   responses: AIResponse[],
   knownCompetitors: string[],
+  brandVariations?: Record<string, BrandVariation>,
   sendEvent?: (event: SSEEvent) => Promise<void>
 ): Promise<{
   providerRankings: ProviderSpecificRanking[];
@@ -881,10 +885,90 @@ export async function analyzeCompetitorsByProvider(
   console.log(`[ProviderComparison] 📊 Total réponses à analyser: ${responses.length}`);
   
   // 2. ÉTAPE 2: Nettoyer les marques avec OpenAI
-  const { cleanBrandsWithAI, extractBrandsFromText, calculateBrandVisibilityByProvider } = await import('./brand-detection-service');
+  const { cleanBrandsWithAI } = await import('./brand-variations-service');
   
   console.log(`[ProviderComparison] 🧹 Nettoyage des marques avec OpenAI...`);
   const cleanedBrands = await cleanBrandsWithAI(allBrands);
+
+  const normalizeKey = (value: string) => (value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const brandLookup = new Map<string, string>();
+  allBrands.forEach(name => {
+    const key = normalizeKey(name);
+    if (key) brandLookup.set(key, name);
+  });
+
+  const findBrandKey = (value: string | null | undefined): string | undefined => {
+    if (!value) return undefined;
+    const normalized = normalizeKey(value);
+    if (!normalized) return undefined;
+    if (brandLookup.has(normalized)) return brandLookup.get(normalized)!
+    for (const [key, original] of brandLookup.entries()) {
+      if (normalized.includes(key) || key.includes(normalized)) {
+        return original;
+      }
+    }
+    return undefined;
+  };
+
+  const aliasSets = new Map<string, Set<string>>();
+  allBrands.forEach(name => {
+    const set = new Set<string>();
+    set.add(name);
+    set.add(name.toLowerCase());
+    aliasSets.set(name, set);
+  });
+
+  cleanedBrands.forEach(brand => {
+    const target = findBrandKey(brand.original ?? brand.cleaned);
+    if (!target) return;
+    const set = aliasSets.get(target);
+    if (!set) return;
+    if (brand.cleaned) set.add(brand.cleaned);
+    if (Array.isArray(brand.variations)) {
+      brand.variations.forEach(v => {
+        if (typeof v === 'string' && v.trim()) set.add(v);
+      });
+    }
+  });
+
+  if (brandVariations) {
+    Object.values(brandVariations).forEach(variation => {
+      if (!variation) return;
+      const target = findBrandKey(variation.original);
+      if (!target) return;
+      const set = aliasSets.get(target);
+      if (!set) return;
+      if (variation.original) set.add(variation.original);
+      if (Array.isArray(variation.variations)) {
+        variation.variations.forEach(v => {
+          if (typeof v === 'string' && v.trim()) set.add(v);
+          // Ajouter version lowercase pour capter acronymes en minuscules
+          if (typeof v === 'string' && v.trim()) set.add(v.trim().toLowerCase());
+        });
+      }
+    });
+  }
+
+  const matcherEntriesBase: Array<{ brandId: string; alias: string }> = [];
+  aliasSets.forEach((aliases, brand) => {
+    const unique = new Set<string>();
+    aliases.forEach(alias => {
+      if (typeof alias !== 'string') return;
+      const trimmed = alias.trim();
+      if (!trimmed) return;
+      unique.add(trimmed);
+      unique.add(trimmed.toLowerCase());
+    });
+    unique.forEach(alias => {
+      matcherEntriesBase.push({ brandId: brand, alias });
+    });
+  });
   
   // 3. ÉTAPE 4: Extraire les marques de chaque réponse LLM (parallélisé)
   console.log(`[ProviderComparison] 🔍 Extraction des marques des réponses LLM...`);
@@ -916,7 +1000,25 @@ export async function analyzeCompetitorsByProvider(
         console.log(`[ProviderComparison] 📄 Analyse réponse ${index + 1}/${providerResponses.length} (${provider})`);
         
         try {
-          const extraction = await extractBrandsFromText(response.response, cleanedBrands, `${provider}-${index + 1}`);
+          // Détection locale avec BrandMatcher pour fiabilité côté serveur
+          const { BrandMatcher } = await import('./brand-matcher');
+          const matcher = new BrandMatcher(matcherEntriesBase, { wordBoundaries: true, longestMatchWins: true });
+          const matches = matcher.match(response.response || '');
+          
+          // Convertir les matches en format d'extraction
+          const mentionedBrands = matches.map((match: any) => ({
+            brand: match.brandId,
+            matchedVariation: match.surface,
+            confidence: 1.0,
+            context: response.response.substring(Math.max(0, match.start - 20), Math.min(response.response.length, match.end + 20))
+          }));
+          
+          const extraction = {
+            mentionedBrands,
+            totalBrandsFound: mentionedBrands.length,
+            confidence: mentionedBrands.length > 0 ? 1.0 : 0,
+            __rawMatches: matches
+          };
           
           // Mise à jour de la progression (70-90% de la progression totale)
           processedResponses++;
@@ -970,7 +1072,7 @@ export async function analyzeCompetitorsByProvider(
       });
     
     const providerExtractions = await Promise.all(responseExtractionPromises);
-    return { provider, extractions: providerExtractions.filter(e => e !== null) };
+    return { provider, extractions: providerExtractions.filter((extraction: any) => extraction !== null) };
   });
   
   // Attendre toutes les extractions
@@ -981,14 +1083,53 @@ export async function analyzeCompetitorsByProvider(
     brandExtractions.set(provider, extractions);
   });
   
-  // 4. ÉTAPE 5: Calculer les détections par provider
+  // 4. ÉTAPE 5: Calculer les détections par provider via stats agrégées locales
   console.log(`[ProviderComparison] 📊 Calcul des détections par provider...`);
-  const providerDetections = calculateBrandVisibilityByProvider(brandExtractions, company.name, knownCompetitors);
+  const providerDetections = new Map<string, Map<string, { mentioned: boolean; confidence: number; mentionCount: number; totalResponses: number; percentage: number }>>();
+
+  // Construire mapping brandId -> displayName à partir des alias connus
+  const brandIdToDisplayName: Record<string, string> = {};
+  aliasSets.forEach((_, brand) => {
+    brandIdToDisplayName[brand] = brand;
+  });
+  const trackedBrandIds = Array.from(aliasSets.keys());
+
+  const { calculateBrandStatistics } = await import('./brand-detection-stats');
+
+  providerResults.forEach(({ provider, extractions }) => {
+    const matchesPerResponse = (extractions as any[]).map(e => (e?.__rawMatches || []) as any[]);
+    const stats = calculateBrandStatistics(matchesPerResponse, trackedBrandIds, brandIdToDisplayName);
+    // Convertir en Map attendue (clé = displayName)
+    const map = new Map<string, { mentioned: boolean; confidence: number; mentionCount: number; totalResponses: number; percentage: number }>();
+    stats.forEach((s, displayName) => {
+      map.set(displayName, {
+        mentioned: s.mentioned,
+        confidence: s.confidence,
+        mentionCount: s.totalMentions,
+        totalResponses: s.totalResponses,
+        percentage: s.percentage,
+      });
+    });
+    providerDetections.set(provider, map);
+  });
   
   // 5. ÉTAPE 6: Construire les résultats dans le format attendu
   const providers = Array.from(responsesByProvider.keys());
   const providerRankings: ProviderSpecificRanking[] = [];
   const providerComparison: ProviderComparisonData[] = [];
+  
+  // Helper pour retrouver une détection avec équivalence souple (accents, sous-chaînes)
+  const norm = (v: string) => (v || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').trim();
+  const resolveDetection = (map: Map<string, any> | undefined, wanted: string) => {
+    if (!map) return undefined;
+    if (map.has(wanted)) return map.get(wanted);
+    const nw = norm(wanted);
+    for (const [k, val] of map.entries()) {
+      const nk = norm(k);
+      if (nk === nw || nk.includes(nw) || nw.includes(nk)) return val;
+    }
+    return undefined;
+  };
   
   // Créer les rankings par provider basés sur la nouvelle détection
   providers.forEach(provider => {
@@ -1000,7 +1141,7 @@ export async function analyzeCompetitorsByProvider(
     console.log(`[ProviderComparison] 🔍 Construction des résultats pour ${provider}: ${totalResponses} réponses`);
     
     allBrands.forEach(brandName => {
-      const detection = providerBrandDetections?.get(brandName);
+      const detection = resolveDetection(providerBrandDetections, brandName);
       const mentionCount = detection?.mentionCount || 0;
       const totalResponses = detection?.totalResponses || providerResponses.length;
       const visibilityScore = detection?.percentage || 0; // Utiliser le pourcentage réel
@@ -1042,8 +1183,17 @@ export async function analyzeCompetitorsByProvider(
         : 0;
     });
     
-    // Sort by visibility score
-    competitors.sort((a, b) => b.visibilityScore - a.visibilityScore);
+    // Sort by visibility score, then mentions (comme l'UI)
+    competitors.sort((a, b) => {
+      const visibilityDiff = (b.visibilityScore ?? 0) - (a.visibilityScore ?? 0);
+      if (visibilityDiff !== 0) return visibilityDiff;
+      return (b.mentions ?? 0) - (a.mentions ?? 0);
+    });
+
+    // Assigner les positions (1 = premier)
+    competitors.forEach((competitor, index) => {
+      competitor.averagePosition = index + 1;
+    });
     
     providerRankings.push({
       provider,

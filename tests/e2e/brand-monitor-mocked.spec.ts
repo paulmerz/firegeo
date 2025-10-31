@@ -4,12 +4,12 @@ import { getExpectedHighlightCount, getExpectedCompetitorHighlightCount, getExpe
 
 const test = base.extend<{ mockMode: MockMode }>({
   mockMode: ['raw', { scope: 'test', option: true }],
-  context: async ({ context, mockMode }, use) => {
+  context: async ({ context, mockMode }, provideContext) => {
     await context.setExtraHTTPHeaders({ 'x-mock-mode': mockMode });
-    await use(context);
+    await provideContext(context);
   }
 });
-import path from 'path';
+// import path from 'path';
 
 type LocaleType = 'fr' | 'en' | 'de' | 'fr-CH' | 'de-CH';
 
@@ -35,22 +35,47 @@ async function registerAndLogin(page: Page, locale: LocaleType) {
   return { email, password };
 }
 
-async function getNavbarCredits(page: Page): Promise<number> {
-  const creditsLabel = page.getByText(/crédits/i).first();
-  try {
-    await expect(creditsLabel).toBeVisible({ timeout: 20000 });
-  } catch {
-    test.skip(true, 'Crédits non affichés (AUTUMN non configuré). Configurez AUTUMN_SECRET_KEY pour activer cette vérification.');
-  }
-  const balanceText = await creditsLabel.evaluate((el) => {
-    const parent = el.parentElement;
-    if (!parent) return null;
-    const firstSpan = parent.querySelector('span');
-    return firstSpan?.textContent?.trim() || null;
-  });
-  const value = balanceText ? parseInt(balanceText, 10) : NaN;
-  return value;
+// Helper pour ajouter un prompt avec un numéro
+async function addPromptWithNumber(page: Page, promptNumber: number) {
+  const promptText = `Ceci est un prompt test ${promptNumber}`;
+  
+  // Cliquer sur "+ Ajouter un prompt"
+  const addPromptBtn = page.getByRole('button', { name: 'Ajouter un prompt'});
+  await expect(addPromptBtn).toBeVisible();
+  await addPromptBtn.click();
+  
+  // Remplir la modale avec le prompt de test
+  const promptInput = page.locator('input[type="text"], textarea').first();
+  await expect(promptInput).toBeVisible();
+  await promptInput.fill(promptText);
+  
+  // Cliquer sur "Ajouter un prompt" dans la modale
+  const confirmAddBtn = page.getByRole('button', { name: 'Ajouter un prompt' }).nth(1);
+  await expect(confirmAddBtn).toBeVisible();
+  await confirmAddBtn.click();
+  
+  // Vérifier que le prompt a été ajouté
+  await expect(page.getByText(promptText)).toBeVisible();
+  
+  console.log(`✅ Prompt ${promptNumber} ajouté: "${promptText}"`);
 }
+
+// async function getNavbarCredits(page: Page): Promise<number> {
+//   const creditsLabel = page.getByText(/crédits/i).first();
+//   try {
+//     await expect(creditsLabel).toBeVisible({ timeout: 20000 });
+//   } catch {
+//     test.skip(true, 'Crédits non affichés (AUTUMN non configuré). Configurez AUTUMN_SECRET_KEY pour activer cette vérification.');
+//   }
+//   const balanceText = await creditsLabel.evaluate((el) => {
+//     const parent = el.parentElement;
+//     if (!parent) return null;
+//     const firstSpan = parent.querySelector('span');
+//     return firstSpan?.textContent?.trim() || null;
+//   });
+//   const value = balanceText ? parseInt(balanceText, 10) : NaN;
+//   return value;
+// }
 
 test('brand-monitor avec mocks AI', async ({ page }) => {
   // Le mode mock est activé via MOCK_AI_FUNCTIONS=true dans .env.local
@@ -140,7 +165,7 @@ test('brand-monitor avec mocks AI', async ({ page }) => {
       contentType: 'application/json',
       body: JSON.stringify({
         success: true,
-        competitors: competitors.map((comp: any) => ({
+        competitors: competitors.map((comp: Record<string, unknown>) => ({
           name: comp.name,
           url: comp.url
         })),
@@ -187,7 +212,8 @@ test('brand-monitor avec mocks AI', async ({ page }) => {
   // 1. Vérifier que l'input URL est présent et fonctionnel
   const urlInput = page.locator('input[type="text"]').first();
   await expect(urlInput).toBeVisible();
-  await expect(urlInput).toHaveAttribute('placeholder', /Entrez l'URL de votre site web/i);
+  await expect(urlInput).toHaveAttribute('placeholder', /Entrez l'URL du site web.*$/i
+);
 
   // 2. Tester validation URL invalide
   await urlInput.fill('not_a_url');
@@ -236,8 +262,19 @@ test('brand-monitor avec mocks AI', async ({ page }) => {
   await expect(continueBtn).toBeVisible();
   await continueBtn.click();
   
-  // Vérifier qu'au moins un prompt (token) est affiché
-  await expect(page.getByText(/KEYWORD_RANKING/i)).toBeVisible({ timeout: 10000 });
+  // 9. Nouveau workflow : La page de prompts est vide, il faut ajouter des prompts manuellement
+  // Vérifier que la page de prompts est vide
+  await expect(page.getByText(/Aucun prompt pour le moment/i)).toBeVisible();
+  
+  // Ajouter 8 prompts de test avec des numéros incrémentaux
+  console.log('📝 Ajout de 8 prompts de test...');
+  for (let i = 1; i <= 8; i++) {
+    await addPromptWithNumber(page, i);
+    // Petite pause entre chaque ajout pour éviter les conflits
+    await page.waitForTimeout(500);
+  }
+  
+  console.log('✅ Tous les 8 prompts ont été ajoutés avec succès');
   
   // Cliquer sur "Commencer l'analyse"
   const launchAnalysisBtn = page.getByRole('button', { name: /Commencer l'analyse/i });
@@ -290,7 +327,11 @@ test('brand-monitor avec mocks AI', async ({ page }) => {
 
   // Charger les scores attendus (mentions, pourcentage)
   const expectedScoresData = await import('../fixtures/brand-monitor/expected-scores.json', { with: { type: 'json' } });
-  const expectedScores = (expectedScoresData as any).default || expectedScoresData;
+  const expectedScores = ((expectedScoresData as Record<string, unknown>).default || expectedScoresData) as {
+    expectedScores: { percentage: number; mentions: number };
+    targetBrand: string;
+    expectedCompetitors: string[];
+  };
 
   // Récupérer tous les textes surlignés
   const highlightedTexts = (await allHighlights.allTextContents()).map(norm);
@@ -378,7 +419,7 @@ test('brand-monitor avec mocks AI', async ({ page }) => {
 
   // 15. Vérifier l'accès aux Sources selon le plan (DEV)
   // Combobox "Plan (DEV)" -> options: free/start => Sources disabled; watch/pro => Sources enabled
-  const planCombo = page.getByRole('combobox', { name: /Plan \(DEV\)/i });
+  // const planCombo = page.getByRole('combobox', { name: /Plan \(DEV\)/i });
   const sourcesBtn = page.getByRole('button', { name: /^Sources$/i });
 
   // free -> disabled

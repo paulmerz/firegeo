@@ -62,7 +62,7 @@ function main(): void {
 
     emptyValues.push(
       ...Object.entries(flatTranslations[locale])
-        .filter(([_, v]) => v === '' || v === null || v === undefined)
+        .filter(([, v]) => v === '' || v === null || v === undefined)
         .map(([k]) => k)
     );
 

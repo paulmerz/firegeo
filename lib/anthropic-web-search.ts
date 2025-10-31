@@ -116,11 +116,6 @@ After searching, analyze your response and determine:
       provider: 'Anthropic',
       prompt,
       response: responseText,
-      brandMentioned: analysis.brandMentioned,
-      brandPosition: analysis.brandPosition,
-      competitors: analysis.competitorsMentioned,
-      sentiment: analysis.sentiment,
-      confidence: analysis.confidence,
       timestamp: new Date()
     };
 

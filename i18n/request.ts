@@ -12,7 +12,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     locale === 'fr-CH' ? 'fr' : locale === 'de-CH' ? 'de' : locale;
 
   // Ensure that a valid locale is used
-  if (!routing.locales.includes(locale as any)) {
+  if (!locale || !routing.locales.includes(locale as (typeof routing.locales)[number])) {
     locale = routing.defaultLocale;
   }
 
