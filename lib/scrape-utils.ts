@@ -24,7 +24,7 @@ const firecrawl = new FirecrawlApp({
 // et ne correspond pas exactement à l'interface Company complète
 const FirecrawlCompanySchema = z.object({
   // Core company info
-  name: z.string().describe("Nom exact de l'entreprise tel qu'il apparaît officiellement"),
+  name: z.string().describe("Marque exacte de l'entreprise tel qu'il apparaît officiellement. Ex: 'Rolex', 'Nike', 'Apple', 'Ferrari' etc."),
   description: z.string().describe("Description claire et concise de ce que fait l'entreprise"),
   keywords: z.array(z.string()).describe("Mots-clés pertinents pour le business"),
   industry: z.string().describe("Catégorie d'industrie principale"),
@@ -101,7 +101,7 @@ IMPORTANT - INSTRUCTION LANGUE:
 🌐 Seul le nom de l'entreprise doit rester dans sa forme originale (extraction exacte).
 
 INFORMATIONS CORE DE L'ENTREPRISE:
-1. Extrait le nom COMPLET et EXACT de l'entreprise tel qu'il apparaît officiellement
+1. Extrait le nom COMPLET et EXACT de l'entreprise tel qu'il apparaît officiellement. Ex: "Rolex", "Nike", "Apple", "Ferrari" etc.
 2. Écris une description claire et concise de ce que fait l'entreprise
 3. Identifie les mots-clés pertinents pour le business
 4. Classifie la catégorie d'industrie PRINCIPALE
@@ -143,7 +143,7 @@ EXIGENCES CRITIQUES:
 ✅ Focus sur ce que l'entreprise FABRIQUE/VEND, pas ce qui va dans les produits
 ✅ Tout le contenu doit être en ${languageInstruction} (locale: ${locale || 'en'})
 ✅ Haute précision - base l'analyse sur le contenu réel du site, pas des suppositions`
-            } as Record<string, unknown> // Type assertion nécessaire car Firecrawl v2 accepte des schémas Zod mais les types ne sont pas encore à jour
+            } as any // Type assertion nécessaire car Firecrawl v2 accepte des schémas Zod mais les types ne sont pas encore à jour
           ],
           maxAge: cacheAge,
           onlyMainContent: true,
@@ -164,7 +164,7 @@ EXIGENCES CRITIQUES:
         const hasError = 'error' in response && !!(response as FirecrawlResponse).error;
         if (hasError) {
           const errorMessage = (response as FirecrawlResponse).error;
-          lastError = errorMessage;
+          lastError = errorMessage || null;
           console.warn(`⚠️ [Scraper] Error in attempt ${attempt}: ${errorMessage}`);
           
           // Si c'est le dernier essai, on lance l'erreur
@@ -181,7 +181,7 @@ EXIGENCES CRITIQUES:
         if ((response as FirecrawlResponse).json) {
           console.log(`✅ [Scraper] JSON extraction successful on attempt ${attempt}`);
           const markdownContent = (response as FirecrawlResponse).markdown || '';
-          return processJsonExtraction((response as FirecrawlResponse).json!, response.metadata, normalizedUrl, locale, markdownContent);
+          return processJsonExtraction((response as FirecrawlResponse).json as any, response.metadata, normalizedUrl, locale, markdownContent);
         } else {
           console.warn(`⚠️ [Scraper] No JSON data in response for attempt ${attempt}`);
           lastError = 'No JSON data returned';
@@ -348,7 +348,7 @@ export async function crawlCompanyInfo(url: string, maxAge?: number, locale?: st
       return path === '/' || path.endsWith('.com') || path.endsWith('.fr') || path.includes('index');
     })?.metadata || sorted[0]?.metadata || {};
 
-      return processScrapedDataFallback(combinedMarkdown, homepageMeta, normalizedUrl, locale);
+      return processScrapedDataFallback(combinedMarkdown, homepageMeta, normalizedUrl);
   } catch (error) {
     console.error('Error crawling company info:', error);
     // Fallback to single page scrape

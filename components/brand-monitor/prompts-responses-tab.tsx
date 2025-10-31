@@ -10,11 +10,29 @@ import { HighlightedResponse } from './highlighted-response';
 import { SourcesList } from './sources-list';
 import { useTranslations } from 'next-intl';
 import { logger } from '@/lib/logger';
-import { detectBrandsInResponse } from '@/lib/brand-detection-service';
 import { extractUrlsFromText } from '@/lib/brand-monitor-sources';
 import { cleanProviderResponse } from '@/lib/provider-response-utils';
 
-type DetectionResult = Awaited<ReturnType<typeof detectBrandsInResponse>>;
+interface DetectionResult {
+  brandMentioned: boolean;
+  detectionDetails: {
+    brandMatches: Array<{
+      text: string;
+      index: number;
+      brandName: string;
+      variation: string;
+      confidence: number;
+    }>;
+    competitorMatches: Map<string, Array<{
+      text: string;
+      index: number;
+      brandName: string;
+      variation: string;
+      confidence: number;
+    }>>;
+  };
+  confidence: number;
+}
 
 interface PromptsResponsesTabProps {
   prompts: BrandPrompt[];
@@ -108,18 +126,85 @@ export function PromptsResponsesTab({
         if (detectionCache.has(cacheKey)) continue;
 
         try {
-          const detection = await detectBrandsInResponse(
-            cleanProviderResponse(response.response, { providerName: response.provider }),
-            brandName,
-            competitors,
-            {
-              caseSensitive: false,
-              excludeNegativeContext: false,
-              minConfidence: 0.3
+          const cleanedText = cleanProviderResponse(response.response, { providerName: response.provider });
+          
+          // Use the new BrandMatcher API
+          const apiResponse = await fetch('/api/brand-detection/match', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              text: cleanedText, 
+              brandVariations 
+            })
+          });
+          
+          if (!apiResponse.ok) {
+            throw new Error(`Brand detection API failed: ${apiResponse.status}`);
+          }
+          
+          const { matches, brandIdToName } = await apiResponse.json();
+          
+          // Convert matches to DetectionResult format
+          const allBrands = [brandName, ...competitors];
+          const brandMatches: Array<{
+            text: string;
+            index: number;
+            brandName: string;
+            variation: string;
+            confidence: number;
+          }> = [];
+          
+          const competitorMatches = new Map<string, Array<{
+            text: string;
+            index: number;
+            brandName: string;
+            variation: string;
+            confidence: number;
+          }>>();
+          
+          // Initialize competitor matches map
+          competitors.forEach(competitor => {
+            competitorMatches.set(competitor, []);
+          });
+          
+          // Process matches en mappant vers la marque cible ou concurrents connus
+          const normalize = (v: string) => v.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').trim();
+          const knownNames = new Map<string, string>();
+          [brandName, ...competitors].forEach(n => knownNames.set(normalize(n), n));
+          const mapToKnown = (name: string) => {
+            const n = normalize(name);
+            if (knownNames.has(n)) return knownNames.get(n)!;
+            for (const [kn, original] of knownNames.entries()) {
+              if (n.includes(kn) || kn.includes(n)) return original;
+            }
+            return name;
+          };
+
+          matches.forEach((match: { brandId: string; surface: string; start: number; end: number }) => {
+            const displayName = mapToKnown((brandIdToName && brandIdToName[match.brandId]) || match.brandId);
+            const matchData = {
+              text: match.surface,
+              index: match.start,
+              brandName: displayName,
+              variation: match.surface,
+              confidence: 1.0
+            };
+            
+            if (displayName === brandName) {
+              brandMatches.push(matchData);
+            } else if (competitors.includes(displayName)) {
+              competitorMatches.get(displayName)!.push(matchData);
+            }
+          });
+          
+          const detection: DetectionResult = {
+            brandMentioned: brandMatches.length > 0,
+            detectionDetails: {
+              brandMatches,
+              competitorMatches
             },
-            undefined,
-            brandVariations
-          );
+            confidence: brandMatches.length > 0 ? 1.0 : 0
+          };
 
           updates.push([cacheKey, detection]);
         } catch (error) {

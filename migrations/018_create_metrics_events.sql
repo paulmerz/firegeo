@@ -10,7 +10,10 @@ BEGIN
             'mentions', 
             'average_position', 
             'sentiment_score', 
-            'share_of_voice'
+            'position',
+            'share_of_voices',
+            'visibility_average',
+            'average_score'
         );
     END IF;
 END $$;

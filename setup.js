@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-const { spawn, execSync } = require('child_process');
+/* eslint-disable @typescript-eslint/no-var-requires */
+const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const { Pool } = require('pg');
+// const { Pool } = require('pg');
 
 // Helper: mappe 'npm' -> 'npm.cmd' et 'npx' -> 'npx.cmd' sous Windows
 const resolveCmd = (cmd) => {
@@ -51,20 +52,20 @@ const exec = (command, args = [], options = {}) => {
 };
 
 // Execute with auto-response (idem)
-const execWithInput = (command, args = [], input = 'y\n') => {
-  return new Promise((resolve) => {
-    const child = spawn(resolveCmd(command), args, {
-      stdio: ['pipe', 'pipe', 'pipe'],
-      shell: process.platform === 'win32',
-    });
-    setTimeout(() => child.stdin.write(input), 1000);
+// const execWithInput = (command, args = [], input = 'y\n') => {
+//   return new Promise((resolve) => {
+//     const child = spawn(resolveCmd(command), args, {
+//       stdio: ['pipe', 'pipe', 'pipe'],
+//       shell: process.platform === 'win32',
+//     });
+//     setTimeout(() => child.stdin.write(input), 1000);
 
-    let output = '';
-    child.stdout.on('data', (d) => (output += d.toString()));
-    child.stderr.on('data', (d) => (output += d.toString()));
-    child.on('close', (code) => resolve({ code, output }));
-  });
-};
+//     let output = '';
+//     child.stdout.on('data', (d) => (output += d.toString()));
+//     child.stderr.on('data', (d) => (output += d.toString()));
+//     child.on('close', (code) => resolve({ code, output }));
+//   });
+// };
 
 // Check prerequisites
 async function checkPrerequisites() {
@@ -137,7 +138,7 @@ async function ensureExtensions() {
 }
 
 // Apply SQL migrations
-async function applyMigrations(dir, description) {
+async function applyMigrations(dir) {
   if (!fs.existsSync(dir)) return;
   
   const files = fs.readdirSync(dir).filter(f => f.endsWith('.sql'));

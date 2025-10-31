@@ -161,7 +161,14 @@ export function ProviderRankingsTabs({
             })}
           </TabsList>
 
-          {providerRankings.map(({ provider, competitors: providerCompetitors }) => (
+          {providerRankings.map(({ provider, competitors: providerCompetitors }) => {
+            const sortedCompetitors = [...providerCompetitors].sort((a, b) => {
+              const visibilityDiff = (b.visibilityScore ?? 0) - (a.visibilityScore ?? 0);
+              if (visibilityDiff !== 0) return visibilityDiff;
+              return (b.mentions ?? 0) - (a.mentions ?? 0);
+            });
+
+            return (
             <TabsContent key={provider} value={provider} className="mt-0">
               <div className="overflow-x-auto rounded-lg border border-gray-200">
                 <table className="w-full border-collapse">
@@ -170,12 +177,13 @@ export function ProviderRankingsTabs({
                       <th className="bg-gray-50 border-b border-r border-gray-200 text-left p-3 text-xs font-medium text-gray-900 w-8">#</th>
                       <th className="bg-gray-50 border-b border-r border-gray-200 text-left p-3 text-xs font-medium text-gray-900 w-[200px]">{t('company')}</th>
                       <th className="bg-gray-50 border-b border-r border-gray-200 text-right p-3 text-xs font-medium text-gray-900">{t('visibility')}</th>
+                      <th className="bg-gray-50 border-b border-r border-gray-200 text-right p-3 text-xs font-medium text-gray-900">{t('mentions')}</th>
                       <th className="bg-gray-50 border-b border-r border-gray-200 text-right p-3 text-xs font-medium text-gray-900">{t('shareOfVoice')}</th>
                       <th className="bg-gray-50 border-b border-gray-200 text-right p-3 text-xs font-medium text-gray-900">{t('sentiment')}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {providerCompetitors.map((competitor, idx) => {
+                    {sortedCompetitors.map((competitor, idx) => {
                       const competitorData = findCompetitorData(competitor.name);
                       const competitorUrl = competitorData?.url || generateFallbackUrl(competitor.name);
                       
@@ -213,6 +221,11 @@ export function ProviderRankingsTabs({
                             </div>
                           </td>
                           <td className="border-r border-gray-200 p-3 text-right">
+                            <span className="text-sm font-medium text-black">
+                              {competitor.mentions || 0}
+                            </span>
+                          </td>
+                          <td className="border-r border-gray-200 p-3 text-right">
                             <span className="text-sm text-black">
                               {competitor.shareOfVoice}%
                             </span>
@@ -227,7 +240,8 @@ export function ProviderRankingsTabs({
                 </table>
               </div>
             </TabsContent>
-          ))}
+          );
+          })}
         </Tabs>
       </CardContent>
     </Card>

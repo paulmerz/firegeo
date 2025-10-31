@@ -3,7 +3,7 @@
 import { useCustomer } from '@/hooks/useAutumnCustomer';
 import { useSession } from '@/lib/auth-client';
 import { useEffect } from 'react';
-import type { Session } from 'better-auth';
+import type { Session } from '@/lib/auth';
 
 // Separate component that uses Autumn hooks
 function AutumnVerifyContent({ session }: { session: Session | null }) {

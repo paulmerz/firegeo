@@ -75,7 +75,7 @@ export default async function middleware(request: NextRequest) {
   
   // Vérifier que nous avons une locale valide
   // Si la locale est absente ou invalide, laisser l'internationalisation gérer la redirection
-  if (!routing.locales.includes(locale as any)) {
+  if (!routing.locales.includes(locale as (typeof routing.locales)[number])) {
     return intlResponse;
   }
   

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { auth } from '@/lib/auth';
 import { Autumn } from 'autumn-js';
-import { performAnalysis, createSSEMessage } from '@/lib/analyze-common';
+import { performAnalysis, createSSEMessage, type AnalysisResult } from '@/lib/analyze-common';
 import { SSEEvent, type MockMode } from '@/lib/types';
 import { getLocaleFromRequest } from '@/lib/locale-utils';
 import { 
@@ -16,6 +16,12 @@ import {
 } from '@/config/constants';
 import { apiUsageTracker } from '@/lib/api-usage-tracker';
 import { logger } from '@/lib/logger';
+import { db } from '@/lib/db';
+import { brandAnalysis, brandAnalysisRuns } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+import { getOrCreateCompanyByUrl } from '@/lib/db/companies-service';
+import { getUserDefaultWorkspace } from '@/lib/db/workspace-service';
+import { insertMetricEvents } from '@/lib/scheduled-analysis-runner';
 
 function getAutumn() {
   const secret = process.env.AUTUMN_SECRET_KEY;
@@ -53,6 +59,28 @@ export async function POST(request: NextRequest) {
     const analysisId = `analysis-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     apiUsageTracker.startAnalysis(analysisId);
     logger.info(`[ApiUsageTracker] Début du tracking pour l'analyse: ${analysisId}`);
+
+    // Créer l'entrée brand_analysis dès le début avec les prompts
+    const workspaceId = await getUserDefaultWorkspace(sessionResponse.user.id);
+    
+    // Obtenir ou créer la company
+    const { company: resolvedCompany } = await getOrCreateCompanyByUrl({
+      url: company.url,
+      preferredName: company.name,
+    });
+
+    // Créer l'analyse avec les prompts
+    const [newAnalysis] = await db.insert(brandAnalysis).values({
+      userId: sessionResponse.user.id,
+      workspaceId,
+      companyId: resolvedCompany.id,
+      analysisName: `Analyse_${resolvedCompany.name}`,
+      competitors: userSelectedCompetitors || [],
+      prompts: customPrompts || [],
+      creditsUsed: (Array.isArray(customPrompts) ? customPrompts.length : 0) * 2,
+    }).returning();
+
+    logger.info(`[Analyze] Created brand_analysis: ${newAnalysis.id}`);
 
 
 
@@ -119,17 +147,62 @@ export async function POST(request: NextRequest) {
         // Log API usage summary
         apiUsageTracker.logSummary();
         
+        // Créer le brand_analysis_runs avec les résultats
+        const [analysisRun] = await db.insert(brandAnalysisRuns).values({
+          brandAnalysisId: newAnalysis.id,
+          status: 'completed',
+          startedAt: new Date(),
+          completedAt: new Date(),
+          creditsUsed: (Array.isArray(customPrompts) ? customPrompts.length : 0) * 2,
+          analysisData: analysisResult,
+          visibilityScore: (analysisResult as any)?.visibilityScore || null,
+          competitorsCount: userSelectedCompetitors?.length || 0,
+          promptsCount: customPrompts?.length || 0,
+        }).returning();
+
+        logger.info(`[Analyze] Created brand_analysis_runs: ${analysisRun.id}`);
+
+        // Parser les résultats pour brand_analysis_metric_events
+        if (analysisResult) {
+          try {
+            await insertMetricEvents(analysisRun.id, newAnalysis.id, analysisResult as Record<string, unknown>);
+            logger.info(`[Analyze] Inserted metric events for run: ${analysisRun.id}`);
+          } catch (error) {
+            logger.error('Failed to insert metric events:', error);
+          }
+        }
+
         await sendEvent({
           type: 'complete',
           stage: 'finalizing',
           data: {
             analysis: analysisResult,
+            analysisId: newAnalysis.id, // Inclure l'ID de l'analyse créée
             apiUsageSummary: apiUsageTracker.getSummary()
           },
           timestamp: new Date()
         });
       } catch (error) {
         logger.error('Analysis error:', error);
+        
+        // Créer un run avec le statut "failed"
+        try {
+          await db.insert(brandAnalysisRuns).values({
+            brandAnalysisId: newAnalysis.id,
+            status: 'failed',
+            startedAt: new Date(),
+            completedAt: new Date(),
+            creditsUsed: 0,
+            analysisData: null,
+            visibilityScore: null,
+            competitorsCount: userSelectedCompetitors?.length || 0,
+            promptsCount: customPrompts?.length || 0,
+          });
+          logger.info(`[Analyze] Created failed brand_analysis_runs for analysis: ${newAnalysis.id}`);
+        } catch (dbError) {
+          logger.error('Failed to create failed analysis run:', dbError);
+        }
+        
         await sendEvent({
           type: 'error',
           stage: 'finalizing',

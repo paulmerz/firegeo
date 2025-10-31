@@ -2,18 +2,25 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Loader2, Plus, Trash2, CheckIcon } from 'lucide-react';
 import { Company, AnalysisStage } from '@/lib/types';
 import { IdentifiedCompetitor, PromptCompletionStatus } from '@/lib/brand-monitor-reducer';
 import { getEnabledProviders } from '@/lib/provider-config';
 import { useTranslations } from 'next-intl';
-import { getDisplayPrompts, getDefaultPromptIndex } from '@/lib/prompt-utils';
+import { generateAdaptivePrompts } from '@/lib/prompt-utils';
 import { CREDIT_COST_PROMPT_GENERATION } from '@/config/constants';
 import { logger } from '@/lib/logger';
 import { useCreditsInvalidation } from '@/hooks/useCreditsInvalidation';
+
+// Type for prompts with custom flag
+type PromptWithType = {
+  text: string;
+  isCustom: boolean;
+};
 
 interface AnalysisProgressSectionProps {
   company: Company;
@@ -27,9 +34,7 @@ interface AnalysisProgressSectionProps {
   };
   prompts: string[];
   customPrompts: string[];
-  removedDefaultPrompts: number[];
   promptCompletionStatus: PromptCompletionStatus;
-  onRemoveDefaultPrompt: (index: number) => void;
   onRemoveCustomPrompt: (prompt: string) => void;
   onAddPromptClick: () => void;
   onStartAnalysis: (displayPrompts: string[]) => void;
@@ -87,97 +92,81 @@ export function AnalysisProgressSection({
   analysisProgress,
   prompts,
   customPrompts,
-  removedDefaultPrompts,
   promptCompletionStatus,
-  onRemoveDefaultPrompt,
   onRemoveCustomPrompt,
   onAddPromptClick,
   onStartAnalysis,
   onCreditsUpdate
 }: AnalysisProgressSectionProps) {
   const t = useTranslations('brandMonitor.analysisProgress');
-  const [displayPrompts, setDisplayPrompts] = useState<string[]>([]);
+  const [displayPrompts, setDisplayPrompts] = useState<PromptWithType[]>([]);
   const [loadingPrompts, setLoadingPrompts] = useState(false);
-  const [promptsGenerated, setPromptsGenerated] = useState(false);
-  const isGeneratingPromptsRef = useRef(false);
   const { invalidateCredits } = useCreditsInvalidation();
   
-  // Load prompts asynchronously - only on initial load
+  // Load existing prompts only if we're actively analyzing
   useEffect(() => {
-    async function loadPrompts() {
-      // Only use existing prompts if we're actively analyzing or if analysis has been completed
-      if (prompts.length > 0 && analyzing) {
-        setDisplayPrompts(prompts);
-        return;
-      }
-      
-      // Only generate prompts if we haven't generated them yet AND not currently generating
-      if (promptsGenerated || isGeneratingPromptsRef.current) {
-        return;
-      }
-      
-      // Set flags IMMEDIATELY before starting async work to avoid double calls in React StrictMode
-      setPromptsGenerated(true);
-      isGeneratingPromptsRef.current = true;
-      setLoadingPrompts(true);
-      try {
-        const adaptivePrompts = await getDisplayPrompts(
-          company,
-          customPrompts,
-          removedDefaultPrompts,
-          [], // Don't pass existing prompts to force adaptive generation
-          identifiedCompetitors
-        );
-        setDisplayPrompts(adaptivePrompts);
-        // Debit credits once when prompts are successfully displayed
-        try {
-          const res = await fetch('/api/credits', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ value: CREDIT_COST_PROMPT_GENERATION, reason: 'prompts_display' })
-          });
-          if (!res.ok) {
-            const err = (await res.json().catch(() => null)) as { error?: string } | null;
-            logger.warn('[Credits] Debit on prompts_display failed:', err?.error || res.statusText);
-          } else {
-            // Invalidate credits cache
-            await invalidateCredits();
-            if (onCreditsUpdate) {
-              onCreditsUpdate();
-            }
-          }
-        } catch (e) {
-          logger.warn('[Credits] Debit on prompts_display error:', e);
-        }
-      } catch (error) {
-        logger.error('Error loading adaptive prompts:', error);
-        // Fallback to basic prompts
-        setDisplayPrompts([
-          'Best tools in 2024?',
-          'Top tools for startups?', 
-          'Most popular tools today?',
-          'Recommended tools for professionals?'
-        ]);
-        setPromptsGenerated(true);
-      } finally {
-        setLoadingPrompts(false);
-        isGeneratingPromptsRef.current = false;
-      }
+    if (prompts.length > 0 && analyzing) {
+      // Convert string prompts to PromptWithType format
+      const promptsWithType = prompts.map(prompt => ({ text: prompt, isCustom: false }));
+      setDisplayPrompts(promptsWithType);
     }
-    
-    loadPrompts();
-  }, [company, analyzing, identifiedCompetitors, prompts, promptsGenerated, customPrompts, removedDefaultPrompts, onCreditsUpdate, invalidateCredits]);
+  }, [prompts, analyzing]);
   
-  // Handle adding new custom prompts without regenerating
+  // Handle adding new custom prompts
   useEffect(() => {
-    if (promptsGenerated && !analyzing && customPrompts.length > 0) {
-      // Only add new custom prompts that aren't already displayed
-      const newCustomPrompts = customPrompts.filter(cp => !displayPrompts.includes(cp));
-      if (newCustomPrompts.length > 0) {
-        setDisplayPrompts(prev => [...prev, ...newCustomPrompts]);
-      }
+    if (!analyzing && customPrompts.length > 0) {
+      // Convert custom prompts to the new format with isCustom flag
+      const customPromptsWithType = customPrompts.map(prompt => ({ text: prompt, isCustom: true }));
+      
+      // Get existing generated prompts (non-custom) from the current state
+      setDisplayPrompts(prev => {
+        const existingGenerated = prev.filter(p => !p.isCustom);
+        return [...existingGenerated, ...customPromptsWithType];
+      });
     }
-  }, [customPrompts, promptsGenerated, analyzing, displayPrompts]);
+  }, [customPrompts, analyzing]);
+
+  // Handle manual prompt generation
+  const handleGeneratePrompts = async () => {
+    if (!company || loadingPrompts) return;
+    
+    setLoadingPrompts(true);
+    try {
+      // Generate adaptive prompts
+      const generatedPrompts = await generateAdaptivePrompts(company, identifiedCompetitors);
+      
+      // Convert to new format with isCustom: false
+      const generatedPromptsWithType = generatedPrompts.map(prompt => ({ text: prompt, isCustom: false }));
+      
+      // Keep existing custom prompts and replace generated ones
+      const existingCustom = displayPrompts.filter(p => p.isCustom);
+      setDisplayPrompts([...generatedPromptsWithType, ...existingCustom]);
+      
+      // Debit credits
+      try {
+        const res = await fetch('/api/credits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: CREDIT_COST_PROMPT_GENERATION, reason: 'prompts_generation' })
+        });
+        if (!res.ok) {
+          const err = (await res.json().catch(() => null)) as { error?: string } | null;
+          logger.warn('[Credits] Debit on prompts_generation failed:', err?.error || res.statusText);
+        } else {
+          await invalidateCredits();
+          if (onCreditsUpdate) {
+            onCreditsUpdate();
+          }
+        }
+      } catch (e) {
+        logger.warn('[Credits] Debit on prompts_generation error:', e);
+      }
+    } catch (error) {
+      logger.error('Error generating prompts:', error);
+    } finally {
+      setLoadingPrompts(false);
+    }
+  };
   
   return (
     <div className="flex items-center justify-center animate-panel-in">
@@ -186,9 +175,27 @@ export function AnalysisProgressSection({
           <Card className="p-2 bg-card text-card-foreground gap-6 rounded-xl border py-6 shadow-sm border-gray-200 h-full flex flex-col">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                  {analyzing ? t('title') : t('prompts')}
-                </CardTitle>
+                <div className="flex flex-col gap-2">
+                  <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                    {analyzing ? t('title') : t('prompts')}
+                  </CardTitle>
+                  {!analyzing && (
+                    <Button
+                      onClick={handleGeneratePrompts}
+                      disabled={loadingPrompts}
+                      className="w-fit h-8 px-4 text-sm bg-orange-500 hover:bg-orange-600 text-white"
+                    >
+                      {loadingPrompts ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          {t('generating')}
+                        </>
+                      ) : (
+                        t('generatePromptsButton')
+                      )}
+                    </Button>
+                  )}
+                </div>
                 {/* Competitors list on the right */}
                 {!analyzing && (
                   <div className="flex items-center gap-2">
@@ -254,45 +261,50 @@ export function AnalysisProgressSection({
                     <Loader2 className="w-6 h-6 animate-spin text-orange-500 mr-2" />
                     <span className="text-gray-600">{t('generatingAdaptivePrompts')}</span>
                   </div>
+                ) : displayPrompts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <p className="text-gray-500 text-lg mb-4">{t('noPromptsMessage')}</p>
+                    <p className="text-gray-400 text-sm">{t('generateOrAddPrompts')}</p>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {displayPrompts.map((prompt, index) => {
-                    // Check if it's custom by looking in customPrompts array
-                    // Also consider AI-generated prompts as "removable" (not custom, but not default either)
-                    const isCustom = customPrompts.includes(prompt);
-                    return (
-                      <div key={`${prompt}-${index}`} className="group relative bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between gap-4">
-                          <p className="text-base font-medium text-gray-900 flex-1">
-                            {prompt}
-                          </p>
-                          {!analyzing && (
-                            <button
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                
-                                // Update local state immediately for better UX
-                                setDisplayPrompts(prev => prev.filter(p => p !== prompt));
-                                
-                                if (isCustom) {
-                                  // Remove from custom prompts
-                                  onRemoveCustomPrompt(prompt);
-                                } else {
-                                  // Try to find the original index for default prompts
-                                  const originalIndex = await getDefaultPromptIndex(prompt, company);
-                                  if (originalIndex !== -1) {
-                                    onRemoveDefaultPrompt(originalIndex);
-                                  } else {
-                                    // If it's not a default prompt, treat it as a custom prompt for removal
+                    {displayPrompts.map((promptObj, index) => {
+                      // Handle the new object format
+                      const prompt = promptObj.text;
+                      const isCustom = promptObj.isCustom;
+                      
+                      return (
+                        <div 
+                          key={`${prompt}-${index}`} 
+                          className={`group relative bg-white rounded-lg p-5 hover:shadow-md transition-shadow ${
+                            isCustom ? 'border-2 border-blue-500' : 'border border-gray-200'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <p className="text-base font-medium text-gray-900 flex-1">
+                              {prompt}
+                            </p>
+                            {!analyzing && (
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  
+                                  // Update local state immediately for better UX
+                                  setDisplayPrompts(prev => prev.filter((_, i) => i !== index));
+                                  
+                                  if (isCustom) {
+                                    // Remove from custom prompts
                                     onRemoveCustomPrompt(prompt);
+                                  } else {
+                                    // For generated prompts, just remove from display
+                                    // No need to call any callback since they're not persisted
                                   }
-                                }
-                              }}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-50"
-                            >
-                              <Trash2 className="w-4 h-4 text-red-600" />
-                            </button>
-                          )}
+                                }}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-600" />
+                              </button>
+                            )}
                         </div>
                         
                         {/* Provider icons and status */}
@@ -351,7 +363,7 @@ export function AnalysisProgressSection({
               {/* Start Analysis Button */}
               <div className="flex justify-center pt-4">
                 <button
-                  onClick={() => onStartAnalysis(displayPrompts)}
+                  onClick={() => onStartAnalysis(displayPrompts.map(p => p.text))}
                   disabled={analyzing || displayPrompts.length === 0}
                   className="h-10 px-6 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-orange-500 text-white hover:bg-orange-600 [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#c2410c,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(234,_88,_12,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#c2410c,_0px_1px_3px_0px_rgba(234,_88,_12,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#c2410c,_0px_1px_2px_0px_rgba(234,_88,_12,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
                 >

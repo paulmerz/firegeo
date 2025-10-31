@@ -15,7 +15,7 @@ export function withApiHandler(
   return async (request: NextRequest) => {
     try {
       if (options.rateLimit) {
-        const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+        const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
         await apiRateLimit(request, clientIP);
       }
 

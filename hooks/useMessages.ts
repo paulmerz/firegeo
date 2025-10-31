@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/lib/auth-client';
 import { API_ENDPOINTS, HTTP_METHODS, CONTENT_TYPES, CACHE_KEYS } from '@/config/constants';
-import { parseApiResponse, ClientApiError } from '@/lib/client-errors';
+import { parseApiResponse } from '@/lib/client-errors';
 import { useCreditsInvalidation } from './useCreditsInvalidation';
 
 interface SendMessageData {

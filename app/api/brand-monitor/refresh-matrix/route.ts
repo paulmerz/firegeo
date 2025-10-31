@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { analyzeCompetitorsByProvider } from '@/lib/ai-utils';
-import { Company, AIResponse } from '@/lib/types';
+import { Company, AIResponse, BrandVariation } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
   try {
-    const { company, responses, knownCompetitors } = await request.json();
+    const { company, responses, knownCompetitors, brandVariations } = await request.json();
     
     if (!company || !responses || !knownCompetitors) {
       return NextResponse.json(
@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
     const { providerRankings, providerComparison } = await analyzeCompetitorsByProvider(
       company as Company,
       responses as AIResponse[],
-      knownCompetitors as string[]
+      knownCompetitors as string[],
+      (brandVariations as Record<string, BrandVariation> | undefined)
     );
 
     logger.info('[RefreshMatrix] ✅ Matrice recalculée avec succès');

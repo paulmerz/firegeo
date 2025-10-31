@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/lib/auth-client';
-import type { BrandAnalysisWithSources } from '@/lib/db/schema';
+import type { BrandAnalysisWithSourcesAndCompany } from '@/lib/db/schema';
 
 export function useBrandAnalyses() {
   const { data: session } = useSession();
   
-  return useQuery<BrandAnalysisWithSources[]>({
+  return useQuery<BrandAnalysisWithSourcesAndCompany[]>({
     queryKey: ['brandAnalyses', session?.user?.id],
     queryFn: async () => {
       const res = await fetch('/api/brand-monitor/analyses');
@@ -21,7 +21,7 @@ export function useBrandAnalyses() {
 export function useBrandAnalysis(analysisId: string | null) {
   const { data: session } = useSession();
   
-  return useQuery<BrandAnalysisWithSources>({
+  return useQuery<BrandAnalysisWithSourcesAndCompany>({
     queryKey: ['brandAnalysis', analysisId],
     queryFn: async () => {
       const res = await fetch(`/api/brand-monitor/analyses/${analysisId}`);
@@ -39,7 +39,7 @@ export function useSaveBrandAnalysis() {
   const { data: session } = useSession();
   
   return useMutation({
-    mutationFn: async (analysisData: Partial<BrandAnalysisWithSources>) => {
+    mutationFn: async (analysisData: Partial<BrandAnalysisWithSourcesAndCompany>) => {
       const res = await fetch('/api/brand-monitor/analyses', {
         method: 'POST',
         headers: {
@@ -54,8 +54,15 @@ export function useSaveBrandAnalysis() {
       
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (savedAnalysis) => {
+      // Invalider le cache pour forcer le rechargement
       queryClient.invalidateQueries({ queryKey: ['brandAnalyses', session?.user?.id] });
+      
+      // Optionnel: Mise à jour optimiste du cache
+      queryClient.setQueryData(['brandAnalyses', session?.user?.id], (oldData: BrandAnalysisWithSourcesAndCompany[] | undefined) => {
+        if (!oldData) return [savedAnalysis];
+        return [savedAnalysis, ...oldData];
+      });
     },
   });
 }
@@ -91,6 +98,7 @@ export function useAnalysisTemplates() {
     companyName: string | null;
     industry: string | null;
     logo: string | null;
+    favicon: string | null;
     locale: string;
     competitorCount: number;
     lastAnalyzedAt: Date;

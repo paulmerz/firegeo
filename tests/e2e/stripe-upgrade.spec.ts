@@ -109,7 +109,7 @@ test('Upgrade de plan: Start puis Watch via Stripe', async ({ page }) => {
   // Capturer le prix (ex: "12,34 €" ou "12 €") affiché dans la StartCard
   const priceEl = startCard.locator('text=/\\d+[\\s\\u00A0]?(?:[.,]\\d{2})?\\s*€/').first();
   await expect(priceEl).toBeVisible({ timeout: 10000 });
-  const priceElText = (await priceEl.textContent())?.trim() ?? null;
+  // const priceElText = (await priceEl.textContent())?.trim() ?? null;
   const startPriceText = (await priceEl.innerText()).trim();
   const startPrice = cleanPrice(startPriceText);
   expect(Number.isFinite(startPrice)).toBeTruthy();
@@ -157,7 +157,6 @@ test('Upgrade de plan: Start puis Watch via Stripe', async ({ page }) => {
   const watchPrice = cleanPrice(watchPriceText);
 
   // La valeur startPrice a déjà été extraite plus haut; on la réutilise ici
-  // eslint-disable-next-line no-console
   console.log('DEBUG prices: start -> watch', /* startPrice already defined above */);
 
 

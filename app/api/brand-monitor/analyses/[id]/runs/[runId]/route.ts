@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { brandAnalyses, brandAnalysisRuns, brandAnalysisSources } from '@/lib/db/schema';
+import { brandAnalysis, brandAnalysisRuns, brandAnalysisSources } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { 
   AuthenticationError, 
@@ -27,8 +27,8 @@ export async function GET(
     // Récupérer l'analyse pour vérifier l'accès
     const [analysis] = await db
       .select()
-      .from(brandAnalyses)
-      .where(eq(brandAnalyses.id, params.id))
+      .from(brandAnalysis)
+      .where(eq(brandAnalysis.id, params.id))
       .limit(1);
 
     if (!analysis) {

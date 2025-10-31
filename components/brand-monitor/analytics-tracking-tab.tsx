@@ -30,6 +30,33 @@ interface AnalyticsTrackingTabProps {
   targetBrand: string;
 }
 
+const normalizeSeriesDates = (
+  series: CompetitorMetricSeries[]
+): CompetitorMetricSeries[] =>
+  series.map(serie => ({
+    ...serie,
+    dataPoints: serie.dataPoints.map(point => {
+      const rawDate = point.date as unknown;
+      const dateValue = rawDate instanceof Date ? rawDate : new Date(rawDate as string | number);
+
+      if (Number.isNaN(dateValue.getTime())) {
+        logger.warn('Invalid date in metrics history', {
+          runId: point.runId,
+          rawDate: point.date,
+        });
+        return {
+          ...point,
+          date: new Date(0)
+        };
+      }
+
+      return {
+        ...point,
+        date: dateValue
+      };
+    })
+  }));
+
 export function AnalyticsTrackingTab({ 
   analysisId, 
   competitors, 
@@ -112,7 +139,7 @@ export function AnalyticsTrackingTab({
     }
 
     const data = await response.json() as MetricsHistoryResponse;
-    return data.series;
+  return normalizeSeriesDates(data.series);
   };
 
   const handleProviderChange = async (providers: string[]) => {

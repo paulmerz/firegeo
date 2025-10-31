@@ -73,31 +73,18 @@ export function createHighlightedHtml(
     if (!result.mentioned || result.matches.length === 0) return;
     const className = getBrandHighlightClass(brandName, config);
     
-    // Get unique variations for this brand (use the actual matched texts)
-    const variations = [...new Set(result.matches.map((m) => m.text))].sort((a, b) => b.length - a.length);
-    
-    variations.forEach((variation) => {
-      // Search for the variation in the actual text instead of using provided index
-      const escaped = variation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
-      let match;
-      
-      while ((match = regex.exec(text)) !== null) {
-        // Avoid duplicate matches at the same position
-        const isDuplicate = allMatches.some(existing => 
-          existing.start === match.index && existing.end === match.index + match[0].length
-        );
-        
-        if (!isDuplicate) {
-          allMatches.push({
-            start: match.index,
-            end: match.index + match[0].length,
-            brandName,
-            text: match[0],
-            className,
-            confidence: result.matches.find(m => m.text === variation)?.confidence || 0.5
-          });
-        }
+    // Use the already detected matches instead of re-searching
+    result.matches.forEach((match) => {
+      // Only include matches that are actually in the current text
+      if (match.index >= 0 && match.index < text.length) {
+        allMatches.push({
+          start: match.index,
+          end: match.index + match.text.length,
+          brandName,
+          text: match.text,
+          className,
+          confidence: match.confidence
+        });
       }
     });
   });
@@ -162,7 +149,50 @@ export function highlightTextWithBrands(
     return text;
   }
 
-  const highlightedText = createHighlightedHtml(text, detectionResults, config);
+  // Project global indices to this local text by re-finding surfaces with word boundaries
+  const localized = new Map<string, BrandDetectionResultForHighlighting>();
+  const isWordChar = (ch: string | undefined) => !!ch && /[\p{L}\p{N}]/u.test(ch);
+  const findAll = (hay: string, needle: string): number[] => {
+    const positions: number[] = [];
+    if (!needle) return positions;
+    let start = 0;
+    while (start <= hay.length - needle.length) {
+      const idx = hay.indexOf(needle, start);
+      if (idx === -1) break;
+      const before = hay[idx - 1];
+      const after = hay[idx + needle.length];
+      const leftOk = !isWordChar(before);
+      const rightOk = !isWordChar(after);
+      if (leftOk && rightOk) positions.push(idx);
+      start = idx + Math.max(needle.length, 1);
+    }
+    return positions;
+  };
+
+  detectionResults.forEach((res, brand) => {
+    const locMatches: typeof res.matches = [];
+    const seenSpans = new Set<string>();
+    res.matches.forEach((m) => {
+      const positions = findAll(text, m.text);
+      positions.forEach((p) => {
+        const key = `${p}:${p + m.text.length}`;
+        if (seenSpans.has(key)) return;
+        seenSpans.add(key);
+        locMatches.push({
+          text: m.text,
+          index: p,
+          brandName: brand,
+          variation: m.variation,
+          confidence: m.confidence,
+        });
+      });
+    });
+    if (locMatches.length > 0) {
+      localized.set(brand, { mentioned: true, matches: locMatches, confidence: res.confidence });
+    }
+  });
+
+  const highlightedText = createHighlightedHtml(text, localized, config);
 
   // Return original text if no highlighting was applied
   if (highlightedText === text) {
@@ -211,14 +241,16 @@ export function highlightMarkdownChildren(
 
       // Recursively process children
       if (props.children) {
-        return React.cloneElement(child, {
-          children: highlightMarkdownChildren(
+        return React.createElement(
+          child.type,
+          props,
+          highlightMarkdownChildren(
             props.children,
             detectionResults,
             config,
             showHighlighting
-          ),
-        });
+          )
+        );
       }
 
       return child;

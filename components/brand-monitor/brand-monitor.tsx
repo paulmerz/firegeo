@@ -2,8 +2,11 @@
 
 import React, { useReducer, useCallback, useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
+import { useQueryClient } from '@tanstack/react-query';
+import { useSession } from '@/lib/auth-client';
 import type { Company, ProviderSpecificRanking } from '@/lib/types';
-import type { BrandAnalysisWithSources } from '@/lib/db/schema';
+import type { BrandAnalysisWithSourcesAndCompany } from '@/lib/db/schema';
+import type { Analysis as BrandAnalysis } from '@/lib/brand-monitor-reducer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
@@ -39,6 +42,9 @@ import { AddCompetitorModal } from './modals/add-competitor-modal';
 import { ProviderComparisonMatrix } from './provider-comparison-matrix';
 import { ProviderRankingsTabs } from './provider-rankings-tabs';
 import { WebSearchToggle } from './web-search-toggle';
+import { SchedulingSettingsTab } from './scheduling-settings-tab';
+import { RunsHistoryTab } from './runs-history-tab';
+import { AnalyticsTrackingTab } from './analytics-tracking-tab';
 import { logger } from '@/lib/logger';
 import { extractAnalysisSources, extractUrlsFromText } from '@/lib/brand-monitor-sources';
 import { ApiUsageSummary, ApiUsageSummaryData } from './api-usage-summary';
@@ -57,11 +63,25 @@ import { useSSEHandler } from './hooks/use-sse-handler';
 // Dev flag to restrict certain UI elements to local/dev only
 const isDev = process.env.NODE_ENV === 'development';
 
+// Type étendu pour inclure analysisData
+type BrandAnalysisWithAnalysisData = BrandAnalysisWithSourcesAndCompany & {
+  analysisData?: BrandAnalysis | null;
+  latestRun?: {
+    id: string;
+    status: string;
+    startedAt: Date | null;
+    completedAt: Date | null;
+    visibilityScore: number | null;
+    competitorsCount: number | null;
+    promptsCount: number | null;
+  } | null;
+};
+
 interface BrandMonitorProps {
   creditsAvailable?: number;
   onCreditsUpdate?: () => void;
-  selectedAnalysis?: BrandAnalysisWithSources | null;
-  onSaveAnalysis?: (analysis: BrandAnalysisWithSources) => void;
+  selectedAnalysis?: BrandAnalysisWithAnalysisData | null;
+  onSaveAnalysis?: (analysis: BrandAnalysisWithAnalysisData) => void;
   hideSourcesTab?: boolean;
   hideWebSearchSources?: boolean;
 }
@@ -87,12 +107,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function isAnalysisPayload(value: unknown): value is Analysis {
+function isAnalysisPayload(value: unknown): value is BrandAnalysis {
   if (!isRecord(value)) {
     return false;
   }
 
-  const candidate = value as Partial<Analysis>;
+  const candidate = value as Partial<BrandAnalysis>;
   return (
     isRecord(candidate.company) &&
     Array.isArray(candidate.competitors) &&
@@ -127,16 +147,16 @@ function normalizeScrapedCompany(input: RawCompany): Company {
 }
 
 function buildCompanyFromSelection(
-  selection: BrandAnalysisWithSources,
-  analysisData?: Analysis | null
+  selection: BrandAnalysisWithSourcesAndCompany,
+  analysisData?: BrandAnalysis | null
 ): Company | null {
   const reference = analysisData?.company;
-  const url = reference?.url ?? selection.url;
+  const url = reference?.url ?? selection.company?.url;
   if (!url) {
     return reference ?? null;
   }
 
-  const name = reference?.name ?? selection.companyName ?? url;
+  const name = reference?.name ?? selection.company?.name ?? url;
   const id = reference?.id ?? selection.id ?? url;
 
   return {
@@ -144,7 +164,7 @@ function buildCompanyFromSelection(
     name,
     url,
     description: reference?.description,
-    industry: reference?.industry ?? selection.industry ?? undefined,
+    industry: reference?.industry ?? selection.company?.businessType ?? undefined,
     logo: reference?.logo,
     favicon: reference?.favicon,
     scraped: reference?.scraped,
@@ -171,6 +191,8 @@ export function BrandMonitor({
   const [showTemplates, setShowTemplates] = useState(true);
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
   const { updateCreditsCache } = useCreditsInvalidation();
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
   
   // Hook pour récupérer les templates d'analyses
   const { data: templates, isLoading: templatesLoading } = useAnalysisTemplates();
@@ -179,39 +201,29 @@ export function BrandMonitor({
     state, 
     dispatch, 
     onCreditsUpdate,
-    onAnalysisComplete: (completedAnalysis) => {
-      // Only save if this is a new analysis (not loaded from existing)
+    onAnalysisComplete: (completedAnalysis, analysisId) => {
+      // Only process if this is a new analysis (not loaded from existing)
       if (!selectedAnalysis && !hasSavedRef.current) {
         hasSavedRef.current = true;
         
-        const normalizedSources = extractAnalysisSources(completedAnalysis);
-        const normalizedAnalysis = {
-          ...completedAnalysis,
-          sources: normalizedSources,
-        };
-
-        const analysisData: Partial<BrandAnalysisWithSources> = {
-          url: company?.url || url,
-          companyName: company?.name,
-          industry: company?.industry,
-          analysisData: normalizedAnalysis,
-          competitors: identifiedCompetitors,
-          prompts: analyzingPrompts,
-          creditsUsed: (completedAnalysis?.prompts?.length || 0) * (useWebSearch ? CREDIT_COST_PER_PROMPT_ANALYSIS_WEB : CREDIT_COST_PER_PROMPT_ANALYSIS_NO_WEB),
-        };
-
-        saveAnalysis.mutate(analysisData, {
-          onSuccess: (savedAnalysis: BrandAnalysisWithSources) => {
-            logger.info('Analysis saved successfully:', savedAnalysis);
-            if (onSaveAnalysis) {
+        logger.info('Analysis completed with ID:', analysisId);
+        
+        // Invalider le cache React Query pour recharger la liste des analyses
+        queryClient.invalidateQueries({ queryKey: ['brandAnalyses', session?.user?.id] });
+        
+        // Si on a un analysisId, on peut essayer de récupérer l'analyse complète
+        if (analysisId && onSaveAnalysis) {
+          // Récupérer l'analyse complète depuis l'API
+          fetch(`/api/brand-monitor/analyses/${analysisId}`)
+            .then(res => res.json())
+            .then((savedAnalysis: BrandAnalysisWithSourcesAndCompany) => {
+              logger.info('Retrieved saved analysis:', savedAnalysis);
               onSaveAnalysis(savedAnalysis);
-            }
-          },
-          onError: (error: unknown) => {
-            logger.error('Failed to save analysis:', error);
-            hasSavedRef.current = false;
-          }
-        });
+            })
+            .catch(error => {
+              logger.error('Failed to retrieve saved analysis:', error);
+            });
+        }
       }
     },
     onApiUsageSummary: (summary) => {
@@ -233,7 +245,6 @@ export function BrandMonitor({
     showPromptsList,
     showCompetitors,
     customPrompts,
-    removedDefaultPrompts,
     identifiedCompetitors,
     analysisProgress,
     promptCompletionStatus,
@@ -272,20 +283,8 @@ export function BrandMonitor({
       return fallback;
     }
 
-    if (selectedAnalysis?.analysisData) {
-      const structured = extractAnalysisSources(selectedAnalysis.analysisData, persisted, selectedAnalysis.id);
-      if (structured.length > 0) return structured;
-      // Fallback from saved analysisData responses
-      const analysisData = selectedAnalysis.analysisData as unknown as { responses?: Array<{ provider?: string; prompt?: string; response?: string }> };
-      const fallback: Array<{ provider?: string; prompt?: string; url: string; sourceType: string; rank: number }> = [];
-      (analysisData.responses || []).forEach((resp) => {
-        const urls = extractUrlsFromText(resp.response || '');
-        urls.forEach((u, idx) => {
-          fallback.push({ provider: resp.provider, prompt: resp.prompt, url: u, sourceType: 'web_search', rank: idx + 1 });
-        });
-      });
-      return fallback;
-    }
+    // Les sources sont maintenant récupérées depuis les runs via les sources persistées
+    // Pas besoin d'accéder à analysisData qui n'existe plus
 
     if (persisted) {
       return extractAnalysisSources(undefined, persisted, selectedAnalysis?.id);
@@ -312,17 +311,9 @@ export function BrandMonitor({
     }
 
     logger.info('[BrandMonitor] Loading existing analysis');
-    const analysisPayload = isAnalysisPayload(selectedAnalysis.analysisData)
-      ? selectedAnalysis.analysisData
-      : null;
-
-    if (analysisPayload) {
-      dispatch({ type: 'SET_ANALYSIS', payload: analysisPayload });
-    } else if (selectedAnalysis.analysisData) {
-      logger.warn('[BrandMonitor] Selected analysis data had unexpected shape; skipping load');
-    }
-
-    const restoredCompany = buildCompanyFromSelection(selectedAnalysis, analysisPayload);
+    
+    // Charger la company
+    const restoredCompany = buildCompanyFromSelection(selectedAnalysis, null);
     if (restoredCompany) {
       dispatch({ type: 'SCRAPE_SUCCESS', payload: restoredCompany });
     }
@@ -339,6 +330,20 @@ export function BrandMonitor({
         logger.info('[BrandMonitor] Restoring identified competitors with URLs:', restoredCompetitors);
         dispatch({ type: 'SET_IDENTIFIED_COMPETITORS', payload: restoredCompetitors });
       }
+    }
+
+    // Charger les données d'analyse complètes depuis analysisData
+    if (selectedAnalysis.analysisData && isAnalysisPayload(selectedAnalysis.analysisData)) {
+      logger.info('[BrandMonitor] Loading analysis data from selectedAnalysis.analysisData');
+      dispatch({ type: 'SET_ANALYSIS', payload: selectedAnalysis.analysisData });
+      
+      // Afficher directement les résultats
+      dispatch({ type: 'SET_SHOW_INPUT', payload: false });
+      dispatch({ type: 'SET_SHOW_COMPANY_CARD', payload: false });
+      dispatch({ type: 'SET_SHOW_PROMPTS_LIST', payload: false });
+      dispatch({ type: 'SET_SHOW_COMPETITORS', payload: false });
+    } else {
+      logger.warn('[BrandMonitor] No analysis data found in selectedAnalysis.analysisData');
     }
   }, [selectedAnalysis]);
   
@@ -802,13 +807,16 @@ export function BrandMonitor({
       if (!res.ok) return;
       
       const analysis = await res.json();
+      console.log('🔍 [Template] Analysis loaded:', analysis);
+      console.log('🔍 [Template] Company data:', analysis.company);
+      console.log('🔍 [Template] Company locales:', analysis.company?.locales);
       
       // Charger la company avec les concurrents filtrés par les overrides
       // Utiliser la même logique que le bouton "Identifier les Concurrents"
       const resolveRes = await fetch('/api/company/resolve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: analysis.url })
+        body: JSON.stringify({ url: analysis.company?.url })
       });
       
       let filteredCompetitors: IdentifiedCompetitor[] = [];
@@ -823,10 +831,15 @@ export function BrandMonitor({
       }
       
       // Dispatcher pour charger company + concurrents filtrés
+      console.log('🔍 [Template] Dispatching with:', {
+        company: analysis.company,
+        competitors: filteredCompetitors
+      });
+      
       dispatch({ 
         type: 'LOAD_FROM_TEMPLATE', 
         payload: {
-          ...analysis,
+          company: analysis.company,
           competitors: filteredCompetitors
         }
       });
@@ -843,6 +856,47 @@ export function BrandMonitor({
     setShowTemplates(false);
     dispatch({ type: 'SET_SHOW_INPUT', payload: true });
   }, []);
+  
+  const handleUpdateSchedule = useCallback(async (data: { periodicity: string; isScheduled: boolean }) => {
+    if (!selectedAnalysis) return;
+    
+    try {
+      const response = await fetch(`/api/brand-monitor/analyses/${selectedAnalysis.id}/schedule`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Erreur lors de la mise à jour');
+      }
+      
+      const result = await response.json();
+      
+      // Mettre à jour l'analyse locale
+      if (onSaveAnalysis) {
+        const updatedAnalysis = {
+          ...selectedAnalysis,
+          periodicity: result.analysis.periodicity,
+          isScheduled: result.analysis.isScheduled,
+          nextRunAt: result.analysis.nextRunAt,
+          lastRunAt: result.analysis.lastRunAt,
+          schedulePaused: result.analysis.schedulePaused,
+        };
+        onSaveAnalysis(updatedAnalysis);
+      }
+      
+      // Mettre à jour les crédits si nécessaire
+      if (onCreditsUpdate) {
+        onCreditsUpdate();
+      }
+      
+    } catch (error) {
+      logger.error('Failed to update schedule:', error);
+      throw error;
+    }
+  }, [selectedAnalysis, onSaveAnalysis, onCreditsUpdate]);
   
   const handleRefreshMatrix = useCallback(async () => {
     if (!company || !analysis?.responses || !identifiedCompetitors) {
@@ -1020,7 +1074,7 @@ export function BrandMonitor({
                 <WebSearchToggle
                   enabled={useWebSearch}
                   onChange={handleWebSearchToggle}
-                  disabled={analyzing}
+                  disabled={analyzing || (selectedAnalysis?.isScheduled || false)}
                 />
               </div>
               <p className="text-xs text-gray-500 mt-2 text-center">
@@ -1040,11 +1094,9 @@ export function BrandMonitor({
           analysisProgress={analysisProgress}
           prompts={analyzingPrompts}
           customPrompts={customPrompts}
-          removedDefaultPrompts={removedDefaultPrompts}
           promptCompletionStatus={promptCompletionStatus}
-          onRemoveDefaultPrompt={(index) => dispatch({ type: 'REMOVE_DEFAULT_PROMPT', payload: index })}
           onRemoveCustomPrompt={(prompt) => {
-            dispatch({ type: 'SET_CUSTOM_PROMPTS', payload: customPrompts.filter(p => p !== prompt) });
+            dispatch({ type: 'REMOVE_CUSTOM_PROMPT', payload: prompt });
           }}
           onAddPromptClick={() => {
             dispatch({ type: 'TOGGLE_MODAL', payload: { modal: 'addPrompt', show: true } });
@@ -1079,6 +1131,8 @@ export function BrandMonitor({
               }}
               onRestart={handleRestart}
               hideSourcesTab={hideSourcesTab}
+              isScheduled={selectedAnalysis?.isScheduled || false}
+              hasSelectedAnalysis={!!selectedAnalysis}
             />
             
             {/* Main Content Area */}
@@ -1183,6 +1237,29 @@ export function BrandMonitor({
                       />
                     </CardContent>
                   </Card>
+                )}
+
+                {activeResultsTab === 'settings' && selectedAnalysis && (
+                  <SchedulingSettingsTab
+                    analysis={selectedAnalysis}
+                    creditsAvailable={creditsAvailable}
+                    onUpdateSchedule={handleUpdateSchedule}
+                  />
+                )}
+
+
+                {activeResultsTab === 'history' && selectedAnalysis && (
+                  <RunsHistoryTab
+                    analysisId={selectedAnalysis.id}
+                  />
+                )}
+
+                {activeResultsTab === 'analytics' && selectedAnalysis && (
+                  <AnalyticsTrackingTab
+                    analysisId={selectedAnalysis.id}
+                    competitors={identifiedCompetitors}
+                    targetBrand={company?.name || ''}
+                  />
                 )}
               </div>
             </div>

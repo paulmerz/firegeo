@@ -1,6 +1,25 @@
 -- Migration 004: Add companies, competitors, and aliases tables
 -- Multi-tenant persistence layer for brand monitoring
 
+-- Créer les ENUMs nécessaires (idempotent)
+DO $$ 
+BEGIN
+    -- Créer enrichment_status ENUM s'il n'existe pas
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enrichment_status') THEN
+        CREATE TYPE enrichment_status AS ENUM('stub', 'partial', 'full');
+    END IF;
+    
+    -- Créer source ENUM s'il n'existe pas
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'source') THEN
+        CREATE TYPE source AS ENUM('scrape', 'user');
+    END IF;
+    
+    -- Créer scope ENUM s'il n'existe pas
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'scope') THEN
+        CREATE TYPE scope AS ENUM('global', 'workspace');
+    END IF;
+END $$;
+
 -- Workspaces and members
 CREATE TABLE IF NOT EXISTS "workspaces" (
     "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -33,7 +52,7 @@ CREATE TABLE IF NOT EXISTS "companies" (
     "technologies" text[],
     "business_model" text,
     "confidence_score" numeric(4,2) DEFAULT 0,
-    "enrichment_status" text CHECK (enrichment_status IN ('stub','partial','full')) DEFAULT 'stub',
+    "enrichment_status" "enrichment_status" DEFAULT 'stub',
     "last_refreshed_at" timestamptz,
     "next_refresh_at" timestamptz,
     "created_at" timestamptz DEFAULT now(),
@@ -86,6 +105,13 @@ BEGIN
         ADD CONSTRAINT company_locales_company_id_locale_key
         UNIQUE (company_id, locale);
     END IF;
+EXCEPTION
+    WHEN duplicate_table THEN
+        -- Constraint already exists, ignore
+        NULL;
+    WHEN duplicate_object THEN
+        -- Constraint already exists, ignore
+        NULL;
 END $$;
 
 CREATE INDEX IF NOT EXISTS "idx_company_locales_company" ON "company_locales"("company_id");
@@ -119,8 +145,8 @@ CREATE TABLE IF NOT EXISTS "competitor_edges" (
     "company_id" uuid NOT NULL REFERENCES "companies"("id") ON DELETE CASCADE,
     "competitor_id" uuid NOT NULL REFERENCES "companies"("id") ON DELETE CASCADE,
     "competition_score" numeric(4,2) NOT NULL,
-    "source" text CHECK (source IN ('scrape','user')) NOT NULL,
-    "scope" text CHECK (scope IN ('global','workspace')) NOT NULL DEFAULT 'global',
+    "source" source NOT NULL,
+    "scope" scope NOT NULL DEFAULT 'global',
     "workspace_id" uuid REFERENCES "workspaces"("id") ON DELETE CASCADE,
     "created_by_user_id" text,
     "updated_by_user_id" text,
@@ -144,36 +170,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS "uq_competitor_edge_scope" ON "competitor_edge
 CREATE INDEX IF NOT EXISTS "idx_competitor_edges_company" ON "competitor_edges"("company_id");
 CREATE INDEX IF NOT EXISTS "idx_competitor_edges_competitor" ON "competitor_edges"("competitor_id");
 
--- Brand alias sets table
-CREATE TABLE IF NOT EXISTS "brand_alias_sets" (
-    "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    "company_id" uuid NOT NULL REFERENCES "companies"("id") ON DELETE CASCADE,
-    "original" text NOT NULL,
-    "confidence" numeric(4,2) DEFAULT 1.00,
-    "scope" text CHECK (scope IN ('global','workspace')) NOT NULL DEFAULT 'global',
-    "workspace_id" uuid REFERENCES "workspaces"("id") ON DELETE CASCADE,
-    "created_by_user_id" text,
-    "updated_by_user_id" text,
-    "created_at" timestamptz DEFAULT now(),
-    "updated_at" timestamptz DEFAULT now(),
-    CONSTRAINT "chk_alias_scope_consistency" CHECK (
-        (scope = 'global' AND workspace_id IS NULL) OR
-        (scope = 'workspace' AND workspace_id IS NOT NULL)
-    )
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS "uq_alias_set_scope" ON "brand_alias_sets"(
-    "company_id", "original", "scope",
-    COALESCE("workspace_id", '00000000-0000-0000-0000-000000000000'::uuid)
-);
-
-CREATE INDEX IF NOT EXISTS "idx_brand_alias_sets_company" ON "brand_alias_sets"("company_id");
-
--- Brand aliases table - individual alias variations
+-- Brand aliases table - simplified structure (compatible with migration 005)
 CREATE TABLE IF NOT EXISTS "brand_aliases" (
     "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    "alias_set_id" uuid NOT NULL REFERENCES "brand_alias_sets"("id") ON DELETE CASCADE,
-    "alias" text NOT NULL
+    "company_id" uuid NOT NULL REFERENCES "companies"("id") ON DELETE CASCADE,
+    "alias" text NOT NULL,
+    "created_at" timestamptz DEFAULT now()
 );
 
 -- Add UNIQUE constraint if it doesn't exist (idempotent)
@@ -185,24 +187,31 @@ BEGIN
         JOIN pg_class rel ON rel.oid = con.conrelid
         WHERE rel.relname = 'brand_aliases'
           AND con.contype = 'u'
-          AND con.conname = 'brand_aliases_alias_set_id_alias_key'
+          AND con.conname = 'uq_brand_aliases_company_alias'
     ) THEN
         -- Remove potential duplicates first (keep first occurrence)
         DELETE FROM brand_aliases ba1
         WHERE ba1.id NOT IN (
-            SELECT DISTINCT ON (alias_set_id, alias) id
+            SELECT DISTINCT ON (company_id, alias) id
             FROM brand_aliases
-            ORDER BY alias_set_id, alias, id
+            ORDER BY company_id, alias, id
         );
         
         -- Create the UNIQUE constraint
         ALTER TABLE brand_aliases
-        ADD CONSTRAINT brand_aliases_alias_set_id_alias_key
-        UNIQUE (alias_set_id, alias);
+        ADD CONSTRAINT uq_brand_aliases_company_alias
+        UNIQUE (company_id, alias);
     END IF;
+EXCEPTION
+    WHEN duplicate_table THEN
+        -- Constraint already exists, ignore
+        NULL;
+    WHEN duplicate_object THEN
+        -- Constraint already exists, ignore
+        NULL;
 END $$;
 
-CREATE INDEX IF NOT EXISTS "idx_brand_aliases_set" ON "brand_aliases"("alias_set_id");
+CREATE INDEX IF NOT EXISTS "idx_brand_aliases_company" ON "brand_aliases"("company_id");
 
 -- Enable pg_trgm extension for fuzzy text search
 CREATE EXTENSION IF NOT EXISTS pg_trgm;

@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS brand_analysis_sources (
     analysis_id uuid NOT NULL REFERENCES brand_analyses(id) ON DELETE CASCADE,
     provider text,
     prompt text,
+    title text,
     domain text,
     url text,
     source_type text DEFAULT 'web_search',

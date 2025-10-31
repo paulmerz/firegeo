@@ -26,23 +26,55 @@ export interface BrandVariation {
  * Generate intelligent brand variations using AI
  * This is the single source of truth for brand variations
  */
-export async function generateIntelligentBrandVariations(brandName: string): Promise<BrandVariation> {
+export async function generateIntelligentBrandVariations(brandName: string, locale: string = 'en'): Promise<BrandVariation> {
   const openai = getOpenAIClient();
   
-  const prompt = `Generate comprehensive brand variations and aliases for the brand "${brandName}".
+  const coreBrand = brandName.trim();
+  const prompt = `You are a brand detection expert. Analyze this brand name and generate ONLY the variations that would be appropriate for brand detection in text.
 
-Include:
-- Common abbreviations and acronyms
-- Alternative spellings and transliterations
-- Nicknames and colloquial terms
-- Industry-specific terms
-- Common misspellings
-- Regional variations
+Brand: "${coreBrand}"
 
-Return ONLY a JSON array of strings, no explanations or formatting. Example:
-["Nike", "Nike Inc", "Nike Inc.", "Just Do It", "Swoosh"]
+Rules:
+1. Include the full brand name and common case variations
+2. Include ONLY distinctive parts that are NOT generic words (avoid: "cars", "technologies", "solutions", "systems", "group", "international", "global", "worldwide", "inc", "llc", "corp", "ltd", "limited", "company", "co")
+3. Include common abbreviations/acronyms ONLY if they are distinctive to this brand
+4. Do NOT include variations that would cause false positives (i.e Radical is a brand, but also an adjective and radical can easily be confused with the brand in a race car context)
+5. For single-word brands that are common adjectives/nouns, ONLY include the exact brand name with proper capitalization (i.e Orange must not be included as "orange" as it would cause a false positive)
+6. Avoid variations that could match common words in other contexts
+7. Be smart as you are a brand detection expert and you know what is a brand and what is not, how people call it or not
 
-Brand: ${brandName}`;
+Examples you can use for training :
+- "Caterham Cars" → ["Caterham Cars", "Caterham", "caterham cars", "caterham"]
+- "Louis Vuitton" → ["Louis Vuitton", "louis vuitton", "LV", "Vuitton"]
+- "Alpine" → ["Alpine", "alpine"] (NOT "BMW Alpine" - that's a different brand)
+- "Christian Dior" → ["Christian Dior", "christian dior", "Dior", "dior"]¨
+- "Dior" → ["Dior", "dior", "Christian Dior", "christian dior"] ("Dior" is the short form, "Christian Dior" is the full brand name)
+- "Yves Saint Laurent" → ["Saint Laurent", "YSL", "St Laurent", "Yves Saint Laurent", "yves saint laurent", "ysl"]
+- "Patek Philippe" → ["Patek Philippe", "patek philippe", "Patek"] (NOT "philippe" - too common as last name and nobody calls the brand "philippe")
+- "Audemars Piguet" → ["Audemars Piguet", "audemars piguet", "Audemars", "AP"] (NOT "Piguet" as nobody calls the brand "Piguet")
+- "Grand Seiko" → ["Grand Seiko", "grand seiko", "GS"] (NOT "Seiko" as it is another brand, much lower price range, not "Grand" as it is a generic term and nobody calls the brand "Grand")
+- "Nvidia Technologies" → ["Nvidia", "nvidia"] (NOT "technologies" - too generic)
+- "Apple Inc" → ["Apple"] (NOT "apple" - too common as fruit)
+- "Radical" → ["Radical"] (NOT "radical" - too common as adjective)
+- "Orange" → ["Orange"] (NOT "orange" - too common as fruit)
+- "Black" → ["Black"] (NOT "black" - too common as color)
+- "Nike" → ["Nike", "nike"] (OK - distinctive enough, not too common)
+- "Tesla" → ["Tesla", "tesla"] (OK - distinctive enough, not too common)
+- "Google" → ["Google", "google"] (OK - distinctive enough, not too common the verb "google" comes from the brand name)
+- "Amazon" → ["Amazon", "amazon"] (OK - distinctive enough, not too common)
+- "Lotus" → ["Lotus", "lotus"] (OK - distinctive enough)
+- "BMW" → ["BMW", "bmw"] (OK - distinctive acronym)
+- "Mercedes" → ["Mercedes", "mercedes"] (OK - distinctive name)
+- "Morgan Stanley" → ["Morgan Stanley", "Morgan Stanley & Co."] ("Morgan" is a generic name, "MS" is the acronym but never used alone)
+
+CRITICAL: For brands that are VERY common words (like "Radical", "Apple", "Orange", "Black", "Google"...), be VERY conservative and ONLY include the exact brand name with proper capitalization. For distinctive brands (like "Nike", "Tesla", "Amazon", "Mercedes"...), include both capitalized and lowercase versions.
+
+Return ONLY a JSON object with this exact structure:
+{
+  "original": "exact brand name",
+  "variations": ["variation1", "variation2", ...],
+  "confidence": 0.0
+}`;
 
   try {
     const startTime = Date.now();
@@ -51,7 +83,7 @@ Brand: ${brandName}`;
       messages: [
         {
           role: 'system',
-          content: 'You are a brand analysis expert. Generate comprehensive brand variations and aliases. Return only valid JSON arrays of strings.'
+          content: 'You are a brand detection expert. Follow the rules strictly and return a compact JSON object exactly as specified.'
         },
         {
           role: 'user',
@@ -87,28 +119,27 @@ Brand: ${brandName}`;
 
     logger.debug(`[BrandVariations] Generated variations for "${brandName}" in ${endTime - startTime}ms`);
 
-    // Parse the JSON response
-    let variations: string[];
+    // Parse JSON object { original, variations, confidence }
+    let parsed: any;
     try {
-      variations = JSON.parse(response);
+      parsed = JSON.parse(response);
     } catch (parseError) {
       logger.warn(`[BrandVariations] Failed to parse AI response for "${brandName}":`, response);
-      // Fallback to basic variations
-      variations = [brandName];
+      parsed = null;
     }
 
-    // Ensure we have the original brand name
-    if (!variations.includes(brandName)) {
-      variations.unshift(brandName);
-    }
+    const original = typeof parsed?.original === 'string' && parsed.original.trim() ? parsed.original.trim() : brandName;
+    const variationsRaw: unknown = parsed?.variations;
+    const confidence = typeof parsed?.confidence === 'number' ? parsed.confidence : 0.9;
 
-    // Remove duplicates and empty strings
-    const uniqueVariations = [...new Set(variations.filter(v => v && typeof v === 'string' && v.trim()))];
+    const variations = Array.isArray(variationsRaw) ? variationsRaw.filter((v: unknown): v is string => typeof v === 'string' && v.trim().length > 0) : [brandName];
+    if (!variations.includes(original)) variations.unshift(original);
+    const uniqueVariations = [...new Set(variations)];
 
     return {
-      original: brandName,
+      original,
       variations: uniqueVariations,
-      confidence: 0.9
+      confidence,
     };
 
   } catch (error) {
@@ -222,20 +253,27 @@ export function calculateBrandVisibilityByProvider(
     const totalResponses = extractions.length;
 
     allBrands.forEach(brand => {
-      let mentionCount = 0;
+      let mentionCount = 0; // Nombre total de mentions (toutes occurrences)
+      let responseCount = 0; // Nombre de réponses contenant au moins une mention
       let totalConfidence = 0;
 
       extractions.forEach(extraction => {
-        const mention = extraction.mentionedBrands.find(m => isSameBrand(m.brand, brand));                                                                      
-        if (mention) {
-          mentionCount++;
-          totalConfidence += mention.confidence;
+        // Compter TOUTES les mentions de cette marque dans cette extraction
+        // (y compris les variations comme "AP" pour "Audemars Piguet")
+        const mentions = extraction.mentionedBrands.filter(m => isSameBrand(m.brand, brand));
+        if (mentions.length > 0) {
+          responseCount++; // Cette réponse contient au moins une mention
+          mentionCount += mentions.length; // Ajouter toutes les mentions de cette réponse
+          mentions.forEach(mention => {
+            totalConfidence += mention.confidence;
+          });
         }
       });
 
       const mentioned = mentionCount > 0;
-      const averageConfidence = mentionCount > 0 ? totalConfidence / mentionCount : 0;                                                                          
-      const percentage = totalResponses > 0 ? (mentionCount / totalResponses) * 100 : 0;                                                                        
+      const averageConfidence = mentionCount > 0 ? totalConfidence / mentionCount : 0;
+      // Le pourcentage est basé sur le nombre de réponses qui contiennent la marque
+      const percentage = totalResponses > 0 ? (responseCount / totalResponses) * 100 : 0;                                                                        
 
       providerResults.set(brand, {
         mentioned,

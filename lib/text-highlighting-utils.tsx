@@ -71,11 +71,12 @@ export function highlightBrandMentions(
   const segments: HighlightedSegment[] = [];
   let lastEnd = 0;
   
-  nonOverlappingMatches.forEach(match => {
+  nonOverlappingMatches.forEach((match) => {
     // Add non-highlighted segment before this match
     if (match.start > lastEnd) {
+      const beforeText = text.substring(lastEnd, match.start);
       segments.push({
-        text: text.substring(lastEnd, match.start),
+        text: beforeText,
         highlighted: false
       });
     }
@@ -94,12 +95,12 @@ export function highlightBrandMentions(
   
   // Add remaining text
   if (lastEnd < text.length) {
+    const remainingText = text.substring(lastEnd);
     segments.push({
-      text: text.substring(lastEnd),
+      text: remainingText,
       highlighted: false
     });
   }
-  
   return segments;
 }
 

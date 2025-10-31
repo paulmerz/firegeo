@@ -200,3 +200,9 @@ async function monitorConstraints() {
 - [Migration 004](../migrations/004_add_companies_competitors_aliases.sql)
 
 
+
+
+
+
+
+

@@ -86,7 +86,7 @@ export async function generateBrandQueryPrompts({
     throw new Error('Target brand is required for prompt generation');
   }
 
-  const languageName = getLanguageName(locale);
+  const languageName = getLanguageName(locale || 'en');
   const prompt = buildPrompt(normalizedBrand, companyInfo, competitors, languageName);
   const competitorCount = competitors.length;
 
@@ -116,8 +116,7 @@ export async function generateBrandQueryPrompts({
       const response = await generateText({
         model,
         prompt,
-        temperature: 0.7,
-        maxTokens: 600
+        temperature: 0.7
       });
       const duration = Date.now() - startTime;
 

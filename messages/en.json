@@ -680,6 +680,16 @@
       "upgradeRequiredTitle": "Available from the \"Watch\" plan",
       "upgradeCta": "Upgrade my plan"
     },
+    "analyticsTracking": {
+      "title": "Analytics Tracking",
+      "description": "Evolution of metrics over time",
+      "visibilityScoreChart": "Visibility score",
+      "comparisonMatrixChart": "Comparison matrix - {provider}",
+      "rankingsChart": "Brand rankings - {provider}",
+      "noData": "No historical data available",
+      "selectProviders": "Select providers",
+      "dateRange": "Date range"
+    },
     "analysisProgress": {
       "title": "Analysis Progress",
       "prompts": "Prompts",
@@ -689,7 +699,11 @@
       "startAnalysis": "Start Analysis",
       "analyzing": "Analyzing...",
       "custom": "Custom",
-      "generatingAdaptivePrompts": "Generating adaptive prompts..."
+      "generatingAdaptivePrompts": "Generating adaptive prompts...",
+      "generating": "Generating...",
+      "generatePromptsButton": "Generate prompts with PromptGen©",
+      "noPromptsMessage": "No prompts yet",
+      "generateOrAddPrompts": "Generate prompts with PromptGen© or add your own prompts"
     },
     "errors": {
       "pleaseEnterUrl": "Please enter a URL",
@@ -732,6 +746,7 @@
       "brand": "Brand",
       "company": "Company",
       "visibility": "Visibility",
+      "mentions": "Mentions",
       "shareOfVoice": "Share of Voice",
       "shareOfVoiceShort": "SoV",
       "avgPositionShort": "Avg Pos",
@@ -767,6 +782,50 @@
       "title": "Sources",
       "showMore": "View {count} more",
       "showLess": "Show less"
+    },
+    "scheduling": {
+      "title": "Scheduling Settings",
+      "description": "Configure periodic analysis of your brand",
+      "frequency": "Frequency",
+      "frequencyDescription": "Choose how often to run this analysis",
+      "none": "None",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "enableScheduling": "Enable Scheduling",
+      "enableSchedulingDescription": "Enable to run this analysis automatically",
+      "nextRun": "Next Run",
+      "lastRun": "Last Run",
+      "never": "Never",
+      "creditsPerRun": "Credits per run",
+      "creditsPerMonth": "Credits per month",
+      "insufficientCreditsWarning": "Warning: {requiredCredits} credits required but only {availableCredits} available. Renewal on {renewalDate}.",
+      "unknownDate": "Unknown date",
+      "updateSchedule": "Update",
+      "updating": "Updating...",
+      "scheduleUpdated": "Schedule updated successfully",
+      "scheduleUpdateError": "Error updating schedule",
+      "lockedConfiguration": "Configuration locked",
+      "lockedConfigurationDescription": "This analysis is scheduled. Duplicate it to modify settings.",
+      "duplicateAnalysis": "Duplicate Analysis",
+      "pauseSchedule": "Pause",
+      "resumeSchedule": "Resume",
+      "schedulePaused": "Schedule paused",
+      "scheduleResumed": "Schedule resumed",
+      "runStatus": {
+        "pending": "Pending",
+        "running": "Running",
+        "completed": "Completed",
+        "failed": "Failed",
+        "insufficient_credits": "Insufficient credits",
+        "unknown": "Unknown"
+      },
+      "periodicity": {
+        "none": "None",
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly"
+      }
     }
   },
   "pricing": {

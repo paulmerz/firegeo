@@ -93,6 +93,11 @@ export function MetricTrendChart({
             const serie = series.find(s => 
               s.competitor === competitor && s.provider === provider
             );
+            const rawValue = entry.value;
+            const numericValue = typeof rawValue === 'number' ? rawValue : Number(rawValue);
+            const formattedValue = Number.isFinite(numericValue)
+              ? formatValue(numericValue)
+              : 'N/A';
             
             return (
               <div key={index} className="flex items-center gap-2 text-sm">
@@ -105,7 +110,7 @@ export function MetricTrendChart({
                 </span>
                 <span className="text-gray-500">({provider})</span>
                 <span className="font-semibold">
-                  {formatValue(entry.value)}
+                  {formattedValue}
                 </span>
               </div>
             );
@@ -174,6 +179,7 @@ export function MetricTrendChart({
                     
                     return (
                       <Dot
+                        key={payload.fullDate || `${serie.competitor}-${serie.provider}-${cx}-${cy}`}
                         cx={cx}
                         cy={cy}
                         r={4}

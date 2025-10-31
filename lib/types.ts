@@ -165,6 +165,25 @@ export interface HistoricalDataPoint {
   position: number;
 }
 
+// Types pour les graphiques de tendances
+export interface MetricDataPoint {
+  runId: string;
+  date: Date;
+  value: number;
+}
+
+export interface CompetitorMetricSeries {
+  competitor: string;
+  provider: string;
+  isOwn: boolean;
+  dataPoints: MetricDataPoint[];
+}
+
+export interface MetricsHistoryResponse {
+  metricType: string;
+  series: CompetitorMetricSeries[];
+}
+
 // SSE Event Types
 export type SSEEventType = 
   | 'start'

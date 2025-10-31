@@ -66,6 +66,29 @@ export function CompanyCard({
   const validLogoUrl = isValidUrl(company.logo) ? company.logo : null;
   const validFaviconUrl = isValidUrl(company.favicon) ? company.favicon : null;
 
+  const toAbsoluteUrl = (raw: string | undefined): string | null => {
+    if (!raw) return null;
+    const trimmed = raw.trim();
+    const withProtocol = trimmed.startsWith('http') ? trimmed : `https://${trimmed}`;
+    try {
+      // Validate construction
+      const u = new URL(withProtocol);
+      return u.toString();
+    } catch {
+      return null;
+    }
+  };
+
+  const getHostname = (raw: string | undefined): string => {
+    const absolute = toAbsoluteUrl(raw);
+    if (!absolute) return '';
+    try {
+      return new URL(absolute).hostname;
+    } catch {
+      return '';
+    }
+  };
+
   return (
     <>
     <Card className="p-2 bg-card text-card-foreground gap-6 rounded-xl border py-6 shadow-sm border-gray-200 overflow-hidden transition-all hover:shadow-lg">
@@ -104,7 +127,7 @@ export function CompanyCard({
           
           {/* Website link overlay on image */}
           <a
-            href={company.originalUrl || company.url}
+            href={toAbsoluteUrl(company.originalUrl || company.url) || '#'}
             target="_blank"
             rel="noopener noreferrer"
             className="absolute top-4 right-4 p-2 rounded-lg bg-white/90 backdrop-blur-sm hover:bg-white transition-all shadow-md group"
@@ -126,7 +149,7 @@ export function CompanyCard({
                 )}
                 <span className="text-sm text-gray-500 flex items-center gap-1">
                   <Globe className="h-3 w-3" />
-                  {new URL(company.originalUrl || company.url).hostname}
+                  {getHostname(company.originalUrl || company.url) || (company.originalUrl || company.url)}
                 </span>
               </div>
             </div>
@@ -152,13 +175,14 @@ export function CompanyCard({
           </div>
 
           <p className="text-sm text-gray-600 mb-4">
-            {company.description}
+            {company.description || (company as any).locales?.[0]?.description}
           </p>
 
           {/* Keywords inline */}
-          {company.scrapedData?.keywords && company.scrapedData.keywords.length > 0 && (
+          {((company.scrapedData?.keywords && company.scrapedData.keywords.length > 0) || 
+            ((company as any).locales?.[0]?.keywords && (company as any).locales[0].keywords.length > 0)) && (
             <div className="flex flex-wrap gap-2">
-              {company.scrapedData.keywords.map((keyword, idx) => (
+              {(company.scrapedData?.keywords || (company as any).locales?.[0]?.keywords || []).map((keyword: string, idx: number) => (
                 <span
                   key={idx}
                   className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"

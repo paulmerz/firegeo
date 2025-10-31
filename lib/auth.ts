@@ -102,3 +102,6 @@ export const auth = betterAuth({
     })
   ],
 });
+
+// Export the Session type for use in components
+export type Session = Awaited<ReturnType<typeof auth.api.getSession>>;

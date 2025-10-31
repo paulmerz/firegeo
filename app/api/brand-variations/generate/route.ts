@@ -7,7 +7,7 @@ import {
 } from '@/lib/api-errors';
 import { logger } from '@/lib/logger';
 import { upsertBrandAliases } from '@/lib/db/aliases-service';
-import { ensureBrandVariationsForBrand } from '@/lib/brand-detection-service';
+import { ensureBrandVariationsForBrand } from '@/lib/brand-variations-service';
 
 export async function POST(request: NextRequest) {
   try {

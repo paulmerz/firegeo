@@ -160,6 +160,7 @@ export const brandAliases = pgTable('brand_aliases', {
 export const workspacesRelations = relations(workspaces, ({ many }) => ({
   members: many(workspaceMembers),
   competitorEdges: many(competitorEdges),
+  competitorEdgeOverrides: many(competitorEdgeOverrides),
 }));
 
 export const workspaceMembersRelations = relations(workspaceMembers, ({ one }) => ({
@@ -173,8 +174,10 @@ export const companiesRelations = relations(companies, ({ many }) => ({
   locales: many(companyLocales),
   urls: many(companyUrls),
   snapshots: many(scrapeSnapshots),
-  competitorEdges: many(competitorEdges),
-  competitorOf: many(competitorEdges, { relationName: 'competitor' }),
+  competitorEdgesAsCompany: many(competitorEdges, { relationName: 'company' }),
+  competitorEdgesAsCompetitor: many(competitorEdges, { relationName: 'competitor' }),
+  competitorEdgeOverridesAsCompany: many(competitorEdgeOverrides, { relationName: 'company' }),
+  competitorEdgeOverridesAsCompetitor: many(competitorEdgeOverrides, { relationName: 'competitor' }),
   brandAliases: many(brandAliases),
 }));
 
@@ -220,6 +223,23 @@ export const brandAliasesRelations = relations(brandAliases, ({ one }) => ({
   company: one(companies, {
     fields: [brandAliases.companyId],
     references: [companies.id],
+  }),
+}));
+
+export const competitorEdgeOverridesRelations = relations(competitorEdgeOverrides, ({ one }) => ({
+  company: one(companies, {
+    fields: [competitorEdgeOverrides.companyId],
+    references: [companies.id],
+    relationName: 'company',
+  }),
+  competitor: one(companies, {
+    fields: [competitorEdgeOverrides.competitorId],
+    references: [companies.id],
+    relationName: 'competitor',
+  }),
+  workspace: one(workspaces, {
+    fields: [competitorEdgeOverrides.workspaceId],
+    references: [workspaces.id],
   }),
 }));
 

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { brandAnalyses, brandAnalysisRuns } from '@/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { brandAnalysis, brandAnalysisRuns } from '@/lib/db/schema';
+import { eq, desc, sql } from 'drizzle-orm';
 import { 
   AuthenticationError, 
   NotFoundError
@@ -27,8 +27,8 @@ export async function GET(
     // Récupérer l'analyse pour vérifier l'accès
     const [analysis] = await db
       .select()
-      .from(brandAnalyses)
-      .where(eq(brandAnalyses.id, params.id))
+      .from(brandAnalysis)
+      .where(eq(brandAnalysis.id, params.id))
       .limit(1);
 
     if (!analysis) {
@@ -64,7 +64,7 @@ export async function GET(
 
     // Compter le total pour la pagination
     const [totalCount] = await db
-      .select({ count: brandAnalysisRuns.id })
+      .select({ count: sql<number>`count(*)::int` })
       .from(brandAnalysisRuns)
       .where(eq(brandAnalysisRuns.brandAnalysisId, params.id));
 

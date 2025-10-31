@@ -1344,7 +1344,7 @@
         },
         "visibility_score": {
           "name": "visibility_score",
-          "type": "integer",
+          "type": "numeric(10, 2)",
           "primaryKey": false,
           "notNull": false
         },

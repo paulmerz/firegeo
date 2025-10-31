@@ -4,14 +4,26 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { AIResponse, type BrandVariation } from '@/lib/types';
-import type { BrandDetectionResult, BrandDetectionMatch } from '@/lib/brand-detection-service';
+export interface BrandDetectionMatch {
+  text: string;
+  index: number;
+  brandName: string;
+  variation: string;
+  confidence: number;
+  snippet?: string;
+}
+
+export interface BrandDetectionResult {
+  mentioned: boolean;
+  matches: BrandDetectionMatch[];
+  confidence: number;
+}
 import { highlightBrandMentions, segmentsToReactElements, type HighlightedSegment } from '@/lib/text-highlighting-utils';
 import {
   highlightMarkdownChildren as highlightMarkdownChildrenUtil,
   type BrandHighlightingConfig
 } from '@/lib/brand-highlighting-utils';
 import { cleanProviderResponse } from '@/lib/provider-response-utils';
-import { detectBrandsInResponse } from '@/lib/brand-detection-service';
 import { useBrandDetection } from '@/hooks/useBrandDetection';
 import { maskUrlsInText } from '@/lib/text-url-masking';
 
@@ -86,10 +98,14 @@ export function HighlightedResponse({
   React.useEffect(() => {
     // Impossible d'exécuter la détection locale sans variations pré-calculées (pas de clé API côté client)
     if (!brandVariations || Object.keys(brandVariations).length === 0) {
+      console.log('[HighlightedResponse] No brandVariations provided, skipping detection', { brandVariations });
       detectionResultsCache.delete(cacheKey);
       setEnhancedDetectionResults(new Map());
       return;
     }
+    
+    console.log('[HighlightedResponse] BrandVariations provided:', brandVariations);
+    
 
     if (!showHighlighting) {
       // Skip if highlighting is disabled
@@ -104,32 +120,73 @@ export function HighlightedResponse({
           return;
         }
 
-        const detection = await detectBrandsInResponse(
-          maskedResponse,
-          brandName,
-          competitors,
-          {
-            caseSensitive: false,
-            excludeNegativeContext: false,
-            minConfidence: 0.3
-          },
-          undefined,
-          brandVariations
-        );
-
-        const results = new Map<string, BrandDetectionResult>();
-        results.set(brandName, {
-          mentioned: detection.brandMentioned,
-          matches: detection.detectionDetails.brandMatches || [],
-          confidence: detection.confidence
+        // Use the new BrandMatcher API instead of regex-based detection
+        console.log('[HighlightedResponse] Detecting brands in text:', { 
+          originalLength: response.response.length,
+          maskedLength: maskedResponse.length,
+          textChanged: response.response !== maskedResponse
         });
-
-        detection.detectionDetails.competitorMatches.forEach((matches, competitor) => {
-          results.set(competitor, {
-            mentioned: matches.length > 0,
-            matches,
-            confidence: matches.length > 0 ? Math.max(...matches.map(m => m.confidence)) : 0
+        
+        const apiResponse = await fetch('/api/brand-detection/match', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            text: maskedResponse, 
+            brandVariations 
+          })
+        });
+        
+        if (!apiResponse.ok) {
+          throw new Error(`Brand detection API failed: ${apiResponse.status}`);
+        }
+        
+        const { matches, brandIdToName } = await apiResponse.json();
+        
+        // Convert matches to BrandDetectionResult format
+        const results = new Map<string, BrandDetectionResult>();
+        
+        // Initialize all brands (target + competitors) avec leurs noms d'affichage
+        const allBrands = [brandName, ...competitors];
+        allBrands.forEach(brand => {
+          results.set(brand, {
+            mentioned: false,
+            matches: [],
+            confidence: 0
           });
+        });
+        
+        // Helper to map detected display name to the closest known (target or competitors)
+        const normalize = (v: string) => v.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').trim();
+        const knownNames = new Map<string, string>();
+        [brandName, ...competitors].forEach(n => knownNames.set(normalize(n), n));
+
+        const mapToKnown = (name: string) => {
+          const n = normalize(name);
+          if (knownNames.has(n)) return knownNames.get(n)!;
+          // try contains both ways
+          for (const [kn, original] of knownNames.entries()) {
+            if (n.includes(kn) || kn.includes(n)) return original;
+          }
+          return name;
+        };
+        
+        // Process matches from BrandMatcher
+        matches.forEach((match: { brandId: string; surface: string; start: number; end: number }) => {
+          const displayNameRaw = (brandIdToName && brandIdToName[match.brandId]) || match.brandId;
+          const displayName = mapToKnown(displayNameRaw);
+          if (!results.has(displayName)) {
+            results.set(displayName, { mentioned: false, matches: [], confidence: 0 });
+          }
+          const result = results.get(displayName)!;
+            result.mentioned = true;
+            result.matches.push({
+              text: match.surface,
+              index: match.start,
+              brandName: displayName,
+              variation: match.surface,
+              confidence: 1.0
+            });
+            result.confidence = Math.max(result.confidence, 1.0);
         });
 
         detectionResultsCache.set(cacheKey, results);
@@ -323,7 +380,7 @@ export function HighlightedText({
   hideWebSearchSources?: boolean;
 }) {
   const maskedText = maskUrlsInText(text, hideWebSearchSources);
-  const { detectMultipleBrands } = useBrandDetection();
+  // Note: We use the service function directly instead of the hook for consistency
   const normalizedTargetBrand = React.useMemo(() => brandName.trim().toLowerCase(), [brandName]);
 
   const competitorNameSet = React.useMemo(() => {
@@ -373,48 +430,67 @@ export function HighlightedText({
   React.useEffect(() => {
     const performDetection = async () => {
       try {
-        // If brand variations are provided, use them for more efficient detection
-        if (brandVariations && Object.keys(brandVariations).length > 0) {
-          const results = new Map<string, BrandDetectionResult>();
-          
-          for (const brandName of brandCandidates) {
-            const variation = brandVariations[brandName];
-            if (variation) {
-              const textLower = text.toLowerCase();
-              const matches: BrandDetectionMatch[] = [];
-              
-              // Simple text matching with pre-generated variations
-              variation.variations.forEach((variationText: string) => {
-                const index = textLower.indexOf(variationText.toLowerCase());
-                if (index !== -1) {
-                  matches.push({
-                    text: maskedText.substring(index, index + variationText.length),
-                    index,
-                    brandName,
-                    variation: variationText,
-                    confidence: variation.confidence
-                  });
-                }
-              });
-              
-              results.set(brandName, {
-                mentioned: matches.length > 0,
-                matches,
-                confidence: matches.length > 0 ? variation.confidence : 0
-              });
-            }
-          }
-          
-          setDetectionResults(results);
-        } else {
-          // Fallback to full AI detection
-          const results = await detectMultipleBrands(maskedText, brandCandidates, {
-            caseSensitive: false,
-            excludeNegativeContext: false,
-            minConfidence: 0.3
-          });
-          setDetectionResults(results);
+        
+        // Use the new BrandMatcher API for consistency with HighlightedResponse
+        const apiResponse = await fetch('/api/brand-detection/match', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            text: maskedText, 
+            brandVariations 
+          })
+        });
+        
+        if (!apiResponse.ok) {
+          throw new Error(`Brand detection API failed: ${apiResponse.status}`);
         }
+        
+        const { matches, brandIdToName } = await apiResponse.json();
+        
+        // Convert matches to BrandDetectionResult format
+        const results = new Map<string, BrandDetectionResult>();
+        
+        // Initialize all brand candidates (display names)
+        brandCandidates.forEach(brand => {
+          results.set(brand, {
+            mentioned: false,
+            matches: [],
+            confidence: 0
+          });
+        });
+        
+        // Process matches from BrandMatcher
+        const normalize2 = (v: string) => v.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').trim();
+        const knownSet = new Map<string, string>();
+        brandCandidates.forEach(n => knownSet.set(normalize2(n), n));
+        const mapToKnown2 = (name: string) => {
+          const n = normalize2(name);
+          if (knownSet.has(n)) return knownSet.get(n)!;
+          for (const [kn, original] of knownSet.entries()) {
+            if (n.includes(kn) || kn.includes(n)) return original;
+          }
+          return name;
+        };
+        matches.forEach((match: { brandId: string; surface: string; start: number; end: number }) => {
+          const displayNameRaw = (brandIdToName && brandIdToName[match.brandId]) || match.brandId;
+          const displayName = mapToKnown2(displayNameRaw);
+          if (!results.has(displayName)) {
+            results.set(displayName, { mentioned: false, matches: [], confidence: 0 });
+          }
+          const result = results.get(displayName)!;
+            result.mentioned = true;
+            result.matches.push({
+              text: match.surface,
+              index: match.start,
+            brandName: displayName,
+              variation: match.surface,
+              confidence: 1.0
+            });
+            result.confidence = Math.max(result.confidence, 1.0);
+        });
+        
+        
+        setDetectionResults(results);
       } catch (error) {
         console.error('Brand detection failed:', error);
         setDetectionResults(new Map());
@@ -422,7 +498,7 @@ export function HighlightedText({
     };
 
     performDetection();
-  }, [brandCandidates, maskedText, brandVariations, detectMultipleBrands, text]);
+  }, [brandCandidates, maskedText, brandVariations]);
 
   const segments = React.useMemo(() => highlightBrandMentions(maskedText, detectionResults), [maskedText, detectionResults]);
 

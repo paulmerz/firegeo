@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { brandAnalysisRuns, brandAnalysis, brandAnalysisMetricEvents } from '@/lib/db/schema';
+import { brandAnalysisRuns, brandAnalysis, brandAnalysisMetricEvents, companies } from '@/lib/db/schema';
 import { eq, and, inArray, gte, lte, desc } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
@@ -39,8 +39,38 @@ export async function GET(
       return NextResponse.json({ error: 'Analysis not found' }, { status: 404 });
     }
 
-    // Construire la requête pour récupérer les métriques directement depuis la table
-    let query = db
+    // Conditions dynamiques pour la requête
+    const conditions = [
+      eq(brandAnalysisMetricEvents.brandAnalysisId, analysisId),
+      eq(brandAnalysisMetricEvents.metricType, metricType),
+      eq(brandAnalysisRuns.status, 'completed')
+    ];
+
+    if (competitorNames.length > 0) {
+      conditions.push(inArray(brandAnalysisMetricEvents.competitorName, competitorNames));
+    }
+
+    if (providers.length > 0) {
+      conditions.push(inArray(brandAnalysisMetricEvents.provider, providers));
+    }
+
+    if (startDate) {
+      const start = new Date(startDate);
+      if (!Number.isNaN(start.getTime())) {
+        conditions.push(gte(brandAnalysisRuns.completedAt, start));
+      }
+    }
+
+    if (endDate) {
+      const end = new Date(endDate);
+      if (!Number.isNaN(end.getTime())) {
+        conditions.push(lte(brandAnalysisRuns.completedAt, end));
+      }
+    }
+
+    const whereClause = and(...conditions);
+
+    const results = await db
       .select({
         runId: brandAnalysisMetricEvents.runId,
         competitorName: brandAnalysisMetricEvents.competitorName,
@@ -48,42 +78,14 @@ export async function GET(
         metricValue: brandAnalysisMetricEvents.metricValue,
         recordedAt: brandAnalysisMetricEvents.recordedAt,
         completedAt: brandAnalysisRuns.completedAt,
-        isOwn: sql<boolean>`CASE WHEN ${brandAnalysisMetricEvents.competitorName} = ${brandAnalysis.companyName} THEN true ELSE false END`
+        isOwn: sql<boolean>`CASE WHEN ${brandAnalysisMetricEvents.competitorName} = ${companies.name} THEN true ELSE false END`
       })
       .from(brandAnalysisMetricEvents)
       .innerJoin(brandAnalysisRuns, eq(brandAnalysisMetricEvents.runId, brandAnalysisRuns.id))
       .innerJoin(brandAnalysis, eq(brandAnalysisMetricEvents.brandAnalysisId, brandAnalysis.id))
-      .where(
-        and(
-          eq(brandAnalysisMetricEvents.brandAnalysisId, analysisId),
-          eq(brandAnalysisMetricEvents.metricType, metricType),
-          eq(brandAnalysisRuns.status, 'completed')
-        )
-      );
-
-    // Filtres optionnels
-    if (competitorNames.length > 0) {
-      query = query.where(inArray(brandAnalysisMetricEvents.competitorName, competitorNames));
-    }
-
-    if (providers.length > 0) {
-      query = query.where(inArray(brandAnalysisMetricEvents.provider, providers));
-    }
-
-    if (startDate) {
-      const start = new Date(startDate);
-      query = query.where(gte(brandAnalysisRuns.completedAt, start));
-    }
-
-    if (endDate) {
-      const end = new Date(endDate);
-      query = query.where(lte(brandAnalysisRuns.completedAt, end));
-    }
-
-    // Ordonner par date de completion
-    query = query.orderBy(desc(brandAnalysisRuns.completedAt));
-
-    const results = await query;
+      .innerJoin(companies, eq(brandAnalysis.companyId, companies.id))
+      .where(whereClause)
+      .orderBy(desc(brandAnalysisRuns.completedAt));
 
     logger.info(`📊 Query returned ${results.length} results`);
 
@@ -111,10 +113,24 @@ export async function GET(
         });
       }
 
+      const numericValue = typeof row.metricValue === 'number'
+        ? row.metricValue
+        : Number(row.metricValue);
+
+      if (Number.isNaN(numericValue)) {
+        logger.warn('Invalid metric value encountered in metrics history', {
+          runId: row.runId,
+          competitor: row.competitorName,
+          provider: row.provider,
+          rawValue: row.metricValue
+        });
+        return;
+      }
+
       seriesMap.get(key)!.dataPoints.push({
         runId: row.runId,
         date: row.completedAt || row.recordedAt,
-        value: row.metricValue
+        value: numericValue
       });
     });
 

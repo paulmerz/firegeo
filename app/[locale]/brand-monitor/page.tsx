@@ -10,7 +10,22 @@ import { useCustomer, useRefreshCustomer } from '@/hooks/useAutumnCustomer';
 import { useBrandAnalyses, useBrandAnalysis, useDeleteBrandAnalysis } from '@/hooks/useBrandAnalyses';
 import { useCreditsInvalidation } from '@/hooks/useCreditsInvalidation';
 import { Button } from '@/components/ui/button';
-import type { BrandAnalysisWithSources } from '@/lib/db/schema';
+import type { BrandAnalysisWithSourcesAndCompany } from '@/lib/db/schema';
+import type { Analysis as BrandAnalysis } from '@/lib/brand-monitor-reducer';
+
+// Type étendu pour inclure analysisData
+type BrandAnalysisWithAnalysisData = BrandAnalysisWithSourcesAndCompany & {
+  analysisData?: BrandAnalysis | null;
+  latestRun?: {
+    id: string;
+    status: string;
+    startedAt: Date | null;
+    completedAt: Date | null;
+    visibilityScore: number | null;
+    competitorsCount: number | null;
+    promptsCount: number | null;
+  } | null;
+};
 import { format } from 'date-fns';
 import { useSession } from '@/lib/auth-client';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -35,9 +50,9 @@ function BrandMonitorContent() {
   const { data: analyses, isLoading: analysesLoading } = useBrandAnalyses();
   const { data: currentAnalysis } = useBrandAnalysis(selectedAnalysisId);
   const deleteAnalysis = useDeleteBrandAnalysis();
-  const analysesList: BrandAnalysisWithSources[] = analyses ?? [];
+  const analysesList: BrandAnalysisWithAnalysisData[] = analyses ?? [];
   const renderAnalysisItem = (
-    item: BrandAnalysisWithSources
+    item: BrandAnalysisWithAnalysisData
   ): ReactElement => {
     return (
       <div
@@ -50,10 +65,10 @@ function BrandMonitorContent() {
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0">
             <p className="font-medium truncate">
-              {item.companyName || t('brandMonitor.untitledAnalysis')}
+              {item.analysisName || item.company?.name || t('brandMonitor.untitledAnalysis')}
             </p>
             <p className="text-sm text-gray-500 truncate">
-              {item.url}
+              {item.company?.url || item.company?.name || ''}
             </p>
             <p className="text-xs text-gray-400">
               {item.createdAt && format(new Date(item.createdAt), 'MMM d, yyyy')}
@@ -209,9 +224,11 @@ function BrandMonitorContent() {
               creditsAvailable={credits} 
               onCreditsUpdate={handleCreditsUpdate}
               selectedAnalysis={selectedAnalysisId ? currentAnalysis : null}
-              onSaveAnalysis={() => {
-                // This will be called when analysis completes
-                // We'll implement this in the next step
+              onSaveAnalysis={(savedAnalysis) => {
+                // Mettre à jour l'analyse sélectionnée immédiatement
+                if (savedAnalysis) {
+                  setSelectedAnalysisId(savedAnalysis.id);
+                }
               }}
               // UI gating by plan
               hideSourcesTab={isStartPlan}

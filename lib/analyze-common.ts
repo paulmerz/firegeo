@@ -6,7 +6,7 @@ import { extractAnalysisSources } from './brand-monitor-sources';
 import { getConfiguredProviders } from './provider-config';
 import { apiUsageTracker, type ApiUsageSummary } from './api-usage-tracker';
 import { logger } from './logger';
-import { ensureBrandVariationsForBrand } from './brand-detection-service';
+import { ensureBrandVariationsForBrand } from './brand-variations-service';
 import type { BrandVariation } from './types';
 
 export interface AnalysisConfig {
@@ -40,6 +40,8 @@ export interface AnalysisResult {
   webSearchUsed?: boolean;
   apiUsageSummary?: ApiUsageSummary;
   brandVariations?: Record<string, BrandVariation>;
+  // Signature d'index pour compatibilité avec Record<string, unknown>
+  [key: string]: unknown;
 }
 
 /**
@@ -463,7 +465,36 @@ export async function performAnalysis({
     const { getBulkAliases } = await import('@/lib/db/aliases-service');
     
     // Get company IDs for target and competitors
-    const companyIds = [company.id, ...competitors].filter(Boolean);
+    // For competitors, we need to resolve them to get their company IDs
+    const companyIds = [company.id];
+    const competitorNameToId: Record<string, string> = {};
+    
+    // Resolve competitors to get their company IDs
+    for (const competitorName of competitors) {
+      try {
+        // Try to find the competitor by name in the database
+        const { db } = await import('@/lib/db');
+        const { companies } = await import('@/lib/db/schema/companies');
+        const { eq } = await import('drizzle-orm');
+        
+        const [competitorCompany] = await db
+          .select({ id: companies.id, name: companies.name })
+          .from(companies)
+          .where(eq(companies.name, competitorName))
+          .limit(1);
+        
+        if (competitorCompany) {
+          companyIds.push(competitorCompany.id);
+          competitorNameToId[competitorName] = competitorCompany.id;
+          logger.debug(`[Brand Variations] Resolved competitor "${competitorName}" to ID: ${competitorCompany.id}`);
+        } else {
+          logger.warn(`[Brand Variations] Could not resolve competitor "${competitorName}" to company ID`);
+        }
+      } catch (error) {
+        logger.warn(`[Brand Variations] Error resolving competitor "${competitorName}":`, error);
+      }
+    }
+    
     const aliasesFromDb = await getBulkAliases(companyIds);
 
     // Convert to BrandVariation format for compatibility
@@ -478,14 +509,27 @@ export async function performAnalysis({
       };
     }
 
-    // Add competitor variations (competitors are just strings in this context)
+    // Add competitor variations with their aliases from database
     competitors.forEach(competitorName => {
-      // For competitors, we don't have company IDs, so we'll create basic variations
-      variationRecord[competitorName] = {
-        original: competitorName,
-        variations: [competitorName, competitorName.toLowerCase()],
-        confidence: 0.8
-      };
+      const competitorId = competitorNameToId[competitorName];
+      
+      if (competitorId && aliasesFromDb[competitorId]) {
+        // Use aliases from database
+        variationRecord[competitorName] = {
+          original: competitorName,
+          variations: aliasesFromDb[competitorId],
+          confidence: 1.0
+        };
+        logger.debug(`[Brand Variations] Loaded ${aliasesFromDb[competitorId].length} aliases for competitor "${competitorName}"`);
+      } else {
+        // Fallback to basic variations if no aliases found
+        variationRecord[competitorName] = {
+          original: competitorName,
+          variations: [competitorName, competitorName.toLowerCase()],
+          confidence: 0.8
+        };
+        logger.debug(`[Brand Variations] Using basic variations for competitor "${competitorName}"`);
+      }
     });
 
     // Add normalized keys for robust matching
@@ -504,6 +548,7 @@ export async function performAnalysis({
     brandVariations = variationRecord;
 
     logger.info(`[Brand Variations] Loaded variations for ${Object.keys(aliasesFromDb).length} companies from database`);
+    logger.debug(`[Brand Variations] Competitor name to ID mapping:`, competitorNameToId);
   } catch (error) {
     logger.error('[Brand Variations] Failed to load brand variations from database:', error);
     // Fallback: create basic variations
@@ -535,6 +580,7 @@ export async function performAnalysis({
     company, 
     responses, 
     competitors,
+    brandVariations,
     sendEvent
   );
 
